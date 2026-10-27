@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mercury-primary: #5266eb;
+  --mercury-on-primary: #ffffff;
+  --mercury-periwinkle: #9cb4e8;
+  --mercury-canvas: #fbfcfd;
+  --mercury-surface: #ffffff;
+  --mercury-surface-tint: #fbfbff;
+  --mercury-lavender: #edecfb;
+  --mercury-night: #171721;
+  --mercury-night-raised: #1e1e2a;
+  --mercury-ink: #28253b;
+  --mercury-ink-secondary: #554e7b;
+  --mercury-on-dark: #ededf3;
+  --mercury-fog: #c3c3cc;
+  --mercury-slate: #70707d;
+
+  --mercury-bg-canvas: #f4f5f8;
+  --mercury-bg-surface-1: #ffffff;
+  --mercury-bg-surface-2: #fbfbff;
+  --mercury-bg-surface-3: #edecfb;
+  --mercury-border-hairline: 1px solid rgba(195, 195, 204, 0.45);
+
+  --mercury-accent-writer: #3b5bdb;
+  --mercury-accent-sheets: #0ca678;
+  --mercury-accent-slides: #e8590c;
+  --mercury-accent-pdf: #e03131;
+  --mercury-accent-ai-python: #7048e8;
+}
+
+[data-theme='dark'] {
+  --mercury-bg-canvas: #12121a;
+  --mercury-bg-surface-1: #171721;
+  --mercury-bg-surface-2: #1e1e2a;
+  --mercury-bg-surface-3: #28253b;
+  --mercury-border-hairline: 1px solid rgba(112, 112, 125, 0.35);
+  --mercury-ink: #ededf3;
+  --mercury-ink-secondary: #c3c3cc;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.011em;
+  user-select: none;
+}
+
+/* Custom scrollbars matching Mercury hairline aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(195, 195, 204, 0.5);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(112, 112, 125, 0.8);
+}

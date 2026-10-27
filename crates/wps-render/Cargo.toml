@@ -1,0 +1,13 @@
+[package]
+name = "wps-render"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wps-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+unicode-segmentation = { workspace = true }
+unicode-width = { workspace = true }
+log = { workspace = true }

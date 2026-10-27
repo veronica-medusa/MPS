@@ -1,0 +1,11 @@
+[package]
+name = "wps-collab"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wps-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }

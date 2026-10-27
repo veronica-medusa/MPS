@@ -1,0 +1,15 @@
+{
+  "name": "openwps-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter workspace-ui run dev",
+    "build": "pnpm --filter workspace-ui run build",
+    "typecheck": "pnpm --filter workspace-ui run typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

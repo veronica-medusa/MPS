@@ -1,0 +1,15 @@
+[package]
+name = "wps-python"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wps-core = { workspace = true }
+wps-sheets = { workspace = true }
+wps-writer = { workspace = true }
+wps-slides = { workspace = true }
+wps-pdf = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }

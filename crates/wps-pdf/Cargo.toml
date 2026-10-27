@@ -1,0 +1,16 @@
+[package]
+name = "wps-pdf"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wps-core = { workspace = true }
+wps-render = { workspace = true }
+wps-writer = { workspace = true }
+wps-sheets = { workspace = true }
+wps-slides = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+miniz_oxide = "0.9"

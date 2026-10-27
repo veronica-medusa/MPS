@@ -1,0 +1,18 @@
+# Rust target directories
+target/
+**/target/
+
+# Node dependencies and build outputs
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Logs and environment
+*.log
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db

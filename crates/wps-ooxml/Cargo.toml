@@ -1,0 +1,13 @@
+[package]
+name = "wps-ooxml"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wps-core = { workspace = true }
+zip = { workspace = true }
+quick-xml = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }

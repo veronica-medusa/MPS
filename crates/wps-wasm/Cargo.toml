@@ -1,0 +1,21 @@
+[package]
+name = "wps-wasm"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wps-core = { workspace = true }
+wps-render = { workspace = true }
+wps-writer = { workspace = true }
+wps-sheets = { workspace = true }
+wps-slides = { workspace = true }
+wps-pdf = { workspace = true }
+wps-python = { workspace = true }
+wps-ai = { workspace = true }
+wps-collab = { workspace = true }
+wasm-bindgen = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
+  "productName": "OpenWPS",
+  "version": "0.1.0",
+  "identifier": "com.openwps.desktop",
+  "build": {
+    "frontendDist": "../apps/workspace-ui/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm --filter workspace-ui run dev",
+    "beforeBuildCommand": "pnpm --filter workspace-ui run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "OpenWPS — Mercury Precision Office",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}

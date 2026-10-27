@@ -1,0 +1,14 @@
+[package]
+name = "wps-slides"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wps-core = { workspace = true }
+wps-render = { workspace = true }
+wps-ooxml = { workspace = true }
+quick-xml = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
