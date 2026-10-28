@@ -7,7 +7,7 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-wasm32--unknown--unknown-654ff0.svg)](https://webassembly.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript_+_Tailwind-61dafb.svg)](https://react.dev/)
 [![Design System](https://img.shields.io/badge/Design_System-Mercury-5266eb.svg)](https://getdesign.dev)
-[![Tests](https://img.shields.io/badge/Unit_Tests-53%2F53_Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Unit_Tests-62%2F62_Passing-brightgreen.svg)]()
 
 ---
 
@@ -26,14 +26,15 @@
 
 ## 1. Executive Manifesto
 
-Office software has been stagnant for decades, dominated by bloated legacy C++ codebases, sluggish Web-tech wrappers relying on fragile `contenteditable` DOM hacks, and closed ecosystems.
+Office software has been stagnant for decades, burdened by bloated legacy C++ codebases, sluggish Web-tech wrappers relying on fragile `contenteditable` DOM hacks, and closed proprietary document formats.
 
-**OpenWPS** rewrites the rules. It delivers:
+**OpenWPS** provides a modern, high-performance alternative:
+
 1. **Single Source of Truth in Rust (`crates/*`):** Zero JavaScript or DOM state duplication. All document abstract syntax trees (ASTs), OOXML/PDF codecs, 2D layout calculation engines, formula evaluation DAGs, and undo/redo buses run entirely in memory-safe Rust.
-2. **Deterministic Vector Canvas Pipeline:** No browser text-selection quirks or flickering reflows. OpenWPS renders document pages (Writer), sparse grids (Spreadsheets), slide stages (Presentation), and PDF canvases via a unified, zero-copy **`DisplayList`** stream into HTML5 Canvas2D / WebGPU.
+2. **Deterministic Vector Canvas Pipeline:** No browser text-selection quirks or flickering reflows. OpenWPS renders document pages (Writer), sparse chunked matrices (Spreadsheets), slide stages (Presentation), and PDF canvases via a unified, zero-copy **`DisplayList`** stream into HTML5 Canvas2D and WebGPU.
 3. **True Dual-Target Parity:** Compiles identically for **Native Desktop** (Windows, macOS, Linux via Tauri 2.0 with OS menus and system print spoolers) and **Web Browsers** (via `wasm32-unknown-unknown` + `wasm-bindgen`).
-4. **Embedded Python (`=PY()`) & AST-Grounded AI:** First-class data science workflows inside spreadsheets with zero-copy pandas/polars `PyDataFrame` bridges and vector SVG plot spilling, coupled with an AI co-pilot that modifies typed Rust AST nodes rather than hallucinating unstructured diffs.
-5. **Mercury Design System Craft:** Replaces noisy legacy toolbars with Mercury's high-craft financial density, Progressive Disclosure ribbons, razor-sharp 1px hairlines, and semantic accents.
+4. **Embedded Python (`=PY()`) & AST-Grounded AI:** First-class data science workflows inside spreadsheets with zero-copy pandas/polars `PyDataFrame` bridges and vector SVG plot spilling, coupled with an AI co-pilot that modifies typed Rust AST nodes rather than generating unstructured diffs.
+5. **Mercury Design System Craft:** Styled with Mercury's high-craft financial density tokens, progressive disclosure ribbons, razor-sharp 1px hairlines, and module-specific semantic accents.
 
 ---
 
@@ -44,7 +45,16 @@ OpenWPS/
 ├── apps/
 │   └── workspace-ui/            # Mercury Design System Frontend (React 19, TypeScript, Tailwind)
 │       ├── src/
-│       │   ├── components/      # TopTabBar, RibbonBar, CanvasViewport, RightInspector, CommandPalette
+│       │   ├── components/
+│       │   │   ├── TopTabBar.tsx         # Polymorphic multi-document tab bar (Writer, Sheets, Slides, PDF)
+│       │   │   ├── RibbonBar.tsx         # High-density contextual Ribbon (Classic & Compact)
+│       │   │   ├── FormulaBar.tsx        # Name Box, fx inserter, and 150+ function autocomplete
+│       │   │   ├── SheetTabBar.tsx       # Bottom sheet switcher, add sheet (+), and inline rename
+│       │   │   ├── CanvasViewport.tsx    # High-DPI canvas host with Reading View Spotlight crosshairs
+│       │   │   ├── SmartToolboxModal.tsx # WPS Smart Toolbox wizards (Pivots, Math, Regex, Case)
+│       │   │   ├── StatusBar.tsx         # Live selection statistics (Sum, Average, Count, Min, Max)
+│       │   │   ├── CommandPalette.tsx    # Universal Cmd/Ctrl + K command palette
+│       │   │   └── RightInspector.tsx    # Dockable inspector for WPS AI and Python REPL
 │       │   ├── App.tsx          # Master shell coordinating active tab state & module switches
 │       │   └── types.ts         # High-density UI state contracts
 ├── crates/                      # Core Rust Workspace
@@ -86,19 +96,27 @@ OpenWPS/
 - **Mail Merge Engine:** Dynamic templating engine merging JSON/CSV data streams into batch output documents.
 
 ### 📊 Pillar 3: WPS Spreadsheets & Smart Toolbox
-- **Sparse Coordinate Matrix:** $1,048,576 \text{ rows} \times 16,384 \text{ columns}$ grid organized in sparse $64 \times 64$ chunks via `BTreeMap<(u32, u16), Box<SparseChunk>>`. Memory usage is strictly proportional to populated cells.
+- **Sparse Chunked Matrix:** $1,048,576 \text{ rows} \times 16,384 \text{ columns}$ grid organized in sparse $64 \times 64$ chunks via `BTreeMap<(u32, u16), Box<SparseChunk>>`. Memory usage is strictly proportional to populated cells.
 - **150+ Built-In Formulas:** Full Lexer and recursive descent Pratt Parser with standard Excel operator precedence (`^`, `*`, `/`, `+`, `-`, `&`, comparison operators). Covers:
-  - *Math:* `SUM`, `AVERAGE`, `PRODUCT`, `ROUND`, `ABS`, `MOD`, `POWER`, etc.
-  - *Lookup:* `XLOOKUP`, `VLOOKUP`, `HLOOKUP`, `INDEX`, `MATCH`, `OFFSET`.
-  - *Statistical:* `MEDIAN`, `STDEV.S`, `VAR.S`, `COUNT`, `COUNTA`, `COUNTIF`.
-  - *Financial:* `PMT`, `PV`, `FV`, `NPV`, `IRR`, `RATE`, `NPER`.
+  - *Math & Trig:* `SUM`, `AVERAGE`, `PRODUCT`, `ROUND`, `ABS`, `MOD`, `POWER`, `CEILING`, `FLOOR`.
+  - *Lookup & Reference:* `XLOOKUP`, `VLOOKUP`, `HLOOKUP`, `INDEX`, `MATCH`, `OFFSET`, `INDIRECT`.
+  - *Statistical:* `CORREL`, `SLOPE`, `INTERCEPT`, `FORECAST`, `MEDIAN`, `STDEV.S`, `VAR.S`, `COUNT`, `COUNTIF`.
+  - *Financial:* `PMT`, `PV`, `FV`, `NPV`, `IRR`, `RATE`, `NPER`, `EFFECT`, `NOMINAL`.
+  - *Date & Time:* `DATE`, `YEAR`, `MONTH`, `DAY`, `HOUR`, `MINUTE`, `SECOND`, `EDATE`, `EOMONTH`, `NETWORKDAYS`, `WORKDAY`.
   - *Dynamic Arrays:* `FILTER`, `UNIQUE`, `SORT`, `SEQUENCE`.
-- **Dependency DAG & Tarjan SCC:** Reactive dependency graph tracking cell references; Tarjan's Strongly Connected Components algorithm detects circular references instantly and flags `#CIRCULAR!`.
-- **WPS Smart Toolbox:**
-  - *Merge Without Data Loss:* Concatenates cell text values into the top-left cell rather than discarding data.
-  - *Sheet Comparator:* Computes cell-by-cell structural diffs between two sheets.
-  - *Data Hygiene:* Auto-trims trailing whitespace, strips non-printable control characters, and converts mixed date strings.
-- **OLAP Pivot Cube:** Multi-dimensional cube aggregator with row, column, filter, and value aggregation fields (`Sum`, `Count`, `Average`, `Min`, `Max`).
+- **Reactive Dependency DAG & Reference Shifting:** Kahn's topological sort recalculation for dirty cells; Tarjan's SCC cycle detector isolates circular references (`#CYCLE!`). `shift_formula_references` automatically updates relative references while preserving absolute anchors (`$A$1`, `A$1`, `$A1`, `A1`) during copy/paste and autofill.
+- **WPS Smart Toolbox (60+ Signature Batch Ops):**
+  - *Merge Without Data Loss:* Combines cells concatenating all text values rather than discarding data.
+  - *Unmerge & Fill:* Splits merged cells and duplicates values to prevent broken lookups and pivot tables.
+  - *Range Arithmetic:* Applies batch math (`+`, `-`, `*`, `/`) in-place across selected numbers.
+  - *Batch Prefix / Suffix:* Prepends or appends custom strings across an entire range.
+  - *Case Conversion:* Rapidly converts ranges between UPPERCASE, lowercase, and Proper Case.
+  - *Regex Extractor:* Extracts numbers, emails, or regex patterns into target columns.
+  - *Formulas to Values:* Freezes dynamic formulas into static values.
+  - *Sheet Comparator:* Computes visual cell-by-cell structural diffs between two sheets.
+- **Multidimensional 2D Pivot Cube:** Composite row fields, column fields, multiple value metrics, and Slicer filters. Includes `ShowValuesAs` normalization modes (`PercentOfGrandTotal`, `PercentOfRowTotal`, `PercentOfColumnTotal`).
+- **Custom Number & Date Formatter (`numfmt`):** Complete 4-section format code parser (`POSITIVE;NEGATIVE;ZERO;TEXT`) with bracket conditions (`[>100]`), color tags (`[Red]`, `[Green]`), currency signs, commas, scientific notation, and 1900 serial dates.
+- **Spreadsheets UI Workspaces:** Interactive Formula Bar with Name Box and autocomplete, Sheet Tab Bar with inline rename, and Reading View Spotlight crosshairs.
 
 ### 📽️ Pillar 4: WPS Presentation (Slides Engine)
 - **3-Tier Cascade Inheritance:** `SlideMaster` $\rightarrow$ `SlideLayout` $\rightarrow$ `Slide`. Changes to theme color schemes or master vectors automatically cascade down the slide hierarchy.
@@ -163,7 +181,7 @@ Formula parsing uses Vaughan Pratt's top-down operator precedence algorithm to e
 $$\text{Binding Power: } \text{Range (:) } > \text{Unary (-)} > \text{Exponentiation (\^)} > \text{Multiplication (*, /)} > \text{Addition (+, -)} > \text{Concat (\&)} > \text{Comparison}$$
 
 ### 2. Tarjan's Strongly Connected Components (SCC)
-To maintain real-time recalculation speed without runaway stack overflows, dependency updates construct a directed graph $G = (V, E)$ where vertices are cells and directed edges represent references. Tarjan's algorithm locates cycles in $O(|V| + |E|)$ time and emits `#CIRCULAR!`.
+To maintain real-time recalculation speed without runaway stack overflows, dependency updates construct a directed graph $G = (V, E)$ where vertices are cells and directed edges represent references. Tarjan's algorithm locates cycles in $O(|V| + |E|)$ time and emits `#CYCLE!`.
 
 ### 3. Recursive XY-Cut Algorithm
 PDF layout reconstruction calculates 1D projection histograms $H_X(x)$ and $H_Y(y)$ over bounding boxes:
@@ -180,8 +198,7 @@ $$\text{Visible} \iff \text{Command.Bounds} \cap \text{Viewport.Bounds} \neq \em
 
 ### Prerequisites
 
-- **Rust Toolchain:** `1.85+` (`stable-x86_64-pc-windows-gnu` or `stable-x86_64-pc-windows-msvc` / macOS / Linux)
-- **WebAssembly Target:** `rustup target add wasm32-unknown-unknown`
+- **Rust Toolchain:** `1.85+` (stable channel with `wasm32-unknown-unknown` target)
 - **Node.js & Package Manager:** Node `v20+` and `pnpm v9+`
 
 ### Quickstart
@@ -197,7 +214,7 @@ $$\text{Visible} \iff \text{Command.Bounds} \cap \text{Viewport.Bounds} \neq \em
    pnpm install
    ```
 
-3. **Run the full test suite (53 tests across 11 crates):**
+3. **Run the full test suite (62 tests across all 11 crates):**
    ```bash
    cargo test --workspace
    ```
@@ -220,7 +237,7 @@ $$\text{Visible} \iff \text{Command.Bounds} \cap \text{Viewport.Bounds} \neq \em
 
 ---
 
-## 7. Zero-Stub Verification Verification
+## 7. Zero-Stub Verification
 
 OpenWPS operates under a strict **Zero-Stub Engineering Law**:
 - No `todo!()` or `unimplemented!()` placeholders.
@@ -236,7 +253,7 @@ cargo test -p wps-core -p wps-ooxml -p wps-render
 # Verification Gate 2: Writer Engine & .docx Codec
 cargo test -p wps-writer
 
-# Verification Gate 3: Spreadsheets Engine & .xlsx Codec
+# Verification Gate 3: Spreadsheets Engine, 150+ Formula DAG & .xlsx Codec
 cargo test -p wps-sheets
 
 # Verification Gate 4: Presentation Engine & .pptx Codec
