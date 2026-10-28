@@ -501,10 +501,70 @@ fn fn_small(args: &[CellValue]) -> CellValue {
     CellValue::Number(nums[k - 1])
 }
 
-fn fn_correl(_args: &[CellValue]) -> CellValue { CellValue::Number(1.0) }
-fn fn_slope(_args: &[CellValue]) -> CellValue { CellValue::Number(1.0) }
-fn fn_intercept(_args: &[CellValue]) -> CellValue { CellValue::Number(0.0) }
-fn fn_forecast(_args: &[CellValue]) -> CellValue { CellValue::Number(42.0) }
+fn fn_correl(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let xs = flatten_numbers(&[args[0].clone()]);
+    let ys = flatten_numbers(&[args[1].clone()]);
+    if xs.is_empty() || xs.len() != ys.len() { return CellValue::Error(CellError::NA); }
+    let n = xs.len() as f64;
+    let mean_x = xs.iter().sum::<f64>() / n;
+    let mean_y = ys.iter().sum::<f64>() / n;
+    let mut cov = 0.0;
+    let mut var_x = 0.0;
+    let mut var_y = 0.0;
+    for (x, y) in xs.iter().zip(ys.iter()) {
+        let dx = x - mean_x;
+        let dy = y - mean_y;
+        cov += dx * dy;
+        var_x += dx * dx;
+        var_y += dy * dy;
+    }
+    if var_x == 0.0 || var_y == 0.0 { return CellValue::Error(CellError::DivZero); }
+    CellValue::Number(cov / (var_x.sqrt() * var_y.sqrt()))
+}
+
+fn fn_slope(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let ys = flatten_numbers(&[args[0].clone()]);
+    let xs = flatten_numbers(&[args[1].clone()]);
+    if xs.is_empty() || xs.len() != ys.len() { return CellValue::Error(CellError::NA); }
+    let n = xs.len() as f64;
+    let mean_x = xs.iter().sum::<f64>() / n;
+    let mean_y = ys.iter().sum::<f64>() / n;
+    let mut cov = 0.0;
+    let mut var_x = 0.0;
+    for (x, y) in xs.iter().zip(ys.iter()) {
+        let dx = x - mean_x;
+        let dy = y - mean_y;
+        cov += dx * dy;
+        var_x += dx * dx;
+    }
+    if var_x == 0.0 { return CellValue::Error(CellError::DivZero); }
+    CellValue::Number(cov / var_x)
+}
+
+fn fn_intercept(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let ys = flatten_numbers(&[args[0].clone()]);
+    let xs = flatten_numbers(&[args[1].clone()]);
+    if xs.is_empty() || xs.len() != ys.len() { return CellValue::Error(CellError::NA); }
+    let slope = match fn_slope(args) {
+        CellValue::Number(s) => s,
+        err => return err,
+    };
+    let n = xs.len() as f64;
+    let mean_x = xs.iter().sum::<f64>() / n;
+    let mean_y = ys.iter().sum::<f64>() / n;
+    CellValue::Number(mean_y - slope * mean_x)
+}
+
+fn fn_forecast(args: &[CellValue]) -> CellValue {
+    if args.len() < 3 { return CellValue::Error(CellError::Value); }
+    let x = match args[0].as_number() { Some(v) => v, None => return CellValue::Error(CellError::Value) };
+    let slope = match fn_slope(&args[1..]) { CellValue::Number(s) => s, err => return err };
+    let intercept = match fn_intercept(&args[1..]) { CellValue::Number(i) => i, err => return err };
+    CellValue::Number(intercept + slope * x)
+}
 
 // === Lookup & Dynamic Arrays ===
 
@@ -1074,14 +1134,260 @@ fn fn_regexreplace(args: &[CellValue]) -> CellValue {
 
 // === Date & Time ===
 
+fn serial_to_ymd(serial: f64) -> (i32, u32, u32) {
+    let days = serial.floor() as i64;
+    let adj_days = if days > 60 { days - 1 } else { days };
+    let mut year = 1900;
+    let mut d = adj_days - 1;
+    while d >= if is_leap_year(year) { 366 } else { 365 } {
+        d -= if is_leap_year(year) { 366 } else { 365 };
+        year += 1;
+    }
+    let leap = is_leap_year(year);
+    let month_days = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let mut month = 1;
+    for &md in &month_days {
+        if d < md { break; }
+        d -= md;
+        month += 1;
+    }
+    let day = (d + 1) as u32;
+    (year as i32, month as u32, day)
+}
+
+fn ymd_to_serial(year: i32, month: u32, day: u32) -> f64 {
+    let mut total_days: i64 = 0;
+    for y in 1900..year {
+        total_days += if is_leap_year(y as i64) { 366 } else { 365 };
+    }
+    let leap = is_leap_year(year as i64);
+    let month_days = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    for m in 1..month {
+        total_days += month_days[(m - 1) as usize];
+    }
+    total_days += day as i64;
+    if total_days >= 60 {
+        total_days += 1; // 1900 leap year bug
+    }
+    total_days as f64
+}
+
+fn is_leap_year(y: i64) -> bool {
+    (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
+}
+
 fn fn_date(args: &[CellValue]) -> CellValue {
     if args.len() < 3 { return CellValue::Error(CellError::Value); }
     let y = match args[0].as_number() { Some(y) => y as i32, None => return CellValue::Error(CellError::Value) };
     let m = match args[1].as_number() { Some(m) => m as u32, None => return CellValue::Error(CellError::Value) };
     let d = match args[2].as_number() { Some(d) => d as u32, None => return CellValue::Error(CellError::Value) };
-    // Approximate Excel serial date (days since 1900-01-01)
-    let serial = (y - 1900) * 365 + (m as i32 - 1) * 30 + d as i32;
-    CellValue::Number(serial as f64)
+    CellValue::Number(ymd_to_serial(y, m, d))
+}
+
+fn fn_year(args: &[CellValue]) -> CellValue {
+    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
+    let (y, _, _) = serial_to_ymd(serial);
+    CellValue::Number(y as f64)
+}
+
+fn fn_month(args: &[CellValue]) -> CellValue {
+    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
+    let (_, m, _) = serial_to_ymd(serial);
+    CellValue::Number(m as f64)
+}
+
+fn fn_day(args: &[CellValue]) -> CellValue {
+    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
+    let (_, _, d) = serial_to_ymd(serial);
+    CellValue::Number(d as f64)
+}
+
+fn fn_hour(args: &[CellValue]) -> CellValue {
+    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
+    let secs = (serial.fract().abs() * 86400.0).round() as u64;
+    CellValue::Number((secs / 3600) as f64)
+}
+
+fn fn_minute(args: &[CellValue]) -> CellValue {
+    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
+    let secs = (serial.fract().abs() * 86400.0).round() as u64;
+    CellValue::Number(((secs % 3600) / 60) as f64)
+}
+
+fn fn_second(args: &[CellValue]) -> CellValue {
+    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
+    let secs = (serial.fract().abs() * 86400.0).round() as u64;
+    CellValue::Number((secs % 60) as f64)
+}
+
+fn fn_edate(args: &[CellValue]) -> CellValue {
+    let s = match args.first().and_then(|a| a.as_number()) { Some(v) => v, None => return CellValue::Error(CellError::Value) };
+    let months_to_add = match args.get(1).and_then(|a| a.as_number()) { Some(v) => v as i32, None => return CellValue::Error(CellError::Value) };
+    let (mut y, mut m, d) = serial_to_ymd(s);
+    let total_months = (y * 12 + (m as i32 - 1)) + months_to_add;
+    y = total_months / 12;
+    m = (total_months % 12 + 1) as u32;
+    let leap = is_leap_year(y as i64);
+    let max_days = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][(m - 1) as usize];
+    let adj_d = d.min(max_days);
+    CellValue::Number(ymd_to_serial(y, m, adj_d))
+}
+
+fn fn_eomonth(args: &[CellValue]) -> CellValue {
+    let s = match args.first().and_then(|a| a.as_number()) { Some(v) => v, None => return CellValue::Error(CellError::Value) };
+    let months_to_add = match args.get(1).and_then(|a| a.as_number()) { Some(v) => v as i32, None => return CellValue::Error(CellError::Value) };
+    let (mut y, mut m, _) = serial_to_ymd(s);
+    let total_months = (y * 12 + (m as i32 - 1)) + months_to_add;
+    y = total_months / 12;
+    m = (total_months % 12 + 1) as u32;
+    let leap = is_leap_year(y as i64);
+    let last_day = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][(m - 1) as usize];
+    CellValue::Number(ymd_to_serial(y, m, last_day))
+}
+
+fn fn_networkdays(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let s1 = match args[0].as_number() { Some(s) => s.floor() as i64, None => return CellValue::Error(CellError::Value) };
+    let s2 = match args[1].as_number() { Some(s) => s.floor() as i64, None => return CellValue::Error(CellError::Value) };
+    let holidays: Vec<i64> = if args.len() > 2 {
+        flatten_numbers(&args[2..]).into_iter().map(|h| h.floor() as i64).collect()
+    } else {
+        Vec::new()
+    };
+
+    let start = s1.min(s2);
+    let end = s1.max(s2);
+    let mut count = 0;
+    for day in start..=end {
+        let weekday = (day + 6) % 7; // 0=Mon, 5=Sat, 6=Sun
+        if weekday < 5 && !holidays.contains(&day) {
+            count += 1;
+        }
+    }
+    let res = if s1 <= s2 { count } else { -count };
+    CellValue::Number(res as f64)
+}
+
+fn fn_workday(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let mut current = match args[0].as_number() { Some(s) => s.floor() as i64, None => return CellValue::Error(CellError::Value) };
+    let days_to_add = match args[1].as_number() { Some(d) => d as i64, None => return CellValue::Error(CellError::Value) };
+    let holidays: Vec<i64> = if args.len() > 2 {
+        flatten_numbers(&args[2..]).into_iter().map(|h| h.floor() as i64).collect()
+    } else {
+        Vec::new()
+    };
+
+    let step = if days_to_add >= 0 { 1 } else { -1 };
+    let mut remaining = days_to_add.abs();
+    while remaining > 0 {
+        current += step;
+        let weekday = (current + 6) % 7;
+        if weekday < 5 && !holidays.contains(&current) {
+            remaining -= 1;
+        }
+    }
+    CellValue::Number(current as f64)
+}
+
+fn fn_irr(args: &[CellValue]) -> CellValue {
+    if args.is_empty() { return CellValue::Error(CellError::Value); }
+    let flows = flatten_numbers(args);
+    if flows.len() < 2 { return CellValue::Error(CellError::Value); }
+    let mut r = 0.1;
+    for _ in 0..100 {
+        let mut npv = 0.0;
+        let mut d_npv = 0.0;
+        for (t, &cf) in flows.iter().enumerate() {
+            let denom = (1.0_f64 + r).powi(t as i32);
+            npv += cf / denom;
+            if t > 0 {
+                d_npv -= (t as f64 * cf) / ((1.0_f64 + r).powi((t + 1) as i32));
+            }
+        }
+        if npv.abs() < 1e-7 {
+            return CellValue::Number(r);
+        }
+        if d_npv.abs() < 1e-12 {
+            break;
+        }
+        let next_r = r - npv / d_npv;
+        if (next_r - r).abs() < 1e-9 {
+            return CellValue::Number(next_r);
+        }
+        r = next_r;
+    }
+    if r.is_nan() || r.is_infinite() {
+        CellValue::Error(CellError::Num)
+    } else {
+        CellValue::Number(r)
+    }
+}
+
+fn fn_rate(args: &[CellValue]) -> CellValue {
+    if args.len() < 3 { return CellValue::Error(CellError::Value); }
+    let nper = match args[0].as_number() { Some(n) => n, None => return CellValue::Error(CellError::Value) };
+    let pmt = match args[1].as_number() { Some(p) => p, None => return CellValue::Error(CellError::Value) };
+    let pv = match args[2].as_number() { Some(v) => v, None => return CellValue::Error(CellError::Value) };
+    let fv = args.get(3).and_then(|a| a.as_number()).unwrap_or(0.0);
+    let p_type = args.get(4).and_then(|a| a.as_number()).unwrap_or(0.0);
+    let mut r = args.get(5).and_then(|a| a.as_number()).unwrap_or(0.1);
+
+    for _ in 0..100 {
+        let f = if r == 0.0 {
+            pv + pmt * nper + fv
+        } else {
+            pv * (1.0 + r).powf(nper) + pmt * (1.0 + r * p_type) * ((1.0 + r).powf(nper) - 1.0) / r + fv
+        };
+        if f.abs() < 1e-7 {
+            return CellValue::Number(r);
+        }
+        let dr = 1e-5;
+        let r_hi = r + dr;
+        let f_hi = pv * (1.0 + r_hi).powf(nper) + pmt * (1.0 + r_hi * p_type) * ((1.0 + r_hi).powf(nper) - 1.0) / r_hi + fv;
+        let df = (f_hi - f) / dr;
+        if df.abs() < 1e-12 { break; }
+        let next_r = r - f / df;
+        if (next_r - r).abs() < 1e-9 {
+            return CellValue::Number(next_r);
+        }
+        r = next_r;
+    }
+    CellValue::Number(r)
+}
+
+fn fn_nper(args: &[CellValue]) -> CellValue {
+    if args.len() < 3 { return CellValue::Error(CellError::Value); }
+    let rate = match args[0].as_number() { Some(r) => r, None => return CellValue::Error(CellError::Value) };
+    let pmt = match args[1].as_number() { Some(p) => p, None => return CellValue::Error(CellError::Value) };
+    let pv = match args[2].as_number() { Some(v) => v, None => return CellValue::Error(CellError::Value) };
+    let fv = args.get(3).and_then(|a| a.as_number()).unwrap_or(0.0);
+    let p_type = args.get(4).and_then(|a| a.as_number()).unwrap_or(0.0);
+
+    if rate == 0.0 {
+        if pmt == 0.0 { return CellValue::Error(CellError::DivZero); }
+        return CellValue::Number(-(pv + fv) / pmt);
+    }
+    let num = pmt * (1.0 + rate * p_type) - fv * rate;
+    let den = pmt * (1.0 + rate * p_type) + pv * rate;
+    if den == 0.0 || (num / den) <= 0.0 { return CellValue::Error(CellError::Num); }
+    CellValue::Number((num / den).ln() / (1.0 + rate).ln())
+}
+
+fn fn_effect(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let nom = match args[0].as_number() { Some(n) => n, None => return CellValue::Error(CellError::Value) };
+    let npery = match args[1].as_number() { Some(p) => p, None => return CellValue::Error(CellError::Value) };
+    if nom <= 0.0 || npery < 1.0 { return CellValue::Error(CellError::Num); }
+    CellValue::Number((1.0 + nom / npery).powf(npery) - 1.0)
+}
+
+fn fn_nominal(args: &[CellValue]) -> CellValue {
+    if args.len() < 2 { return CellValue::Error(CellError::Value); }
+    let eff = match args[0].as_number() { Some(e) => e, None => return CellValue::Error(CellError::Value) };
+    let npery = match args[1].as_number() { Some(p) => p, None => return CellValue::Error(CellError::Value) };
+    if eff <= 0.0 || npery < 1.0 { return CellValue::Error(CellError::Num); }
+    CellValue::Number(npery * ((1.0 + eff).powf(1.0 / npery) - 1.0))
 }
 
 fn fn_time(args: &[CellValue]) -> CellValue {
@@ -1092,33 +1398,15 @@ fn fn_time(args: &[CellValue]) -> CellValue {
     CellValue::Number((h * 3600.0 + m * 60.0 + s) / 86400.0)
 }
 
-fn fn_year(args: &[CellValue]) -> CellValue {
-    let serial = match args.first().and_then(|a| a.as_number()) { Some(s) => s, None => return CellValue::Error(CellError::Value) };
-    let y = 1900 + (serial / 365.25) as i32;
-    CellValue::Number(y as f64)
-}
-
-fn fn_month(_args: &[CellValue]) -> CellValue { CellValue::Number(10.0) }
-fn fn_day(_args: &[CellValue]) -> CellValue { CellValue::Number(27.0) }
-fn fn_hour(_args: &[CellValue]) -> CellValue { CellValue::Number(12.0) }
-fn fn_minute(_args: &[CellValue]) -> CellValue { CellValue::Number(30.0) }
-fn fn_second(_args: &[CellValue]) -> CellValue { CellValue::Number(0.0) }
-fn fn_edate(args: &[CellValue]) -> CellValue {
-    let s = args.first().and_then(|a| a.as_number()).unwrap_or(45600.0);
-    let m = args.get(1).and_then(|a| a.as_number()).unwrap_or(1.0);
-    CellValue::Number(s + m * 30.0)
-}
-fn fn_eomonth(args: &[CellValue]) -> CellValue { fn_edate(args) }
 fn fn_datedif(args: &[CellValue]) -> CellValue {
     let d1 = args.first().and_then(|a| a.as_number()).unwrap_or(0.0);
     let d2 = args.get(1).and_then(|a| a.as_number()).unwrap_or(0.0);
     CellValue::Number((d2 - d1).abs())
 }
-fn fn_days(args: &[CellValue]) -> CellValue { fn_datedif(args) }
-fn fn_networkdays(args: &[CellValue]) -> CellValue { fn_datedif(args) }
-fn fn_workday(args: &[CellValue]) -> CellValue { fn_edate(args) }
 
-// === Financial ===
+fn fn_days(args: &[CellValue]) -> CellValue {
+    fn_datedif(args)
+}
 
 fn fn_pmt(args: &[CellValue]) -> CellValue {
     if args.len() < 3 { return CellValue::Error(CellError::Value); }
@@ -1164,9 +1452,6 @@ fn fn_npv(args: &[CellValue]) -> CellValue {
     CellValue::Number(total)
 }
 
-fn fn_irr(_args: &[CellValue]) -> CellValue { CellValue::Number(0.12) }
-fn fn_rate(_args: &[CellValue]) -> CellValue { CellValue::Number(0.05) }
-fn fn_nper(_args: &[CellValue]) -> CellValue { CellValue::Number(36.0) }
 fn fn_sln(args: &[CellValue]) -> CellValue {
     if args.len() < 3 { return CellValue::Error(CellError::Value); }
     let cost = match args[0].as_number() { Some(c) => c, None => return CellValue::Error(CellError::Value) };
@@ -1175,10 +1460,9 @@ fn fn_sln(args: &[CellValue]) -> CellValue {
     if life == 0.0 { return CellValue::Error(CellError::DivZero); }
     CellValue::Number((cost - salvage) / life)
 }
+
 fn fn_syd(args: &[CellValue]) -> CellValue { fn_sln(args) }
 fn fn_db(args: &[CellValue]) -> CellValue { fn_sln(args) }
-fn fn_effect(_args: &[CellValue]) -> CellValue { CellValue::Number(0.0512) }
-fn fn_nominal(_args: &[CellValue]) -> CellValue { CellValue::Number(0.05) }
 
 #[cfg(test)]
 mod tests {

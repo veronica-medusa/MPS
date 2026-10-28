@@ -1,9 +1,10 @@
 use crate::cell::*;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
 pub const CHUNK_SIZE: usize = 64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SparseChunk {
     cells: HashMap<(u8, u8), Cell>,
 }
@@ -42,7 +43,7 @@ impl SparseChunk {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct SparseMatrix {
     chunks: BTreeMap<(u32, u16), Box<SparseChunk>>,
     pub row_heights: HashMap<u32, f64>,
@@ -94,6 +95,40 @@ impl SparseMatrix {
         let mut cell = self.get_cell(coord).cloned().unwrap_or_default();
         cell.formula = formula;
         self.set_cell(coord, cell);
+    }
+
+    pub fn clear_cell(&mut self, coord: CellCoordinate) {
+        let (chunk_idx, local) = Self::chunk_coord(coord);
+        if let Some(chunk) = self.chunks.get_mut(&chunk_idx) {
+            chunk.cells.remove(&(local.0, local.1));
+            if chunk.is_empty() {
+                self.chunks.remove(&chunk_idx);
+            }
+        }
+    }
+
+    pub fn clear_range(&mut self, range: CellRange) {
+        for coord in range.iter_coords() {
+            self.clear_cell(coord);
+        }
+    }
+
+    pub fn iter_populated(&self) -> impl Iterator<Item = (CellCoordinate, &Cell)> {
+        self.chunks.iter().flat_map(|(&(cr, cc), chunk)| {
+            chunk.cells.iter().map(move |(&(lr, lc), cell)| {
+                let row = cr * CHUNK_SIZE as u32 + lr as u32;
+                let col = cc * CHUNK_SIZE as u16 + lc as u16;
+                (CellCoordinate::new(row, col), cell)
+            })
+        })
+    }
+
+    pub fn max_populated_row(&self) -> u32 {
+        self.iter_populated().map(|(c, _)| c.row).max().unwrap_or(0)
+    }
+
+    pub fn max_populated_col(&self) -> u16 {
+        self.iter_populated().map(|(c, _)| c.col).max().unwrap_or(0)
     }
 
     pub fn non_empty_cell_count(&self) -> usize {

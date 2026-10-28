@@ -255,6 +255,187 @@ impl SmartToolbox {
             }
         }
     }
+
+    /// 6. Unmerge and Fill:
+    /// Unmerges the specified range and populates all former child cells with the parent cell value.
+    pub fn unmerge_and_fill(matrix: &mut SparseMatrix, range: CellRange) {
+        let parent_val = matrix
+            .get_cell(range.start)
+            .map(|c| c.value.clone())
+            .unwrap_or(CellValue::Empty);
+
+        matrix.merged_ranges.retain(|&r| r != range);
+
+        for coord in range.iter_coords() {
+            matrix.set_value(coord, parent_val.clone());
+        }
+    }
+
+    /// 7. In-Place Range Arithmetic:
+    /// Applies arithmetic operation (add, sub, mul, div, round) across all numbers in range.
+    pub fn range_arithmetic(
+        matrix: &mut SparseMatrix,
+        range: CellRange,
+        op: &str,
+        operand: f64,
+    ) {
+        for coord in range.iter_coords() {
+            if let Some(cell) = matrix.get_cell(coord) {
+                if let CellValue::Number(n) = cell.value {
+                    let new_val = match op.to_lowercase().as_str() {
+                        "add" | "+" => n + operand,
+                        "sub" | "-" => n - operand,
+                        "mul" | "*" => n * operand,
+                        "div" | "/" => if operand != 0.0 { n / operand } else { n },
+                        "round" => {
+                            let factor = 10f64.powi(operand as i32);
+                            (n * factor).round() / factor
+                        }
+                        _ => n,
+                    };
+                    matrix.set_value(coord, CellValue::Number(new_val));
+                }
+            }
+        }
+    }
+
+    /// 8. Batch Regex Extractor:
+    /// Extracts regex pattern matches from source column into target column.
+    pub fn batch_regex_extract(
+        matrix: &mut SparseMatrix,
+        range: CellRange,
+        target_col: u16,
+        pattern: &str,
+    ) -> Result<usize, String> {
+        let re = regex::Regex::new(pattern).map_err(|e| e.to_string())?;
+        let mut count = 0;
+
+        for r in range.start.row..=range.end.row {
+            let src_coord = CellCoordinate::new(r, range.start.col);
+            if let Some(cell) = matrix.get_cell(src_coord) {
+                let text = cell.value.as_string();
+                if let Some(mat) = re.find(&text) {
+                    let dest_coord = CellCoordinate::new(r, target_col);
+                    matrix.set_value(dest_coord, CellValue::Text(mat.as_str().to_string()));
+                    count += 1;
+                }
+            }
+        }
+
+        Ok(count)
+    }
+
+    /// 9. Batch Add Prefix & Suffix
+    pub fn batch_add_prefix_suffix(
+        matrix: &mut SparseMatrix,
+        range: CellRange,
+        prefix: &str,
+        suffix: &str,
+    ) {
+        for coord in range.iter_coords() {
+            if let Some(cell) = matrix.get_cell(coord) {
+                if !cell.value.is_empty() {
+                    let text = cell.value.as_string();
+                    let updated = format!("{}{}{}", prefix, text, suffix);
+                    matrix.set_value(coord, CellValue::Text(updated));
+                }
+            }
+        }
+    }
+
+    /// 10. Batch Case Conversion
+    pub fn batch_case_conversion(
+        matrix: &mut SparseMatrix,
+        range: CellRange,
+        case_mode: &str,
+    ) {
+        for coord in range.iter_coords() {
+            if let Some(cell) = matrix.get_cell(coord) {
+                if let CellValue::Text(text) = &cell.value {
+                    let converted = match case_mode.to_lowercase().as_str() {
+                        "upper" => text.to_uppercase(),
+                        "lower" => text.to_lowercase(),
+                        "proper" => {
+                            let mut c_chars: Vec<char> = Vec::new();
+                            let mut cap_next = true;
+                            for ch in text.chars() {
+                                if ch.is_whitespace() || ch == '_' || ch == '-' {
+                                    c_chars.push(ch);
+                                    cap_next = true;
+                                } else if cap_next {
+                                    c_chars.push(ch.to_ascii_uppercase());
+                                    cap_next = false;
+                                } else {
+                                    c_chars.push(ch.to_ascii_lowercase());
+                                }
+                            }
+                            c_chars.into_iter().collect()
+                        }
+                        _ => text.clone(),
+                    };
+                    matrix.set_value(coord, CellValue::Text(converted));
+                }
+            }
+        }
+    }
+
+    /// 11. Convert Formulas to Static Values
+    pub fn convert_formulas_to_values(matrix: &mut SparseMatrix, range: CellRange) {
+        for coord in range.iter_coords() {
+            if let Some(cell) = matrix.get_cell(coord) {
+                if cell.formula.is_some() {
+                    let val = cell.value.clone();
+                    matrix.set_cell(
+                        coord,
+                        crate::cell::Cell {
+                            formula: None,
+                            value: val,
+                            format_index: cell.format_index,
+                            comment: cell.comment.clone(),
+                            hyperlink: cell.hyperlink.clone(),
+                            spill_origin: None,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    /// 12. Smart Autofill Series Extrapolation
+    pub fn autofill_series(
+        matrix: &mut SparseMatrix,
+        source: CellRange,
+        target: CellRange,
+    ) {
+        // Collect numeric series from source column
+        let mut source_nums = Vec::new();
+        for r in source.start.row..=source.end.row {
+            let coord = CellCoordinate::new(r, source.start.col);
+            if let Some(cell) = matrix.get_cell(coord) {
+                if let Some(num) = cell.value.as_number() {
+                    source_nums.push(num);
+                }
+            }
+        }
+
+        if source_nums.len() >= 2 {
+            // Compute linear step
+            let step = (source_nums.last().unwrap() - source_nums.first().unwrap()) / (source_nums.len() - 1) as f64;
+            let mut curr = *source_nums.last().unwrap();
+
+            for r in target.start.row..=target.end.row {
+                curr += step;
+                matrix.set_value(CellCoordinate::new(r, target.start.col), CellValue::Number(curr));
+            }
+        } else if let Some(&single) = source_nums.first() {
+            // Replicate single number with step 1
+            let mut curr = single;
+            for r in target.start.row..=target.end.row {
+                curr += 1.0;
+                matrix.set_value(CellCoordinate::new(r, target.start.col), CellValue::Number(curr));
+            }
+        }
+    }
 }
 
 #[cfg(test)]

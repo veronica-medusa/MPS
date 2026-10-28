@@ -570,43 +570,167 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
           </div>
         )}
 
-        {/* ===================== WPS SMART TOOLBOX (SHEETS) ===================== */}
-        {activeTab === 'toolbox' && (
+        {/* ===================== DATA & PIVOT TAB (SHEETS) ===================== */}
+        {activeTab === 'data' && (
           <div className="flex items-center space-x-2 text-xs">
             <button
-              onClick={() => onOpenSmartToolbox('merge_no_loss')}
+              onClick={() => onOpenSmartToolbox('pivot_wizard')}
               className="flex items-center space-x-1 px-3 py-1.5 rounded-mercury-sm bg-mercury-sheets text-white hover:bg-mercury-sheets/90 font-medium shadow-sm"
             >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>Pivot Table Cube</span>
+            </button>
+
+            <div className="flex items-center space-x-1 px-2 border-l border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('sort_range', { ascending: true })}
+                className="flex items-center space-x-1 px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Sort Ascending A -> Z"
+              >
+                <span>Sort A &rarr; Z</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('sort_range', { ascending: false })}
+                className="flex items-center space-x-1 px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Sort Descending Z -> A"
+              >
+                <span>Sort Z &rarr; A</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => onExecuteCommand('toggle_autofilter')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <Filter className="w-3.5 h-3.5 text-mercury-sheets" />
+              <span>AutoFilter</span>
+            </button>
+
+            <button
+              onClick={() => onOpenSmartToolbox('data_validation')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-mercury-primary" />
+              <span>Data Validation</span>
+            </button>
+
+            <button
+              onClick={() => onExecuteCommand('remove_duplicates')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <span>Remove Duplicates</span>
+            </button>
+          </div>
+        )}
+
+        {/* ===================== WPS SMART TOOLBOX (SHEETS) ===================== */}
+        {activeTab === 'toolbox' && (
+          <div className="flex items-center space-x-2 text-xs overflow-x-auto py-0.5">
+            <button
+              onClick={() => onOpenSmartToolbox('merge_no_loss')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm bg-mercury-sheets text-white hover:bg-mercury-sheets/90 font-medium shadow-sm shrink-0"
+              title="Merge cells concatenating data"
+            >
               <Combine className="w-3.5 h-3.5" />
-              <span>Merge Without Data Loss</span>
+              <span>Merge No Loss</span>
+            </button>
+            <button
+              onClick={() => onOpenSmartToolbox('unmerge_fill')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
+              title="Unmerge and autofill merged values into all cells"
+            >
+              <span>Unmerge & Fill</span>
+            </button>
+            <button
+              onClick={() => onOpenSmartToolbox('range_arithmetic')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
+              title="Apply batch math (+, -, *, /) to all selected numbers"
+            >
+              <span>Range Arithmetic</span>
+            </button>
+            <button
+              onClick={() => onOpenSmartToolbox('add_prefix_suffix')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
+              title="Batch prepend or append text across range"
+            >
+              <span>Prefix / Suffix</span>
+            </button>
+            <button
+              onClick={() => onOpenSmartToolbox('case_conversion')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
+              title="Convert text to UPPERCASE, lowercase, or Proper Case"
+            >
+              <span>Case Conversion</span>
+            </button>
+            <button
+              onClick={() => onOpenSmartToolbox('regex_extract')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
+              title="Extract numbers, letters, or regex patterns into target column"
+            >
+              <span>Regex Extract</span>
+            </button>
+            <button
+              onClick={() => onExecuteCommand('convert_formulas_to_values')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
+              title="Freeze calculated values permanently replacing formulas"
+            >
+              <span>Formulas &rarr; Values</span>
             </button>
             <button
               onClick={() => onOpenSmartToolbox('split_sheet')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
             >
               <Split className="w-3.5 h-3.5 text-mercury-sheets" />
-              <span>Split Sheet Wizard</span>
-            </button>
-            <button
-              onClick={() => onOpenSmartToolbox('combine_sheets')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <Layers className="w-3.5 h-3.5 text-mercury-sheets" />
-              <span>Combine Workbooks</span>
+              <span>Split Sheet</span>
             </button>
             <button
               onClick={() => onOpenSmartToolbox('compare_sheets')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
             >
               <Search className="w-3.5 h-3.5 text-mercury-sheets" />
               <span>Sheet Comparator</span>
             </button>
             <button
               onClick={() => onOpenSmartToolbox('data_hygiene')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night shrink-0"
             >
               <Wand2 className="w-3.5 h-3.5 text-mercury-primary" />
-              <span>Data Hygiene Tools</span>
+              <span>Data Hygiene</span>
+            </button>
+          </div>
+        )}
+
+        {/* ===================== VIEW TAB ===================== */}
+        {activeTab === 'view' && (
+          <div className="flex items-center space-x-2 text-xs">
+            <button
+              onClick={() => onExecuteCommand('toggle_reading_view')}
+              className="flex items-center space-x-1 px-3 py-1.5 rounded-mercury-sm bg-mercury-sheets/10 text-mercury-sheets border border-mercury-sheets/30 hover:bg-mercury-sheets/20 font-medium"
+              title="Highlight active row and column headers with crosshair spotlight"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Reading View Spotlight</span>
+            </button>
+
+            <button
+              onClick={() => onExecuteCommand('freeze_panes')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <span>Freeze Panes</span>
+            </button>
+
+            <button
+              onClick={() => onExecuteCommand('freeze_top_row')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <span>Freeze Top Row</span>
+            </button>
+
+            <button
+              onClick={() => onExecuteCommand('freeze_first_col')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <span>Freeze First Column</span>
             </button>
           </div>
         )}

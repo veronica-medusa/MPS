@@ -117,7 +117,7 @@ export const App: React.FC = () => {
   const handleExecuteCommand = (cmdId: string, payload?: any) => {
     console.log(`OpenWPS Command Dispatched: ${cmdId}`, payload);
     // Mark dirty on edits
-    if (cmdId.startsWith('insert_') || cmdId.startsWith('toggle_') || cmdId.startsWith('apply_') || cmdId.startsWith('set_')) {
+    if (cmdId.startsWith('insert_') || cmdId.startsWith('toggle_') || cmdId.startsWith('apply_') || cmdId.startsWith('set_') || cmdId.startsWith('sort_') || cmdId.startsWith('freeze_') || cmdId.startsWith('convert_')) {
       setTabs(tabs.map((t) => {
         if (t.id !== activeTabId) return t;
         let updated = { ...t, isDirty: true };
@@ -130,12 +130,22 @@ export const App: React.FC = () => {
         if (cmdId === 'accept_all_revisions' || cmdId === 'reject_all_revisions') {
           updated.pendingRevisions = 0;
         }
+        if (cmdId === 'toggle_reading_view') {
+          updated.readingView = !updated.readingView;
+        }
+        if (cmdId === 'freeze_panes' || cmdId === 'freeze_top_row' || cmdId === 'freeze_first_col') {
+          updated.freezePane = true;
+        }
         return updated;
       }));
     }
     if (cmdId === 'open_ai') {
       setIsInspectorOpen(true);
     }
+  };
+
+  const handleUpdateActiveCell = (coord: string, stats?: any) => {
+    setTabs(tabs.map((t) => (t.id === activeTabId ? { ...t, activeCell: coord, stats } : t)));
   };
 
   const commandsList: CommandItem[] = [
@@ -182,6 +192,7 @@ export const App: React.FC = () => {
         <div className="flex-1 flex overflow-hidden">
           <CanvasViewport
             tab={activeTab}
+            onUpdateActiveCell={handleUpdateActiveCell}
             onOpenAiAssist={() => setIsInspectorOpen(true)}
           />
 
@@ -189,6 +200,7 @@ export const App: React.FC = () => {
             <div className="flex-1 flex border-l border-mercury-fog/40">
               <CanvasViewport
                 tab={splitTab}
+                onUpdateActiveCell={handleUpdateActiveCell}
                 onOpenAiAssist={() => setIsInspectorOpen(true)}
               />
             </div>

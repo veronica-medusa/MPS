@@ -125,7 +125,9 @@ pub enum CellError {
     Num,        // #NUM!
     NA,         // #N/A
     Spill,      // #SPILL!
-    Circular,   // #CIRCULAR!
+    Circular,   // #CIRCULAR! / #CYCLE!
+    Cycle,      // #CYCLE!
+    Calc,       // #CALC!
 }
 
 impl CellError {
@@ -139,7 +141,9 @@ impl CellError {
             CellError::Num => "#NUM!",
             CellError::NA => "#N/A",
             CellError::Spill => "#SPILL!",
-            CellError::Circular => "#CIRCULAR!",
+            CellError::Circular => "#CYCLE!",
+            CellError::Cycle => "#CYCLE!",
+            CellError::Calc => "#CALC!",
         }
     }
 }
@@ -210,7 +214,12 @@ pub struct Cell {
     pub value: CellValue,
     pub format_index: usize,
     pub comment: Option<String>,
+    pub hyperlink: Option<String>,
+    pub spill_origin: Option<CellCoordinate>,
 }
+
+pub type CellRecord = Cell;
+pub type SheetError = CellError;
 
 #[cfg(test)]
 mod tests {

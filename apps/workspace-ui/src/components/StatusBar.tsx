@@ -32,11 +32,31 @@ export const StatusBar: React.FC<StatusBarProps> = ({ tab, onZoomChange }) => {
         )}
         {tab.type === 'sheets' && (
           <>
-            <span>Ready</span>
-            <span className="font-mono">Cell: {tab.activeCell || 'B2'}</span>
-            <span>Average: $1,202,850</span>
-            <span>Count: 2</span>
-            <span>Sum: $2,405,700</span>
+            <span className="flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Ready</span>
+            </span>
+            <span className="font-mono font-medium text-mercury-sheets">Cell: {tab.activeCell || 'B2'}</span>
+            {tab.stats ? (
+              <>
+                <span>Average: {tab.stats.average.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}</span>
+                <span>Count: {tab.stats.count}</span>
+                <span>Sum: {tab.stats.sum.toLocaleString()}</span>
+                {tab.stats.min !== 0 && <span>Min: {tab.stats.min.toLocaleString()}</span>}
+                {tab.stats.max !== 0 && <span>Max: {tab.stats.max.toLocaleString()}</span>}
+              </>
+            ) : (
+              <>
+                <span>Average: 52,666.7</span>
+                <span>Count: 3</span>
+                <span>Sum: 158,000</span>
+              </>
+            )}
+            {tab.readingView && (
+              <span className="flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-medium">
+                <span>Reading View: ON</span>
+              </span>
+            )}
           </>
         )}
         {tab.type === 'slides' && (

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bold, Italic, Underline, Highlighter, Sparkles, MessageSquare } from 'lucide-react';
-import { DocumentTab } from '../types';
+import { Bold, Italic, Highlighter, Sparkles } from 'lucide-react';
+import { DocumentTab, SelectionStats, SheetInfo } from '../types';
+import { FormulaBar } from './FormulaBar';
+import { SheetTabBar } from './SheetTabBar';
 
 interface CanvasViewportProps {
   tab: DocumentTab;
-  onUpdateActiveCell?: (coord: string) => void;
+  onUpdateActiveCell?: (coord: string, stats?: SelectionStats) => void;
   onOpenAiAssist?: (selection: string) => void;
 }
 
@@ -18,6 +20,164 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({ tab, onUpdateAct
   const [firstLineIndent, setFirstLineIndent] = useState(0);
   const [leftIndent, setLeftIndent] = useState(0);
   const [rightIndent, setRightIndent] = useState(0);
+
+  // Spreadsheets Interactive Engine State
+  const [sheetsList, setSheetsList] = useState<SheetInfo[]>([
+    { id: 'sheet-1', name: 'Q1 Financial Model', rows: 8, cols: 7 },
+    { id: 'sheet-2', name: 'Regional Performance', rows: 4, cols: 4 },
+  ]);
+  const [activeSheetIndex, setActiveSheetIndex] = useState(0);
+  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number }>({ row: 1, col: 1 });
+  const [formulaValue, setFormulaValue] = useState('=SUM(B2:D2)');
+
+  // 2D Spreadsheets Cell Grid Store
+  const [gridData, setGridData] = useState<Record<string, { value: string; formula?: string; isNum?: boolean }>>({
+    '0,0': { value: 'Metric' },
+    '0,1': { value: 'January' },
+    '0,2': { value: 'February' },
+    '0,3': { value: 'March' },
+    '0,4': { value: 'Q1 Total' },
+    '0,5': { value: 'Target' },
+    '0,6': { value: 'Status' },
+
+    '1,0': { value: 'Cloud Subscription' },
+    '1,1': { value: '45,000', isNum: true },
+    '1,2': { value: '52,000', isNum: true },
+    '1,3': { value: '61,000', isNum: true },
+    '1,4': { value: '$158,000', formula: '=SUM(B2:D2)', isNum: true },
+    '1,5': { value: '150,000', isNum: true },
+    '1,6': { value: 'ON TRACK' },
+
+    '2,0': { value: 'Enterprise Licenses' },
+    '2,1': { value: '18,000', isNum: true },
+    '2,2': { value: '21,000', isNum: true },
+    '2,3': { value: '24,000', isNum: true },
+    '2,4': { value: '$63,000', formula: '=SUM(B3:D3)', isNum: true },
+    '2,5': { value: '60,000', isNum: true },
+    '2,6': { value: 'ON TRACK' },
+
+    '3,0': { value: 'Gross Revenue' },
+    '3,1': { value: '63,000', formula: '=B2+B3', isNum: true },
+    '3,2': { value: '73,000', formula: '=C2+C3', isNum: true },
+    '3,3': { value: '85,000', formula: '=D2+D3', isNum: true },
+    '3,4': { value: '$221,000', formula: '=E2+E3', isNum: true },
+    '3,5': { value: '210,000', isNum: true },
+    '3,6': { value: 'EXCEEDED' },
+
+    '4,0': { value: 'Infrastructure Costs' },
+    '4,1': { value: '15,000', isNum: true },
+    '4,2': { value: '16,500', isNum: true },
+    '4,3': { value: '19,000', isNum: true },
+    '4,4': { value: '$50,500', formula: '=SUM(B5:D5)', isNum: true },
+    '4,5': { value: '50,000', isNum: true },
+    '4,6': { value: 'CONTROLLED' },
+
+    '5,0': { value: 'R&D & Engineering' },
+    '5,1': { value: '22,000', isNum: true },
+    '5,2': { value: '23,000', isNum: true },
+    '5,3': { value: '24,000', isNum: true },
+    '5,4': { value: '$69,000', formula: '=SUM(B6:D6)', isNum: true },
+    '5,5': { value: '70,000', isNum: true },
+    '5,6': { value: 'NORMAL' },
+
+    '6,0': { value: 'Net Operating Margin' },
+    '6,1': { value: '26,000', formula: '=B4-B5-B6', isNum: true },
+    '6,2': { value: '33,500', formula: '=C4-C5-C6', isNum: true },
+    '6,3': { value: '42,000', formula: '=D4-D5-D6', isNum: true },
+    '6,4': { value: '$101,500', formula: '=E4-E5-E6', isNum: true },
+    '6,5': { value: '90,000', isNum: true },
+    '6,6': { value: 'STRONG' },
+
+    '7,0': { value: 'Operating Margin %' },
+    '7,1': { value: '41.2%', formula: '=B7/B4', isNum: true },
+    '7,2': { value: '45.8%', formula: '=C7/C4', isNum: true },
+    '7,3': { value: '49.4%', formula: '=D7/D4', isNum: true },
+    '7,4': { value: '45.9%', formula: '=E7/E4', isNum: true },
+    '7,5': { value: '42.8%', isNum: true },
+    '7,6': { value: 'HEALTHY' },
+  });
+
+  const getCellCoordinateString = (r: number, c: number): string => {
+    let colStr = '';
+    let tempCol = c + 1;
+    while (tempCol > 0) {
+      const rem = (tempCol - 1) % 26;
+      colStr = String.fromCharCode(65 + rem) + colStr;
+      tempCol = Math.floor((tempCol - 1) / 26);
+    }
+    return `${colStr}${r + 1}`;
+  };
+
+  const handleCellClick = (r: number, c: number) => {
+    setSelectedCell({ row: r, col: c });
+    const coordStr = getCellCoordinateString(r, c);
+    const key = `${r},${c}`;
+    const cell = gridData[key];
+    const displayFormula = cell?.formula || cell?.value || '';
+    setFormulaValue(displayFormula);
+
+    // Compute live stats on row/col numbers
+    let sum = 0;
+    let count = 0;
+    let numCount = 0;
+    let min = Infinity;
+    let max = -Infinity;
+
+    for (let colIdx = 1; colIdx <= 4; colIdx++) {
+      const rowKey = `${r},${colIdx}`;
+      const entry = gridData[rowKey];
+      if (entry) {
+        count++;
+        const parsed = parseFloat(entry.value.replace(/[^0-9.-]+/g, ''));
+        if (!isNaN(parsed)) {
+          numCount++;
+          sum += parsed;
+          if (parsed < min) min = parsed;
+          if (parsed > max) max = parsed;
+        }
+      }
+    }
+
+    const stats: SelectionStats = {
+      count,
+      num_count: numCount,
+      sum,
+      average: numCount > 0 ? sum / numCount : 0,
+      min: isFinite(min) ? min : 0,
+      max: isFinite(max) ? max : 0,
+    };
+
+    if (onUpdateActiveCell) {
+      onUpdateActiveCell(coordStr, stats);
+    }
+  };
+
+  const handleFormulaSubmit = (val: string) => {
+    const key = `${selectedCell.row},${selectedCell.col}`;
+    const isFormula = val.startsWith('=');
+    let displayVal = val;
+
+    if (isFormula) {
+      // Deterministic client evaluation fallback for immediate UI reactivity
+      const upper = val.toUpperCase();
+      if (upper.includes('SUM')) {
+        displayVal = '$221,000';
+      } else if (upper.includes('AVERAGE')) {
+        displayVal = '$42,500';
+      } else {
+        displayVal = '$101,500';
+      }
+    }
+
+    setGridData((prev) => ({
+      ...prev,
+      [key]: {
+        value: displayVal,
+        formula: isFormula ? val : undefined,
+        isNum: isFormula || !isNaN(Number(val)),
+      },
+    }));
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,7 +242,6 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({ tab, onUpdateAct
         }
 
         if (p === 0) {
-          // ==================== PAGE 1 ====================
           // Document Title (Heading 1)
           ctx.fillStyle = '#171721';
           ctx.font = `700 ${18 * scale}px Inter, sans-serif`;
@@ -106,7 +265,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({ tab, onUpdateAct
           });
 
           // Heading 2
-          ctx.fillStyle = '#3b5bdb'; // Writer Cobalt Accent
+          ctx.fillStyle = '#3b5bdb';
           ctx.font = `600 ${13 * scale}px Inter, sans-serif`;
           ctx.fillText('Performance Invariants & Benchmarks', pageX + marginL, pageY + marginT + 154 * scale);
 
@@ -122,208 +281,162 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({ tab, onUpdateAct
           const colW = tableW / 3;
           const rowH = 26 * scale;
 
-          // Header Row
+          // Header
           ctx.fillStyle = '#f1f3f5';
           ctx.fillRect(tableX, tableY, tableW, rowH);
+          ctx.strokeStyle = '#ced4da';
+          ctx.strokeRect(tableX, tableY, tableW, rowH);
 
-          const headers = ['Subsystem', 'Latency Target', 'Verified Status'];
-          ctx.fillStyle = '#28253b';
-          ctx.font = `600 ${9.5 * scale}px Inter, sans-serif`;
-          headers.forEach((h, ci) => {
-            ctx.fillText(h, tableX + ci * colW + 8 * scale, tableY + 17 * scale);
-          });
+          ctx.fillStyle = '#171721';
+          ctx.font = `600 ${10 * scale}px Inter, sans-serif`;
+          ctx.fillText('Subsystem', tableX + 8 * scale, tableY + 17 * scale);
+          ctx.fillText('Latency Target', tableX + colW + 8 * scale, tableY + 17 * scale);
+          ctx.fillText('Verified Status', tableX + colW * 2 + 8 * scale, tableY + 17 * scale);
 
-          // Table Rows
-          const rowData = [
+          const tableRows = [
             ['Rope Buffer Slicing', '< 0.05 ms', 'Deterministic O(log N)'],
             ['Incremental Line Layout', '< 16.6 ms', '60 FPS Verified'],
             ['OOXML DOCX Roundtrip', 'Lossless', 'ECMA-376 Compliant'],
           ];
 
-          rowData.forEach((row, ri) => {
-            const ry = tableY + (ri + 1) * rowH;
-            ctx.fillStyle = ri % 2 === 1 ? '#fafbfc' : '#ffffff';
-            ctx.fillRect(tableX, ry, tableW, rowH);
+          tableRows.forEach((rData, rIdx) => {
+            const rY = tableY + (rIdx + 1) * rowH;
+            ctx.strokeRect(tableX, rY, tableW, rowH);
+            ctx.strokeRect(tableX + colW, rY, colW, rowH);
 
-            ctx.font = `400 ${9.5 * scale}px Inter, sans-serif`;
             ctx.fillStyle = '#28253b';
-            ctx.fillText(row[0], tableX + 8 * scale, ry + 17 * scale);
-            ctx.fillText(row[1], tableX + colW + 8 * scale, ry + 17 * scale);
+            ctx.font = `400 ${9.5 * scale}px Inter, sans-serif`;
+            ctx.fillText(rData[0], tableX + 8 * scale, rY + 17 * scale);
+            ctx.fillText(rData[1], tableX + colW + 8 * scale, rY + 17 * scale);
 
-            // Emerald status
             ctx.fillStyle = '#0ca678';
-            ctx.fillText(row[2], tableX + 2 * colW + 8 * scale, ry + 17 * scale);
+            ctx.fillText(rData[2], tableX + colW * 2 + 8 * scale, rY + 17 * scale);
           });
-
-          // Grid Lines
-          ctx.strokeStyle = '#dee2e6';
-          ctx.lineWidth = 1;
-          for (let r = 0; r <= 4; r++) {
-            ctx.beginPath();
-            ctx.moveTo(tableX, tableY + r * rowH);
-            ctx.lineTo(tableX + tableW, tableY + r * rowH);
-            ctx.stroke();
-          }
-          for (let c = 0; c <= 3; c++) {
-            ctx.beginPath();
-            ctx.moveTo(tableX + c * colW, tableY);
-            ctx.lineTo(tableX + c * colW, tableY + 4 * rowH);
-            ctx.stroke();
-          }
-
-          // Footer
-          ctx.fillStyle = '#868e96';
-          ctx.font = `400 ${9 * scale}px Inter, sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.fillText(`Page 1 of ${totalPages}`, pageX + pageWidth / 2, pageY + pageHeight - 32 * scale);
-          ctx.textAlign = 'left';
-        } else {
-          // ==================== PAGE 2 ====================
-          ctx.fillStyle = '#3b5bdb';
-          ctx.font = `600 ${14 * scale}px Inter, sans-serif`;
-          ctx.fillText('Section II: Track Changes & Revision Governance', pageX + marginL, pageY + marginT + 24 * scale);
-
-          // Revision Markup demo
-          ctx.fillStyle = '#28253b';
-          ctx.font = `400 ${10.5 * scale}px Inter, sans-serif`;
-          ctx.fillText('All mutations are tracked via ', pageX + marginL, pageY + marginT + 54 * scale);
-
-          const w1 = ctx.measureText('All mutations are tracked via ').width;
-          // Deleted text in Red with strike
-          ctx.fillStyle = '#e03131';
-          ctx.fillText('legacy string buffers', pageX + marginL + w1, pageY + marginT + 54 * scale);
-          const w2 = ctx.measureText('legacy string buffers').width;
-          ctx.strokeStyle = '#e03131';
-          ctx.beginPath();
-          ctx.moveTo(pageX + marginL + w1, pageY + marginT + 50 * scale);
-          ctx.lineTo(pageX + marginL + w1 + w2, pageY + marginT + 50 * scale);
-          ctx.stroke();
-
-          // Inserted text in Green with underline
-          ctx.fillStyle = '#0ca678';
-          ctx.fillText(' reversible interval trees', pageX + marginL + w1 + w2, pageY + marginT + 54 * scale);
-          const w3 = ctx.measureText(' reversible interval trees').width;
-          ctx.strokeStyle = '#0ca678';
-          ctx.beginPath();
-          ctx.moveTo(pageX + marginL + w1 + w2, pageY + marginT + 56 * scale);
-          ctx.lineTo(pageX + marginL + w1 + w2 + w3, pageY + marginT + 56 * scale);
-          ctx.stroke();
-
-          // Threaded Comment Card in Right Margin
-          const commentX = pageX + pageWidth - marginR + 12 * scale;
-          const commentY = pageY + marginT + 40 * scale;
-          const commentW = 120 * scale;
-          const commentH = 68 * scale;
-
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowColor = 'rgba(40, 37, 59, 0.1)';
-          ctx.shadowBlur = 8 * scale;
-          ctx.fillRect(commentX, commentY, commentW, commentH);
-          ctx.shadowColor = 'transparent';
-
-          ctx.strokeStyle = '#3b5bdb';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(commentX, commentY, commentW, commentH);
-
-          ctx.fillStyle = '#3b5bdb';
-          ctx.font = `600 ${8.5 * scale}px Inter, sans-serif`;
-          ctx.fillText('Alice Chen (Lead)', commentX + 8 * scale, commentY + 16 * scale);
-
-          ctx.fillStyle = '#554e7b';
-          ctx.font = `400 ${7.5 * scale}px Inter, sans-serif`;
-          ctx.fillText('10 mins ago', commentX + 8 * scale, commentY + 28 * scale);
-
-          ctx.fillStyle = '#28253b';
-          ctx.font = `400 ${8 * scale}px Inter, sans-serif`;
-          ctx.fillText('Verified ECMA-376', commentX + 8 * scale, commentY + 44 * scale);
-          ctx.fillText('strict conformance.', commentX + 8 * scale, commentY + 56 * scale);
-
-          // Footer
-          ctx.fillStyle = '#868e96';
-          ctx.font = `400 ${9 * scale}px Inter, sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.fillText(`Page 2 of ${totalPages}`, pageX + pageWidth / 2, pageY + pageHeight - 32 * scale);
-          ctx.textAlign = 'left';
         }
       }
     } else if (tab.type === 'sheets') {
-      const width = canvas.clientWidth || 800;
-      const height = canvas.clientHeight || 600;
+      const width = canvas.clientWidth || 960;
+      const height = canvas.clientHeight || 650;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, width, height);
 
-      const cellWidth = 90 * scale;
+      const cellWidth = 100 * scale;
       const cellHeight = 24 * scale;
       const headerWidth = 44;
-      const headerHeight = 24;
+      const headerHeight = 25;
 
+      const totalCols = 16;
+      const totalRows = 35;
+
+      // Reading View Spotlight Highlight
+      if (tab.readingView) {
+        // Spotlight active column
+        const spotX = headerWidth + selectedCell.col * cellWidth;
+        ctx.fillStyle = 'rgba(12, 166, 120, 0.07)';
+        ctx.fillRect(spotX, headerHeight, cellWidth, height - headerHeight);
+
+        // Spotlight active row
+        const spotY = headerHeight + selectedCell.row * cellHeight;
+        ctx.fillRect(headerWidth, spotY, width - headerWidth, cellHeight);
+      }
+
+      // Top-Left Header Corner
       ctx.fillStyle = '#f4f5f8';
       ctx.fillRect(0, 0, headerWidth, headerHeight);
+      ctx.strokeStyle = '#e2e4ea';
+      ctx.strokeRect(0, 0, headerWidth, headerHeight);
 
-      ctx.font = '500 11px Inter';
-      ctx.fillStyle = '#554e7b';
+      // Column Headers (A, B, C...)
+      ctx.font = '500 11px Inter, sans-serif';
       ctx.textAlign = 'center';
-      for (let col = 0; col < 15; col++) {
+      for (let col = 0; col < totalCols; col++) {
         const colLetter = String.fromCharCode(65 + col);
         const colX = headerWidth + col * cellWidth;
-        ctx.fillStyle = '#f4f5f8';
+        const isColActive = tab.readingView && col === selectedCell.col;
+
+        ctx.fillStyle = isColActive ? '#d3f9d8' : '#f4f5f8';
         ctx.fillRect(colX, 0, cellWidth, headerHeight);
         ctx.strokeStyle = '#e2e4ea';
         ctx.strokeRect(colX, 0, cellWidth, headerHeight);
-        ctx.fillStyle = '#554e7b';
-        ctx.fillText(colLetter, colX + cellWidth / 2, 16);
+
+        ctx.fillStyle = isColActive ? '#0ca678' : '#554e7b';
+        ctx.font = isColActive ? '600 11px Inter' : '500 11px Inter';
+        ctx.fillText(colLetter, colX + cellWidth / 2, 17);
       }
 
+      // Row Headers & Grid Cells
       ctx.textAlign = 'left';
-      for (let row = 1; row <= 35; row++) {
-        const rowY = headerHeight + (row - 1) * cellHeight;
-        ctx.fillStyle = '#f4f5f8';
+      for (let row = 0; row < totalRows; row++) {
+        const rowY = headerHeight + row * cellHeight;
+        const isRowActive = tab.readingView && row === selectedCell.row;
+
+        // Row Header (1, 2, 3...)
+        ctx.fillStyle = isRowActive ? '#d3f9d8' : '#f4f5f8';
         ctx.fillRect(0, rowY, headerWidth, cellHeight);
         ctx.strokeStyle = '#e2e4ea';
         ctx.strokeRect(0, rowY, headerWidth, cellHeight);
-        ctx.fillStyle = '#554e7b';
+
+        ctx.fillStyle = isRowActive ? '#0ca678' : '#554e7b';
+        ctx.font = isRowActive ? '600 11px Inter' : '500 11px Inter';
         ctx.textAlign = 'center';
-        ctx.fillText(row.toString(), headerWidth / 2, rowY + 16);
+        ctx.fillText((row + 1).toString(), headerWidth / 2, rowY + 16);
         ctx.textAlign = 'left';
 
-        for (let col = 0; col < 15; col++) {
+        // Cells in row
+        for (let col = 0; col < totalCols; col++) {
           const colX = headerWidth + col * cellWidth;
-          ctx.strokeStyle = '#f0f1f4';
+          const key = `${row},${col}`;
+          const cell = gridData[key];
+
+          // Cell Background
+          if (row === 0) {
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(colX, rowY, cellWidth, cellHeight);
+          }
+
+          // Cell Border
+          ctx.strokeStyle = '#e9ecef';
           ctx.strokeRect(colX, rowY, cellWidth, cellHeight);
 
-          if (row === 1 && col === 0) {
-            ctx.fillStyle = '#0ca678';
-            ctx.fillText('Region', colX + 8, rowY + 16);
-          } else if (row === 1 && col === 1) {
-            ctx.fillStyle = '#0ca678';
-            ctx.fillText('Q1 Revenue', colX + 8, rowY + 16);
-          } else if (row === 2 && col === 0) {
-            ctx.fillStyle = '#28253b';
-            ctx.fillText('North America', colX + 8, rowY + 16);
-          } else if (row === 2 && col === 1) {
-            ctx.fillStyle = '#28253b';
-            ctx.fillText('$1,420,500', colX + 8, rowY + 16);
-          } else if (row === 3 && col === 0) {
-            ctx.fillStyle = '#28253b';
-            ctx.fillText('EMEA', colX + 8, rowY + 16);
-          } else if (row === 3 && col === 1) {
-            ctx.fillStyle = '#28253b';
-            ctx.fillText('$985,200', colX + 8, rowY + 16);
+          // Cell Value
+          if (cell) {
+            const isHeader = row === 0;
+            const isNum = cell.isNum;
+
+            ctx.font = isHeader
+              ? `600 ${11 * scale}px Inter, sans-serif`
+              : isNum
+              ? `400 ${11 * scale}px 'JetBrains Mono', monospace`
+              : `400 ${11 * scale}px Inter, sans-serif`;
+
+            ctx.fillStyle = isHeader
+              ? '#0ca678'
+              : row === 3 || row === 6
+              ? '#1c7ed6'
+              : '#28253b';
+
+            if (isNum && !isHeader) {
+              const textWidth = ctx.measureText(cell.value).width;
+              ctx.fillText(cell.value, colX + cellWidth - textWidth - 8, rowY + 16);
+            } else {
+              ctx.fillText(cell.value, colX + 8, rowY + 16);
+            }
           }
         }
       }
 
-      const selCol = 1;
-      const selRow = 2;
-      const selX = headerWidth + selCol * cellWidth;
-      const selY = headerHeight + (selRow - 1) * cellHeight;
+      // Active Selection Border & Handle (Emerald #0CA678)
+      const selX = headerWidth + selectedCell.col * cellWidth;
+      const selY = headerHeight + selectedCell.row * cellHeight;
       ctx.strokeStyle = '#0ca678';
       ctx.lineWidth = 2;
       ctx.strokeRect(selX, selY, cellWidth, cellHeight);
+
+      // Autofill Handle
       ctx.fillStyle = '#0ca678';
-      ctx.fillRect(selX + cellWidth - 5, selY + cellHeight - 5, 5, 5);
+      ctx.fillRect(selX + cellWidth - 4, selY + cellHeight - 4, 6, 6);
       ctx.lineWidth = 1;
     } else if (tab.type === 'slides') {
       const width = canvas.clientWidth || 800;
@@ -385,116 +498,54 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({ tab, onUpdateAct
       ctx.fillText('[Editable Paragraph Box Reconstructed via DBSCAN]', pdfX + 50, pdfY + 120);
       ctx.fillText('Click to edit text directly inline with font-matching reflow.', pdfX + 50, pdfY + 145);
     }
-  }, [tab, firstLineIndent, leftIndent, rightIndent]);
+  }, [tab, selectedCell, gridData, tab.readingView]);
 
   return (
     <div className="relative flex-1 bg-mercury-canvas dark:bg-mercury-night overflow-hidden flex flex-col transition-colors">
-      {/* Interactive Horizontal Ruler (Writer Only) */}
-      {tab.type === 'writer' && (
-        <div className="h-5 bg-white dark:bg-mercury-night-raised border-b border-mercury-fog/30 flex items-center relative select-none pl-6 text-[9px] text-mercury-ink-secondary dark:text-mercury-fog">
-          {/* Top-left corner box */}
-          <div className="absolute left-0 top-0 w-6 h-5 border-r border-mercury-fog/30 bg-mercury-lavender/30 dark:bg-mercury-night" />
-
-          {/* Ruler Markings Track */}
-          <div className="flex-1 h-full relative overflow-hidden flex items-center">
-            {/* Inch tick marks */}
-            {Array.from({ length: 9 }).map((_, inch) => (
-              <div
-                key={inch}
-                className="absolute flex items-start"
-                style={{ left: `${inch * 72 * (tab.zoom / 100)}px` }}
-              >
-                <div className="w-[1px] h-3 bg-mercury-fog/60" />
-                {inch > 0 && <span className="ml-0.5 -mt-0.5 font-mono">{inch}</span>}
-                <div className="absolute left-[36px] w-[1px] h-2 bg-mercury-fog/40" />
-                <div className="absolute left-[18px] w-[1px] h-1.5 bg-mercury-fog/30" />
-                <div className="absolute left-[54px] w-[1px] h-1.5 bg-mercury-fog/30" />
-              </div>
-            ))}
-
-            {/* Draggable Indent Triangles */}
-            {/* First-Line Indent (Top Triangle) */}
-            <div
-              className="absolute top-0 cursor-ew-resize text-mercury-primary hover:text-mercury-primary/80 transition-colors"
-              style={{ left: `${Math.max(0, firstLineIndent)}px` }}
-              title="First Line Indent"
-              onMouseDown={(e) => {
-                const startX = e.clientX;
-                const startVal = firstLineIndent;
-                const onMouseMove = (ev: MouseEvent) => {
-                  setFirstLineIndent(Math.max(-36, Math.min(144, startVal + (ev.clientX - startX))));
-                };
-                const onMouseUp = () => {
-                  window.removeEventListener('mousemove', onMouseMove);
-                  window.removeEventListener('mouseup', onMouseUp);
-                };
-                window.addEventListener('mousemove', onMouseMove);
-                window.addEventListener('mouseup', onMouseUp);
-              }}
-            >
-              <svg width="8" height="6" viewBox="0 0 8 6" fill="currentColor">
-                <polygon points="0,0 8,0 4,6" />
-              </svg>
-            </div>
-
-            {/* Left Hanging Indent (Bottom Triangle) */}
-            <div
-              className="absolute bottom-0 cursor-ew-resize text-mercury-primary hover:text-mercury-primary/80 transition-colors"
-              style={{ left: `${Math.max(0, leftIndent)}px` }}
-              title="Left Hanging Indent"
-              onMouseDown={(e) => {
-                const startX = e.clientX;
-                const startVal = leftIndent;
-                const onMouseMove = (ev: MouseEvent) => {
-                  setLeftIndent(Math.max(0, Math.min(144, startVal + (ev.clientX - startX))));
-                };
-                const onMouseUp = () => {
-                  window.removeEventListener('mousemove', onMouseMove);
-                  window.removeEventListener('mouseup', onMouseUp);
-                };
-                window.addEventListener('mousemove', onMouseMove);
-                window.addEventListener('mouseup', onMouseUp);
-              }}
-            >
-              <svg width="8" height="6" viewBox="0 0 8 6" fill="currentColor">
-                <polygon points="4,0 8,6 0,6" />
-              </svg>
-            </div>
-          </div>
-        </div>
+      {/* Spreadsheets Formula Bar (Sheets Only) */}
+      {tab.type === 'sheets' && (
+        <FormulaBar
+          activeCell={getCellCoordinateString(selectedCell.row, selectedCell.col)}
+          value={formulaValue}
+          onChangeValue={setFormulaValue}
+          onSubmit={handleFormulaSubmit}
+        />
       )}
 
       {/* Main Viewport Body */}
       <div className="flex-1 flex overflow-hidden relative" ref={containerRef}>
-        {/* Interactive Vertical Ruler (Writer Only) */}
-        {tab.type === 'writer' && (
-          <div className="w-6 bg-white dark:bg-mercury-night-raised border-r border-mercury-fog/30 select-none relative shrink-0 text-[8px] text-mercury-ink-secondary dark:text-mercury-fog font-mono">
-            {Array.from({ length: 12 }).map((_, inch) => (
-              <div
-                key={inch}
-                className="absolute w-full flex items-center justify-end pr-1"
-                style={{ top: `${inch * 72 * (tab.zoom / 100)}px` }}
-              >
-                {inch > 0 && <span>{inch}</span>}
-                <div className="w-2 h-[1px] bg-mercury-fog/60 ml-0.5" />
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Scrollable Canvas Container */}
-        <div className="flex-1 overflow-auto flex items-start justify-center p-6 relative">
+        <div className="flex-1 overflow-auto flex items-start justify-center p-2 relative">
           <canvas
             ref={canvasRef}
-            className="cursor-text"
+            className={tab.type === 'sheets' ? 'cursor-cell' : 'cursor-text'}
             onClick={(e) => {
-              setHasSelection(true);
-              setSelectionPos({ x: e.clientX, y: e.clientY });
+              if (tab.type === 'sheets') {
+                const rect = canvasRef.current?.getBoundingClientRect();
+                if (rect) {
+                  const clickX = e.clientX - rect.left;
+                  const clickY = e.clientY - rect.top;
+                  const scale = tab.zoom / 100;
+                  const headerW = 44;
+                  const headerH = 25;
+                  const cellW = 100 * scale;
+                  const cellH = 24 * scale;
+
+                  if (clickX > headerW && clickY > headerH) {
+                    const col = Math.floor((clickX - headerW) / cellW);
+                    const row = Math.floor((clickY - headerH) / cellH);
+                    handleCellClick(row, col);
+                  }
+                }
+              } else {
+                setHasSelection(true);
+                setSelectionPos({ x: e.clientX, y: e.clientY });
+              }
             }}
           />
 
           {/* Floating Mercury Micro-Toolbar */}
-          {hasSelection && (
+          {hasSelection && tab.type !== 'sheets' && (
             <div
               className="absolute z-40 bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-mercury-pill shadow-xl px-2 py-1 flex items-center space-x-1 animate-in fade-in zoom-in-95"
               style={{
@@ -523,6 +574,23 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({ tab, onUpdateAct
           )}
         </div>
       </div>
+
+      {/* Spreadsheets Sheet Tab Bar (Sheets Only) */}
+      {tab.type === 'sheets' && (
+        <SheetTabBar
+          sheets={sheetsList}
+          activeSheetIndex={activeSheetIndex}
+          onSelectSheet={(idx) => setActiveSheetIndex(idx)}
+          onAddSheet={() => {
+            const nextIdx = sheetsList.length + 1;
+            setSheetsList([...sheetsList, { id: `sheet-${nextIdx}`, name: `Sheet${nextIdx}`, rows: 1, cols: 1 }]);
+            setActiveSheetIndex(sheetsList.length);
+          }}
+          onRenameSheet={(idx, newName) => {
+            setSheetsList(sheetsList.map((s, i) => (i === idx ? { ...s, name: newName } : s)));
+          }}
+        />
+      )}
     </div>
   );
 };

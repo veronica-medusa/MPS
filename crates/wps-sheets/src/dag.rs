@@ -46,7 +46,7 @@ impl DependencyDag {
     /// Checks for circular references using Tarjan's Strongly Connected Components
     pub fn has_cycle(&self) -> bool {
         let sccs = tarjan_scc(&self.graph);
-        sccs.iter().any(|scc| scc.len() > 1)
+        sccs.iter().any(|scc| scc.len() > 1 || (scc.len() == 1 && self.graph.contains_edge(scc[0], scc[0])))
     }
 
     /// Returns all cells in circular reference loops
@@ -54,7 +54,7 @@ impl DependencyDag {
         let sccs = tarjan_scc(&self.graph);
         let mut circular = Vec::new();
         for scc in sccs {
-            if scc.len() > 1 {
+            if scc.len() > 1 || (scc.len() == 1 && self.graph.contains_edge(scc[0], scc[0])) {
                 for node in scc {
                     if let Some(&coord) = self.graph.node_weight(node) {
                         circular.push(coord);
@@ -63,6 +63,66 @@ impl DependencyDag {
             }
         }
         circular
+    }
+
+    /// Computes topological recalculation order for dirty cells and their transitive dependents
+    pub fn get_recalculation_order(&self, dirty: &[CellCoordinate]) -> Result<Vec<CellCoordinate>, Vec<CellCoordinate>> {
+        let circular = self.find_circular_cells();
+        if !circular.is_empty() {
+            return Err(circular);
+        }
+
+        let mut visited = std::collections::HashSet::new();
+        let mut queue = std::collections::VecDeque::new();
+
+        for &d in dirty {
+            if let Some(&node) = self.coord_to_node.get(&d) {
+                queue.push_back(node);
+                visited.insert(node);
+            }
+        }
+
+        // BFS to collect all reachable dependents
+        let mut reachable_nodes = Vec::new();
+        while let Some(current) = queue.pop_front() {
+            reachable_nodes.push(current);
+            for neighbor in self.graph.neighbors_directed(current, petgraph::Direction::Outgoing) {
+                if visited.insert(neighbor) {
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+
+        // Topologically sort reachable subgraph using Kahn's algorithm
+        let mut in_degrees: HashMap<NodeIndex, usize> = HashMap::new();
+        for &node in &reachable_nodes {
+            let count = self.graph.neighbors_directed(node, petgraph::Direction::Incoming)
+                .filter(|n| visited.contains(n))
+                .count();
+            in_degrees.insert(node, count);
+        }
+
+        let mut ready: std::collections::VecDeque<NodeIndex> = in_degrees.iter()
+            .filter(|(_, &deg)| deg == 0)
+            .map(|(&node, _)| node)
+            .collect();
+
+        let mut order = Vec::new();
+        while let Some(node) = ready.pop_front() {
+            if let Some(&coord) = self.graph.node_weight(node) {
+                order.push(coord);
+            }
+            for neighbor in self.graph.neighbors_directed(node, petgraph::Direction::Outgoing) {
+                if let Some(deg) = in_degrees.get_mut(&neighbor) {
+                    *deg = deg.saturating_sub(1);
+                    if *deg == 0 {
+                        ready.push_back(neighbor);
+                    }
+                }
+            }
+        }
+
+        Ok(order)
     }
 
     /// Dynamic Array Spilling: records a spill range and detects collisions
