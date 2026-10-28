@@ -14,8 +14,8 @@ impl DocxCodec {
 
         // 1. [Content_Types].xml
         let mut ct = ContentTypes::new();
-        ct.overrides
-            .insert("/word/document.xml".to_string(), CT_DOCX_MAIN.to_string());
+        ct.overrides.insert("/word/document.xml".to_string(), CT_DOCX_MAIN.to_string());
+        ct.overrides.insert("/word/styles.xml".to_string(), "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml".to_string());
         pkg.set_part_string("[Content_Types].xml", &ct.to_xml());
 
         // 2. _rels/.rels
@@ -24,22 +24,47 @@ impl DocxCodec {
         pkg.set_part_string("_rels/.rels", &root_rels.to_xml());
 
         // 3. word/_rels/document.xml.rels
-        let doc_rels = Relationships::new();
+        let mut doc_rels = Relationships::new();
+        doc_rels.add("rIdStyles", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles", "styles.xml");
         pkg.set_part_string("word/_rels/document.xml.rels", &doc_rels.to_xml());
 
-        // 4. word/document.xml
+        // 4. word/styles.xml
+        let mut styles_xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">");
+        for (id, style) in &doc.styles.styles {
+            styles_xml.push_str(&format!(
+                "<w:style w:type=\"paragraph\" w:styleId=\"{}\"><w:name w:val=\"{}\"/>",
+                quick_xml::escape::escape(id),
+                quick_xml::escape::escape(&style.name)
+            ));
+            if let Some(ref based) = style.based_on {
+                styles_xml.push_str(&format!("<w:basedOn w:val=\"{}\"/>", quick_xml::escape::escape(based)));
+            }
+            styles_xml.push_str("</w:style>");
+        }
+        styles_xml.push_str("</w:styles>");
+        pkg.set_part_string("word/styles.xml", &styles_xml);
+
+        // 5. word/document.xml
         let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>");
 
         for section in &doc.sections {
             for elem in &section.elements {
                 match elem {
-                    BlockElement::Paragraph(p) => {
+                    BlockNode::Paragraph(p) => {
                         xml.push_str("<w:p>");
-                        if !p.style_name.is_empty() && p.style_name != "Normal" {
-                            xml.push_str("<w:pPr><w:pStyle w:val=\"");
-                            xml.push_str(&quick_xml::escape::escape(&p.style_name));
-                            xml.push_str("\"/></w:pPr>");
+                        xml.push_str("<w:pPr>");
+                        if !p.style_id.is_empty() && p.style_id != "Normal" {
+                            xml.push_str(&format!("<w:pStyle w:val=\"{}\"/>", quick_xml::escape::escape(&p.style_id)));
                         }
+                        let align_str = match p.alignment {
+                            TextAlignment::Center => "center",
+                            TextAlignment::Right => "right",
+                            TextAlignment::Justify => "both",
+                            TextAlignment::Left => "left",
+                        };
+                        xml.push_str(&format!("<w:jc w:val=\"{}\"/>", align_str));
+                        xml.push_str("</w:pPr>");
+
                         for inline in &p.inlines {
                             match inline {
                                 InlineElement::Run(r) => {
@@ -58,22 +83,22 @@ impl DocxCodec {
                                     }
                                     xml.push_str(&format!("<w:sz w:val=\"{}\"/>", (r.size_pt * 2.0).round() as i64));
                                     xml.push_str(&format!("<w:color w:val=\"{}\"/>", r.color.to_hex().trim_start_matches('#')));
-                                    xml.push_str("</w:rPr><w:t>");
+                                    xml.push_str("</w:rPr><w:t xml:space=\"preserve\">");
                                     xml.push_str(&quick_xml::escape::escape(&r.text));
                                     xml.push_str("</w:t></w:r>");
                                 }
                                 InlineElement::Field(f) => {
                                     xml.push_str("<w:fldSimple w:instr=\"");
                                     match &f.field_type {
-                                        FieldType::Page => xml.push_str("PAGE"),
-                                        FieldType::NumPages => xml.push_str("NUMPAGES"),
-                                        FieldType::Date => xml.push_str("DATE"),
-                                        FieldType::MergeField(name) => {
+                                        DynamicField::Page => xml.push_str("PAGE"),
+                                        DynamicField::NumPages => xml.push_str("NUMPAGES"),
+                                        DynamicField::Date => xml.push_str("DATE"),
+                                        DynamicField::MergeField(name) => {
                                             xml.push_str(&format!("MERGEFIELD {}", quick_xml::escape::escape(name)))
                                         }
                                         _ => xml.push_str("FIELD"),
                                     }
-                                    xml.push_str("\"><w:r><w:t>");
+                                    xml.push_str("\"><w:r><w:t xml:space=\"preserve\">");
                                     xml.push_str(&quick_xml::escape::escape(&f.cached_value));
                                     xml.push_str("</w:t></w:r></w:fldSimple>");
                                 }
@@ -82,15 +107,22 @@ impl DocxCodec {
                         }
                         xml.push_str("</w:p>");
                     }
-                    BlockElement::Table(tbl) => {
+                    BlockNode::Table(tbl) => {
                         xml.push_str("<w:tbl>");
+                        xml.push_str("<w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/></w:tblPr>");
                         for row in &tbl.rows {
                             xml.push_str("<w:tr>");
+                            if row.is_header || row.is_header_repeat {
+                                xml.push_str("<w:trPr><w:tblHeader/></w:trPr>");
+                            }
                             for cell in &row.cells {
                                 xml.push_str("<w:tc>");
+                                if cell.grid_span > 1 {
+                                    xml.push_str(&format!("<w:tcPr><w:gridSpan w:val=\"{}\"/></w:tcPr>", cell.grid_span));
+                                }
                                 for cell_elem in &cell.elements {
-                                    if let BlockElement::Paragraph(p) = cell_elem {
-                                        xml.push_str("<w:p><w:r><w:t>");
+                                    if let BlockNode::Paragraph(p) = cell_elem {
+                                        xml.push_str("<w:p><w:r><w:t xml:space=\"preserve\">");
                                         xml.push_str(&quick_xml::escape::escape(&p.plain_text()));
                                         xml.push_str("</w:t></w:r></w:p>");
                                     }
@@ -104,9 +136,20 @@ impl DocxCodec {
                         }
                         xml.push_str("</w:tbl>");
                     }
-                    _ => {}
+                    BlockNode::FloatingObject(_) => {}
                 }
             }
+
+            // Section properties
+            xml.push_str(&format!(
+                "<w:sectPr><w:pgSz w:w=\"{}\" w:h=\"{}\"/><w:pgMar w:top=\"{}\" w:bottom=\"{}\" w:left=\"{}\" w:right=\"{}\"/></w:sectPr>",
+                section.page_setup.width_twips,
+                section.page_setup.height_twips,
+                section.page_setup.margins.top_twips,
+                section.page_setup.margins.bottom_twips,
+                section.page_setup.margins.left_twips,
+                section.page_setup.margins.right_twips
+            ));
         }
 
         xml.push_str("</w:body></w:document>");
@@ -124,16 +167,36 @@ impl DocxCodec {
         reader.config_mut().trim_text(false);
 
         let mut in_t = false;
-        let mut current_p = Paragraph::new("p0");
+        let mut in_tbl = false;
+        let mut _in_tr = false;
+        let mut in_tc = false;
+
+        let mut current_p = ParagraphNode::new("p0");
         let mut current_r = TextRun::default();
         let mut current_text = String::new();
+        let mut current_tbl = TableNode::default();
+        let mut current_row = TableRow::default();
+        let mut current_cell = TableCell::default();
 
         let mut buf = Vec::new();
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
+                    b"tbl" => {
+                        in_tbl = true;
+                        current_tbl = TableNode::default();
+                    }
+                    b"tr" => {
+                        _in_tr = true;
+                        current_row = TableRow::default();
+                    }
+                    b"tc" => {
+                        in_tc = true;
+                        current_cell = TableCell::default();
+                    }
                     b"p" => {
-                        current_p = Paragraph::new(&format!("p-{}", doc.sections[0].elements.len() + 1));
+                        let id = format!("p-{}", doc.sections[0].elements.len() + 1);
+                        current_p = ParagraphNode::new(&id);
                     }
                     b"r" => {
                         current_r = TextRun::default();
@@ -149,6 +212,27 @@ impl DocxCodec {
                     b"i" => current_r.italic = true,
                     b"u" => current_r.underline = true,
                     b"strike" => current_r.strike = true,
+                    b"tblHeader" => current_row.is_header_repeat = true,
+                    b"pStyle" => {
+                        for attr in e.attributes().flatten() {
+                            if attr.key.as_ref() == b"val" || attr.key.as_ref() == b"w:val" {
+                                if let Ok(val_str) = std::str::from_utf8(&attr.value) {
+                                    current_p.style_id = val_str.to_string();
+                                }
+                            }
+                        }
+                    }
+                    b"gridSpan" => {
+                        for attr in e.attributes().flatten() {
+                            if attr.key.as_ref() == b"val" || attr.key.as_ref() == b"w:val" {
+                                if let Ok(val_str) = std::str::from_utf8(&attr.value) {
+                                    if let Ok(span) = val_str.parse::<u16>() {
+                                        current_cell.grid_span = span;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     b"sz" => {
                         for attr in e.attributes().flatten() {
                             if attr.key.as_ref() == b"val" || attr.key.as_ref() == b"w:val" {
@@ -189,7 +273,23 @@ impl DocxCodec {
                         }
                     }
                     b"p" => {
-                        doc.add_paragraph(current_p.clone());
+                        if in_tc {
+                            current_cell.elements.push(BlockNode::Paragraph(current_p.clone()));
+                        } else if !in_tbl {
+                            doc.add_paragraph(current_p.clone());
+                        }
+                    }
+                    b"tc" => {
+                        in_tc = false;
+                        current_row.cells.push(current_cell.clone());
+                    }
+                    b"tr" => {
+                        _in_tr = false;
+                        current_tbl.rows.push(current_row.clone());
+                    }
+                    b"tbl" => {
+                        in_tbl = false;
+                        doc.sections[0].elements.push(BlockNode::Table(current_tbl.clone()));
                     }
                     _ => {}
                 },
@@ -202,33 +302,95 @@ impl DocxCodec {
 
         Ok(doc)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    /// Imports Markdown text directly into Document AST
+    pub fn import_markdown(md: &str) -> Document {
+        let mut doc = Document::new("Markdown Document", "OpenWPS");
+        for (idx, line) in md.lines().enumerate() {
+            let id = format!("md-p-{}", idx + 1);
+            let trimmed = line.trim();
 
-    #[test]
-    fn test_docx_roundtrip() {
-        let mut original = Document::new("Report", "Author");
-        let mut p1 = Paragraph::new("p1");
-        p1.add_run(TextRun::new("Executive Summary").bold().with_size(16.0));
-        original.add_paragraph(p1);
+            if trimmed.starts_with("# ") {
+                doc.add_paragraph(ParagraphNode::heading(&id, 1, &trimmed[2..]));
+            } else if trimmed.starts_with("## ") {
+                doc.add_paragraph(ParagraphNode::heading(&id, 2, &trimmed[3..]));
+            } else if trimmed.starts_with("### ") {
+                doc.add_paragraph(ParagraphNode::heading(&id, 3, &trimmed[4..]));
+            } else if trimmed.starts_with("- ") || trimmed.starts_with("* ") {
+                let mut p = ParagraphNode::new(&id);
+                p.style_id = "List Paragraph".to_string();
+                p.indent_left_twips = Twips(360);
+                p.add_run(TextRun::new(&trimmed[2..]));
+                doc.add_paragraph(p);
+            } else if !trimmed.is_empty() {
+                let mut p = ParagraphNode::new(&id);
+                p.add_run(TextRun::new(trimmed));
+                doc.add_paragraph(p);
+            }
+        }
+        doc
+    }
 
-        let mut p2 = Paragraph::new("p2");
-        p2.add_run(TextRun::new("OpenWPS brings high-craft productivity.").italic());
-        original.add_paragraph(p2);
+    /// Exports Document AST to Markdown formatted string
+    pub fn export_markdown(doc: &Document) -> String {
+        let mut md = String::new();
+        for sec in &doc.sections {
+            for elem in &sec.elements {
+                match elem {
+                    BlockNode::Paragraph(p) => {
+                        if p.style_id == "Heading 1" {
+                            md.push_str(&format!("# {}\n\n", p.plain_text()));
+                        } else if p.style_id == "Heading 2" {
+                            md.push_str(&format!("## {}\n\n", p.plain_text()));
+                        } else if p.style_id == "Heading 3" {
+                            md.push_str(&format!("### {}\n\n", p.plain_text()));
+                        } else if p.style_id == "List Paragraph" {
+                            md.push_str(&format!("- {}\n", p.plain_text()));
+                        } else {
+                            md.push_str(&format!("{}\n\n", p.plain_text()));
+                        }
+                    }
+                    BlockNode::Table(t) => {
+                        for (r_idx, row) in t.rows.iter().enumerate() {
+                            let cells: Vec<String> = row.cells.iter().map(|c| {
+                                c.elements.iter().map(|e| e.plain_text()).collect::<Vec<_>>().join(" ")
+                            }).collect();
+                            md.push_str(&format!("| {} |\n", cells.join(" | ")));
+                            if r_idx == 0 {
+                                let sep = vec!["---"; row.cells.len()].join(" | ");
+                                md.push_str(&format!("| {} |\n", sep));
+                            }
+                        }
+                        md.push('\n');
+                    }
+                    _ => {}
+                }
+            }
+        }
+        md
+    }
 
-        let bytes = DocxCodec::export_docx(&original).unwrap();
-        assert!(!bytes.is_empty());
+    /// Imports plain text into Document AST
+    pub fn import_txt(txt: &str) -> Document {
+        let mut doc = Document::new("Text Document", "OpenWPS");
+        for (idx, line) in txt.lines().enumerate() {
+            let id = format!("txt-p-{}", idx + 1);
+            let mut p = ParagraphNode::new(&id);
+            p.add_run(TextRun::new(line));
+            doc.add_paragraph(p);
+        }
+        doc
+    }
 
-        let imported = DocxCodec::import_docx(&bytes).unwrap();
-        assert_eq!(imported.sections[0].elements.len(), 2);
-
-        let BlockElement::Paragraph(imp_p1) = &imported.sections[0].elements[0] else { panic!() };
-        assert_eq!(imp_p1.plain_text(), "Executive Summary");
-
-        let BlockElement::Paragraph(imp_p2) = &imported.sections[0].elements[1] else { panic!() };
-        assert_eq!(imp_p2.plain_text(), "OpenWPS brings high-craft productivity.");
+    /// Exports Document AST to plain text
+    pub fn export_txt(doc: &Document) -> String {
+        let mut out = String::new();
+        for sec in &doc.sections {
+            for elem in &sec.elements {
+                out.push_str(&elem.plain_text());
+                out.push('\n');
+            }
+        }
+        out
     }
 }

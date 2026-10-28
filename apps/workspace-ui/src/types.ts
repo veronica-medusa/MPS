@@ -21,6 +21,9 @@ export interface DocumentTab {
   currentSlide?: number;
   totalSlides?: number;
   wordCount?: number;
+  charCount?: number;
+  trackChanges?: boolean;
+  pendingRevisions?: number;
   activeCell?: string;
   selectionSummary?: string;
 }
@@ -31,6 +34,7 @@ export type ActiveRibbonTab =
   | 'home'
   | 'insert'
   | 'layout'
+  | 'references'
   | 'formulas'
   | 'data'
   | 'toolbox'

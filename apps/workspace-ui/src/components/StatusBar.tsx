@@ -15,7 +15,18 @@ export const StatusBar: React.FC<StatusBarProps> = ({ tab, onZoomChange }) => {
         {tab.type === 'writer' && (
           <>
             <span>Page {tab.currentPage || 1} of {tab.totalPages || 1}</span>
-            <span>{tab.wordCount || 84} words</span>
+            <span>{tab.wordCount || 842} words</span>
+            <span>{tab.charCount || 4820} chars</span>
+            {tab.trackChanges ? (
+              <span className="flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span>Track Changes: ON ({tab.pendingRevisions || 0})</span>
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 rounded text-[10px] text-mercury-ink-secondary dark:text-mercury-fog">
+                Track Changes: Off
+              </span>
+            )}
             <span>English (US)</span>
           </>
         )}

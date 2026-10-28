@@ -9,6 +9,12 @@ pub struct Color {
     pub a: u8,
 }
 
+impl Default for Color {
+    fn default() -> Self {
+        Self::BLACK
+    }
+}
+
 impl Color {
     pub const TRANSPARENT: Self = Color { r: 0, g: 0, b: 0, a: 0 };
     pub const BLACK: Self = Color { r: 0, g: 0, b: 0, a: 255 };

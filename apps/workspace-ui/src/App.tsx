@@ -117,8 +117,21 @@ export const App: React.FC = () => {
   const handleExecuteCommand = (cmdId: string, payload?: any) => {
     console.log(`OpenWPS Command Dispatched: ${cmdId}`, payload);
     // Mark dirty on edits
-    if (cmdId.startsWith('insert_') || cmdId.startsWith('toggle_') || cmdId.startsWith('apply_')) {
-      setTabs(tabs.map((t) => (t.id === activeTabId ? { ...t, isDirty: true } : t)));
+    if (cmdId.startsWith('insert_') || cmdId.startsWith('toggle_') || cmdId.startsWith('apply_') || cmdId.startsWith('set_')) {
+      setTabs(tabs.map((t) => {
+        if (t.id !== activeTabId) return t;
+        let updated = { ...t, isDirty: true };
+        if (cmdId === 'toggle_track_changes') {
+          updated.trackChanges = !updated.trackChanges;
+          if (updated.trackChanges && !updated.pendingRevisions) {
+            updated.pendingRevisions = 3;
+          }
+        }
+        if (cmdId === 'accept_all_revisions' || cmdId === 'reject_all_revisions') {
+          updated.pendingRevisions = 0;
+        }
+        return updated;
+      }));
     }
     if (cmdId === 'open_ai') {
       setIsInspectorOpen(true);

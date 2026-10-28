@@ -66,6 +66,7 @@ impl PdfConverter {
                     id: table_id,
                     rows: Vec::new(),
                     alignment: wps_writer::ast::TextAlignment::Left,
+                    ..Default::default()
                 };
 
                 // Group cells by row
@@ -74,6 +75,9 @@ impl PdfConverter {
                         cells: Vec::new(),
                         is_header: r == 0,
                         cant_split: true,
+                        is_header_repeat: r == 0,
+                        allow_row_split_across_pages: false,
+                        ..Default::default()
                     };
 
                     let row_cells: Vec<_> = table.cells.iter().filter(|c| c.row == r).collect();
@@ -93,6 +97,8 @@ impl PdfConverter {
                             row_span: c.row_span,
                             width_twips: cell_w_twips,
                             background_color: c.background,
+                            grid_span: c.col_span as u16,
+                            ..Default::default()
                         });
                     }
 
