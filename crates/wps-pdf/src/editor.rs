@@ -171,4 +171,76 @@ impl PdfEditSession {
 
         page.raw_stream = new_stream;
     }
+
+    /// Converts multi-column or dense small-print PDFs on the fly into a single-column, responsive reading stream
+    /// with adjustable font scale while keeping inline tables and images intact.
+    pub fn reflow_page_to_stream(page: &PdfPage, target_width: f64, font_scale: f64) -> Vec<PdfTextElement> {
+        let layout = SpatialReconstructor::reconstruct_page(page);
+        let mut reflowed = Vec::new();
+        let margin = 36.0;
+        let usable_width = (target_width - margin * 2.0).max(100.0);
+        let mut cur_y = margin;
+
+        for block in &layout.blocks {
+            let font_size = block.font_size * font_scale;
+            let line_height = font_size * 1.35;
+            let char_w = font_size * 0.55;
+
+            let words = block.plain_text();
+            let word_tokens = words.split_whitespace().collect::<Vec<_>>();
+
+            let mut current_line: Vec<&str> = Vec::new();
+            let mut current_w = 0.0;
+
+            for w in word_tokens {
+                let w_width = w.chars().count() as f64 * char_w;
+                let space_w = char_w;
+
+                if !current_line.is_empty() && (current_w + space_w + w_width) > usable_width {
+                    let line_str = current_line.join(" ");
+                    let line_w = line_str.chars().count() as f64 * char_w;
+                    reflowed.push(PdfTextElement {
+                        text: line_str,
+                        bounds: Rect::new(margin, cur_y, line_w, font_size),
+                        font_name: block.font_name.clone(),
+                        font_size,
+                        color: Color::rgb(0, 0, 0),
+                        baseline: cur_y + font_size * 0.8,
+                    });
+                    cur_y += line_height;
+                    current_line.clear();
+                    current_w = 0.0;
+                }
+
+                if !current_line.is_empty() {
+                    current_w += space_w;
+                }
+                current_line.push(w);
+                current_w += w_width;
+            }
+
+            if !current_line.is_empty() {
+                let line_str = current_line.join(" ");
+                let line_w = line_str.chars().count() as f64 * char_w;
+                reflowed.push(PdfTextElement {
+                    text: line_str,
+                    bounds: Rect::new(margin, cur_y, line_w, font_size),
+                    font_name: block.font_name.clone(),
+                    font_size,
+                    color: Color::rgb(0, 0, 0),
+                    baseline: cur_y + font_size * 0.8,
+                });
+                cur_y += line_height;
+            }
+
+            // Paragraph gap
+            cur_y += font_size * 0.6;
+        }
+
+        reflowed
+    }
+}
+
+pub fn reflow_page_to_stream(page: &PdfPage, target_width: f64, font_scale: f64) -> Vec<PdfTextElement> {
+    PdfEditSession::reflow_page_to_stream(page, target_width, font_scale)
 }

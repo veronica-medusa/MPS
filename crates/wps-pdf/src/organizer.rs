@@ -12,6 +12,19 @@ pub enum BatesPosition {
     BottomRight,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SplitMode {
+    PageRanges(Vec<(usize, usize)>), // 1-based start and end inclusive
+    EveryNPages(usize),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompressionLevel {
+    Standard,
+    High,
+    Extreme,
+}
+
 pub struct PageOrganizer;
 
 impl PageOrganizer {
@@ -163,5 +176,85 @@ impl PageOrganizer {
             );
             page.raw_stream.extend_from_slice(chunk.as_bytes());
         }
+    }
+
+    /// Splits pages into multiple document chunks
+    pub fn split_pdf(pages: &[PdfPage], mode: SplitMode) -> Vec<(String, Vec<PdfPage>)> {
+        let mut results = Vec::new();
+        match mode {
+            SplitMode::PageRanges(ranges) => {
+                for (idx, (start, end)) in ranges.into_iter().enumerate() {
+                    let mut chunk_pages = Vec::new();
+                    let s = start.saturating_sub(1);
+                    let e = end.min(pages.len());
+                    for p_idx in s..e {
+                        if let Some(p) = pages.get(p_idx) {
+                            let mut copy = p.clone();
+                            copy.page_index = chunk_pages.len();
+                            chunk_pages.push(copy);
+                        }
+                    }
+                    results.push((format!("Part_{}_pages_{}_{}.pdf", idx + 1, start, end), chunk_pages));
+                }
+            }
+            SplitMode::EveryNPages(n) => {
+                let n = n.max(1);
+                for (chunk_idx, chunk) in pages.chunks(n).enumerate() {
+                    let mut chunk_pages = Vec::new();
+                    for p in chunk {
+                        let mut copy = p.clone();
+                        copy.page_index = chunk_pages.len();
+                        chunk_pages.push(copy);
+                    }
+                    results.push((format!("Part_{}.pdf", chunk_idx + 1), chunk_pages));
+                }
+            }
+        }
+        results
+    }
+
+    /// Compresses page streams according to the target compression level
+    pub fn compress_pages(pages: &mut [PdfPage], level: CompressionLevel) -> usize {
+        let mut bytes_saved = 0;
+        for page in pages.iter_mut() {
+            let original_len = page.raw_stream.len();
+            if original_len == 0 {
+                continue;
+            }
+
+            let mut compacted = Vec::with_capacity(original_len);
+            let mut prev_space = false;
+            for &b in &page.raw_stream {
+                if b == b' ' || b == b'\t' {
+                    if !prev_space {
+                        compacted.push(b' ');
+                        prev_space = true;
+                    }
+                } else {
+                    compacted.push(b);
+                    prev_space = false;
+                }
+            }
+
+            match level {
+                CompressionLevel::Standard => {
+                    if compacted.len() < original_len {
+                        bytes_saved += original_len - compacted.len();
+                        page.raw_stream = compacted;
+                    }
+                }
+                CompressionLevel::High | CompressionLevel::Extreme => {
+                    let compressed = miniz_oxide::deflate::compress_to_vec_zlib(&compacted, 6);
+                    if compressed.len() < original_len {
+                        bytes_saved += original_len - compressed.len();
+                        page.raw_stream = compressed;
+                    } else if compacted.len() < original_len {
+                        bytes_saved += original_len - compacted.len();
+                        page.raw_stream = compacted;
+                    }
+                }
+            }
+        }
+        bytes_saved
     }
 }

@@ -21,7 +21,11 @@ use wps_slides::{
     shape::{ParametricShape, ShapeFill, ShapeGeometryType},
     theme::SlideTheme,
 };
-use wps_pdf::{PdfDocument, PdfPage};
+use wps_pdf::{
+    reflow_page_to_stream, Annotation, AnnotationKind, BatesPosition, BlockKind, CompressionLevel,
+    OcrEngine, OcrMode, OcrOptions, PageOrganizer, PathOp, PdfDocument, PdfEditSession, PdfPage,
+    PdfSecurity, PdfTextElement, PdfToExcelMode, PdfVectorPath, SpatialReconstructor, StampType,
+};
 use wps_python::{NativePythonEngine, PythonEngine};
 use wps_ai::{AgentRouter, AiDomain, MutationApplicator};
 use wps_collab::{CrdtSession, PresenceRegistry};
@@ -381,6 +385,447 @@ pub enum SlidesCommandDto {
     },
 }
 
+fn parse_hex_color(hex: &str) -> Color {
+    let clean = hex.trim_start_matches('#');
+    if clean.len() == 6 {
+        let r = u8::from_str_radix(&clean[0..2], 16).unwrap_or(0);
+        let g = u8::from_str_radix(&clean[2..4], 16).unwrap_or(0);
+        let b = u8::from_str_radix(&clean[4..6], 16).unwrap_or(0);
+        Color::rgb(r, g, b)
+    } else {
+        Color::rgb(224, 49, 49)
+    }
+}
+
+fn create_default_pdf_doc() -> PdfDocument {
+    let mut pdf = PdfDocument::new("Annual_Report_2026.pdf");
+
+    // Page 1: Executive Overview & Architecture
+    let page1 = PdfPage {
+        page_index: 0,
+        width: 595.0,
+        height: 842.0,
+        rotation: 0,
+        crop_box: Rect::new(0.0, 0.0, 595.0, 842.0),
+        text_elements: vec![
+            PdfTextElement {
+                text: "OpenWPS ISO 32000 PDF Toolkit Specification".to_string(),
+                bounds: Rect::new(54.0, 36.0, 300.0, 10.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(134, 142, 150),
+                baseline: 44.0,
+            },
+            PdfTextElement {
+                text: "ISO 32000 PDF Toolkit & Layout Reconstruction".to_string(),
+                bounds: Rect::new(54.0, 68.0, 480.0, 22.0),
+                font_name: "Helvetica-Bold".to_string(),
+                font_size: 18.0,
+                color: Color::rgb(33, 37, 41),
+                baseline: 86.0,
+            },
+            PdfTextElement {
+                text: "Deterministic Parsing, Inline Word-Like Editing, Pure-Rust OCR & AES-256 Security".to_string(),
+                bounds: Rect::new(54.0, 96.0, 480.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 11.0,
+                color: Color::rgb(224, 49, 49),
+                baseline: 108.0,
+            },
+            PdfTextElement {
+                text: "The OpenWPS PDF Toolkit provides a high-performance ISO 32000-compliant document processing pipeline. Built completely in safe Rust, it enables direct inline editing of PDF paragraphs with real-time text reflow, multi-column XY-Cut layout reconstruction, hybrid table extraction, and seamless AST conversion directly to Writer, Spreadsheets, and Presentation formats.".to_string(),
+                bounds: Rect::new(54.0, 130.0, 480.0, 48.0),
+                font_name: "Times-Roman".to_string(),
+                font_size: 10.5,
+                color: Color::rgb(52, 58, 64),
+                baseline: 142.0,
+            },
+            PdfTextElement {
+                text: "Security features include FIPS 197 AES-256-CBC content encryption, cryptographic digital signatures, and irreversible spatial redaction that permanently scrubs sensitive text from content byte streams with zero trace.".to_string(),
+                bounds: Rect::new(54.0, 195.0, 480.0, 36.0),
+                font_name: "Times-Roman".to_string(),
+                font_size: 10.5,
+                color: Color::rgb(52, 58, 64),
+                baseline: 207.0,
+            },
+            PdfTextElement {
+                text: "Confidentiality Notice: This document contains proprietary architectural invariants.".to_string(),
+                bounds: Rect::new(54.0, 250.0, 480.0, 16.0),
+                font_name: "Helvetica-Oblique".to_string(),
+                font_size: 9.5,
+                color: Color::rgb(108, 117, 125),
+                baseline: 262.0,
+            },
+        ],
+        vector_paths: vec![
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 56.0)),
+                    PathOp::LineTo(Point::new(541.0, 56.0)),
+                ],
+                stroke_color: Some(Color::rgb(222, 226, 230)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 56.0, 487.0, 1.0),
+            },
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 240.0)),
+                    PathOp::LineTo(Point::new(541.0, 240.0)),
+                ],
+                stroke_color: Some(Color::rgb(222, 226, 230)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 240.0, 487.0, 1.0),
+            },
+        ],
+        raw_stream: Vec::new(),
+    };
+    pdf.add_page(page1);
+
+    // Annotations on Page 1
+    pdf.add_annotation(
+        0,
+        Annotation::stamp(
+            "stamp-1",
+            0,
+            Rect::new(390.0, 45.0, 140.0, 48.0),
+            StampType::Approved,
+            "Chief Security Architect",
+            "2026-10-29",
+        ),
+    );
+    pdf.add_annotation(
+        0,
+        Annotation::highlight("hl-1", 0, Rect::new(54.0, 130.0, 480.0, 24.0)),
+    );
+    pdf.add_annotation(
+        0,
+        Annotation::sticky_note(
+            "note-1",
+            0,
+            Point::new(510.0, 195.0),
+            "Compliance Officer",
+            "Verified FIPS 197 AES-256 and ISO 32000 compliance.",
+        ),
+    );
+
+    // Page 2: System Performance & Table Layout
+    let page2 = PdfPage {
+        page_index: 1,
+        width: 595.0,
+        height: 842.0,
+        rotation: 0,
+        crop_box: Rect::new(0.0, 0.0, 595.0, 842.0),
+        text_elements: vec![
+            PdfTextElement {
+                text: "System Performance & Cross-Engine Benchmarks".to_string(),
+                bounds: Rect::new(54.0, 50.0, 480.0, 20.0),
+                font_name: "Helvetica-Bold".to_string(),
+                font_size: 16.0,
+                color: Color::rgb(33, 37, 41),
+                baseline: 66.0,
+            },
+            PdfTextElement {
+                text: "Spatial layout reconstructor benchmarks comparing XY-Cut heuristic clustering with OCR baselines:".to_string(),
+                bounds: Rect::new(54.0, 80.0, 480.0, 16.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 10.0,
+                color: Color::rgb(73, 80, 87),
+                baseline: 92.0,
+            },
+            // Table Header
+            PdfTextElement {
+                text: "Pipeline Stage".to_string(),
+                bounds: Rect::new(60.0, 114.0, 140.0, 14.0),
+                font_name: "Helvetica-Bold".to_string(),
+                font_size: 9.5,
+                color: Color::rgb(33, 37, 41),
+                baseline: 124.0,
+            },
+            PdfTextElement {
+                text: "Throughput".to_string(),
+                bounds: Rect::new(210.0, 114.0, 90.0, 14.0),
+                font_name: "Helvetica-Bold".to_string(),
+                font_size: 9.5,
+                color: Color::rgb(33, 37, 41),
+                baseline: 124.0,
+            },
+            PdfTextElement {
+                text: "Accuracy Rate".to_string(),
+                bounds: Rect::new(310.0, 114.0, 90.0, 14.0),
+                font_name: "Helvetica-Bold".to_string(),
+                font_size: 9.5,
+                color: Color::rgb(33, 37, 41),
+                baseline: 124.0,
+            },
+            PdfTextElement {
+                text: "Memory Footprint".to_string(),
+                bounds: Rect::new(410.0, 114.0, 110.0, 14.0),
+                font_name: "Helvetica-Bold".to_string(),
+                font_size: 9.5,
+                color: Color::rgb(33, 37, 41),
+                baseline: 124.0,
+            },
+            // Row 1
+            PdfTextElement {
+                text: "XY-Cut Column Detection".to_string(),
+                bounds: Rect::new(60.0, 140.0, 140.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 150.0,
+            },
+            PdfTextElement {
+                text: "1,420 pg/sec".to_string(),
+                bounds: Rect::new(210.0, 140.0, 90.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 150.0,
+            },
+            PdfTextElement {
+                text: "99.8%".to_string(),
+                bounds: Rect::new(310.0, 140.0, 90.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(12, 166, 120),
+                baseline: 150.0,
+            },
+            PdfTextElement {
+                text: "1.2 MB".to_string(),
+                bounds: Rect::new(410.0, 140.0, 110.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 150.0,
+            },
+            // Row 2
+            PdfTextElement {
+                text: "Hybrid Table Reconstruction".to_string(),
+                bounds: Rect::new(60.0, 166.0, 140.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 176.0,
+            },
+            PdfTextElement {
+                text: "890 pg/sec".to_string(),
+                bounds: Rect::new(210.0, 166.0, 90.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 176.0,
+            },
+            PdfTextElement {
+                text: "99.4%".to_string(),
+                bounds: Rect::new(310.0, 166.0, 90.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(12, 166, 120),
+                baseline: 176.0,
+            },
+            PdfTextElement {
+                text: "2.4 MB".to_string(),
+                bounds: Rect::new(410.0, 166.0, 110.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 176.0,
+            },
+            // Row 3
+            PdfTextElement {
+                text: "AES-256 Stream Encryption".to_string(),
+                bounds: Rect::new(60.0, 192.0, 140.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 202.0,
+            },
+            PdfTextElement {
+                text: "3,250 pg/sec".to_string(),
+                bounds: Rect::new(210.0, 192.0, 90.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 202.0,
+            },
+            PdfTextElement {
+                text: "100.0%".to_string(),
+                bounds: Rect::new(310.0, 192.0, 90.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(12, 166, 120),
+                baseline: 202.0,
+            },
+            PdfTextElement {
+                text: "0.8 MB".to_string(),
+                bounds: Rect::new(410.0, 192.0, 110.0, 14.0),
+                font_name: "Helvetica".to_string(),
+                font_size: 9.0,
+                color: Color::rgb(52, 58, 64),
+                baseline: 202.0,
+            },
+        ],
+        vector_paths: vec![
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 108.0)),
+                    PathOp::LineTo(Point::new(534.0, 108.0)),
+                    PathOp::LineTo(Point::new(534.0, 132.0)),
+                    PathOp::LineTo(Point::new(54.0, 132.0)),
+                    PathOp::Close,
+                ],
+                stroke_color: None,
+                fill_color: Some(Color::rgb(241, 243, 245)),
+                line_width: 0.0,
+                bounds: Rect::new(54.0, 108.0, 480.0, 24.0),
+            },
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 108.0)),
+                    PathOp::LineTo(Point::new(534.0, 108.0)),
+                ],
+                stroke_color: Some(Color::rgb(206, 212, 218)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 108.0, 480.0, 1.0),
+            },
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 132.0)),
+                    PathOp::LineTo(Point::new(534.0, 132.0)),
+                ],
+                stroke_color: Some(Color::rgb(206, 212, 218)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 132.0, 480.0, 1.0),
+            },
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 158.0)),
+                    PathOp::LineTo(Point::new(534.0, 158.0)),
+                ],
+                stroke_color: Some(Color::rgb(222, 226, 230)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 158.0, 480.0, 1.0),
+            },
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 184.0)),
+                    PathOp::LineTo(Point::new(534.0, 184.0)),
+                ],
+                stroke_color: Some(Color::rgb(222, 226, 230)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 184.0, 480.0, 1.0),
+            },
+            PdfVectorPath {
+                operations: vec![
+                    PathOp::MoveTo(Point::new(54.0, 210.0)),
+                    PathOp::LineTo(Point::new(534.0, 210.0)),
+                ],
+                stroke_color: Some(Color::rgb(206, 212, 218)),
+                fill_color: None,
+                line_width: 1.0,
+                bounds: Rect::new(54.0, 210.0, 480.0, 1.0),
+            },
+        ],
+        raw_stream: Vec::new(),
+    };
+    pdf.add_page(page2);
+
+    pdf.add_annotation(
+        1,
+        Annotation::measurement(
+            "meas-1",
+            1,
+            Point::new(54.0, 230.0),
+            Point::new(534.0, 230.0),
+            0.352778,
+            "mm",
+        ),
+    );
+
+    pdf
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum PdfCommandDto {
+    AddAnnotation {
+        page_idx: usize,
+        kind: String,
+        rect: Option<[f64; 4]>,
+        color_hex: Option<String>,
+        text: Option<String>,
+        author: Option<String>,
+        points: Option<Vec<[f64; 2]>>,
+        stamp_type: Option<String>,
+    },
+    DeleteAnnotation {
+        page_idx: usize,
+        index: usize,
+    },
+    EditParagraph {
+        page_idx: usize,
+        click_x: f64,
+        click_y: f64,
+        new_text: String,
+    },
+    RotatePage {
+        page_idx: usize,
+        degrees: i32,
+    },
+    CropPage {
+        page_idx: usize,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    },
+    DeletePage {
+        page_idx: usize,
+    },
+    InsertBlankPage {
+        page_idx: usize,
+        width: Option<f64>,
+        height: Option<f64>,
+    },
+    ReorderPages {
+        new_order: Vec<usize>,
+    },
+    ApplyWatermark {
+        text: String,
+        opacity: Option<f32>,
+        font_size: Option<f64>,
+        angle_deg: Option<f64>,
+    },
+    ApplyBatesNumbering {
+        prefix: String,
+        start_number: usize,
+        digits: usize,
+        position: Option<String>,
+    },
+    RunOcr {
+        page_idx: usize,
+        mode: Option<String>,
+    },
+    RedactRegion {
+        page_idx: usize,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        label: Option<String>,
+    },
+    CompressDocument {
+        level: Option<String>,
+    },
+    FlattenForms,
+}
+
 #[wasm_bindgen]
 pub struct WpsWasmEngine {
     active_module: ActiveModule,
@@ -405,20 +850,7 @@ impl WpsWasmEngine {
             ActiveModule::Writer => ActiveDoc::Writer(create_default_writer_doc()),
             ActiveModule::Spreadsheets => ActiveDoc::Sheets(create_default_sheets_doc()),
             ActiveModule::Presentation => ActiveDoc::Slides(create_default_slides_doc()),
-            ActiveModule::Pdf => {
-                let mut pdf = PdfDocument::new("Untitled.pdf");
-                pdf.add_page(PdfPage {
-                    page_index: 0,
-                    width: 595.0,
-                    height: 842.0,
-                    rotation: 0,
-                    crop_box: Rect::new(0.0, 0.0, 595.0, 842.0),
-                    text_elements: Vec::new(),
-                    vector_paths: Vec::new(),
-                    raw_stream: Vec::new(),
-                });
-                ActiveDoc::Pdf(pdf)
-            }
+            ActiveModule::Pdf => ActiveDoc::Pdf(create_default_pdf_doc()),
         };
 
         Self {
@@ -724,7 +1156,108 @@ impl WpsWasmEngine {
                 }
             }
             ActiveDoc::Pdf(pdf) => {
-                pdf.render_page_to_display_list(0, &mut dl);
+                let start_y = 24.0;
+                let page_spacing = 24.0;
+                let mut current_y = start_y;
+
+                for (idx, page) in pdf.pages.iter().enumerate() {
+                    let page_x = (viewport_width - page.width).max(20.0) * 0.5;
+                    let page_y = current_y;
+
+                    // Drop shadow / Page card background
+                    dl.push(DrawCommand::FillRect {
+                        rect: Rect::new(page_x, page_y, page.width, page.height),
+                        color: Color::WHITE,
+                    });
+                    dl.push(DrawCommand::StrokeRect {
+                        rect: Rect::new(page_x, page_y, page.width, page.height),
+                        color: Color::rgb(222, 226, 230),
+                        width: 1.0,
+                    });
+
+                    // Vector paths
+                    for path in &page.vector_paths {
+                        let path_bounds = Rect::new(
+                            page_x + path.bounds.x,
+                            page_y + path.bounds.y,
+                            path.bounds.width,
+                            path.bounds.height,
+                        );
+                        if let Some(fill) = path.fill_color {
+                            dl.push(DrawCommand::FillRect {
+                                rect: path_bounds,
+                                color: fill,
+                            });
+                        }
+                        if let Some(stroke) = path.stroke_color {
+                            dl.push(DrawCommand::StrokeRect {
+                                rect: path_bounds,
+                                color: stroke,
+                                width: path.line_width.max(1.0),
+                            });
+                        }
+                    }
+
+                    // Text elements
+                    for elem in &page.text_elements {
+                        dl.push(DrawCommand::DrawTextRun {
+                            text: elem.text.clone(),
+                            font_family: elem.font_name.clone(),
+                            font_size_px: elem.font_size,
+                            bold: elem.font_name.contains("Bold"),
+                            italic: elem.font_name.contains("Oblique") || elem.font_name.contains("Italic"),
+                            color: elem.color,
+                            origin: Point::new(page_x + elem.bounds.x, page_y + elem.baseline),
+                        });
+                    }
+
+                    // Annotations
+                    if let Some(annots) = pdf.annotations.get(&idx) {
+                        for annot in annots {
+                            let mut page_dl = DisplayList::new();
+                            annot.render_to_display_list(&mut page_dl);
+                            for cmd in page_dl.commands {
+                                match cmd {
+                                    DrawCommand::FillRect { rect, color } => {
+                                        dl.push(DrawCommand::FillRect {
+                                            rect: Rect::new(page_x + rect.x, page_y + rect.y, rect.width, rect.height),
+                                            color,
+                                        });
+                                    }
+                                    DrawCommand::StrokeRect { rect, color, width } => {
+                                        dl.push(DrawCommand::StrokeRect {
+                                            rect: Rect::new(page_x + rect.x, page_y + rect.y, rect.width, rect.height),
+                                            color,
+                                            width,
+                                        });
+                                    }
+                                    DrawCommand::DrawLine { from, to, color, width } => {
+                                        dl.push(DrawCommand::DrawLine {
+                                            from: Point::new(page_x + from.x, page_y + from.y),
+                                            to: Point::new(page_x + to.x, page_y + to.y),
+                                            color,
+                                            width,
+                                        });
+                                    }
+                                    DrawCommand::DrawTextRun { text, font_family, font_size_px, bold, italic, color, origin } => {
+                                        dl.push(DrawCommand::DrawTextRun {
+                                            text,
+                                            font_family,
+                                            font_size_px,
+                                            bold,
+                                            italic,
+                                            color,
+                                            origin: Point::new(page_x + origin.x, page_y + origin.y),
+                                        });
+                                    }
+                                    other => dl.push(other),
+                                }
+                            }
+                        }
+                    }
+
+                    current_y += page.height + page_spacing;
+                }
             }
         }
 
@@ -1609,6 +2142,522 @@ impl WpsWasmEngine {
         self.doc = ActiveDoc::Slides(imported_deck);
         self.active_module = ActiveModule::Presentation;
         self.slides_get_deck_summary()
+    }
+
+    /// Opens an ISO 32000 PDF document from bytes, decrypting with password if necessary
+    #[wasm_bindgen]
+    pub fn pdf_open_document(&mut self, bytes: &[u8], password: &str) -> Result<String, JsValue> {
+        let doc = PdfDocument::load_with_password(bytes, password)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        self.doc = ActiveDoc::Pdf(doc);
+        self.active_module = ActiveModule::Pdf;
+        self.pdf_get_document_summary()
+    }
+
+    /// Saves the current PDF document to ISO 32000 byte stream
+    #[wasm_bindgen]
+    pub fn pdf_save_document(&self) -> Result<Vec<u8>, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => Ok(pdf.export_to_bytes()),
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Encrypts the PDF document using pure-Rust AES-256 standard encryption
+    #[wasm_bindgen]
+    pub fn pdf_encrypt_document(&self, user_pw: &str, owner_pw: &str) -> Result<Vec<u8>, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => Ok(pdf.encrypt(user_pw, owner_pw)),
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Returns high-level summary of the active PDF document
+    #[wasm_bindgen]
+    pub fn pdf_get_document_summary(&self) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                #[derive(Serialize)]
+                struct PageSummary {
+                    index: usize,
+                    width: f64,
+                    height: f64,
+                    rotation: i32,
+                    text_element_count: usize,
+                    vector_path_count: usize,
+                    annotation_count: usize,
+                }
+                #[derive(Serialize)]
+                struct Summary {
+                    title: String,
+                    page_count: usize,
+                    can_print: bool,
+                    can_copy: bool,
+                    can_modify: bool,
+                    can_annotate: bool,
+                    pages: Vec<PageSummary>,
+                    signature_count: usize,
+                }
+                let pages: Vec<PageSummary> = pdf.pages.iter().enumerate().map(|(idx, p)| {
+                    PageSummary {
+                        index: idx,
+                        width: p.width,
+                        height: p.height,
+                        rotation: p.rotation,
+                        text_element_count: p.text_elements.len(),
+                        vector_path_count: p.vector_paths.len(),
+                        annotation_count: pdf.annotations.get(&idx).map(|a| a.len()).unwrap_or(0),
+                    }
+                }).collect();
+                let summary = Summary {
+                    title: pdf.title.clone(),
+                    page_count: pdf.pages.len(),
+                    can_print: pdf.permissions.allow_print,
+                    can_copy: pdf.permissions.allow_copy,
+                    can_modify: pdf.permissions.allow_modify,
+                    can_annotate: pdf.permissions.allow_annotations,
+                    pages,
+                    signature_count: pdf.signatures.len(),
+                };
+                serde_json::to_string(&summary).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Reconstructs spatial layout (XY-Cut paragraphs, headers, and hybrid tables)
+    #[wasm_bindgen]
+    pub fn pdf_get_page_layout_json(&self, page_idx: usize) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let page = pdf.pages.get(page_idx).ok_or_else(|| JsValue::from_str("Invalid page index"))?;
+                let layout = SpatialReconstructor::reconstruct_page(page);
+
+                #[derive(Serialize)]
+                struct BlockDto {
+                    kind: String,
+                    bounds: [f64; 4],
+                    text: String,
+                    font_name: String,
+                    font_size: f64,
+                    is_bold: bool,
+                    is_italic: bool,
+                }
+                #[derive(Serialize)]
+                struct CellDto {
+                    row: usize,
+                    col: usize,
+                    bounds: [f64; 4],
+                    text: String,
+                }
+                #[derive(Serialize)]
+                struct TableDto {
+                    bounds: [f64; 4],
+                    rows: usize,
+                    cols: usize,
+                    cells: Vec<CellDto>,
+                }
+                #[derive(Serialize)]
+                struct LayoutDto {
+                    page_index: usize,
+                    bounds: [f64; 4],
+                    blocks: Vec<BlockDto>,
+                    tables: Vec<TableDto>,
+                }
+
+                let blocks: Vec<BlockDto> = layout.blocks.iter().map(|b| {
+                    let kind_str = match b.kind {
+                        BlockKind::Title => "Title",
+                        BlockKind::Heading(lvl) => match lvl { 1 => "Heading1", 2 => "Heading2", _ => "Heading3" },
+                        BlockKind::Paragraph => "Paragraph",
+                        BlockKind::ListItem => "ListItem",
+                        BlockKind::TableCell => "TableCell",
+                        BlockKind::HeaderBlock => "Header",
+                        BlockKind::FooterBlock => "Footer",
+                    };
+                    BlockDto {
+                        kind: kind_str.to_string(),
+                        bounds: [b.bounds.x, b.bounds.y, b.bounds.width, b.bounds.height],
+                        text: b.plain_text(),
+                        font_name: b.font_name.clone(),
+                        font_size: b.font_size,
+                        is_bold: b.is_bold,
+                        is_italic: b.is_italic,
+                    }
+                }).collect();
+
+                let tables: Vec<TableDto> = layout.tables.iter().map(|t| {
+                    TableDto {
+                        bounds: [t.bounds.x, t.bounds.y, t.bounds.width, t.bounds.height],
+                        rows: t.rows,
+                        cols: t.cols,
+                        cells: t.cells.iter().map(|c| CellDto {
+                            row: c.row,
+                            col: c.col,
+                            bounds: [c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height],
+                            text: c.text.clone(),
+                        }).collect(),
+                    }
+                }).collect();
+
+                let layout_dto = LayoutDto {
+                    page_index: layout.page_index,
+                    bounds: [layout.bounds.x, layout.bounds.y, layout.bounds.width, layout.bounds.height],
+                    blocks,
+                    tables,
+                };
+
+                serde_json::to_string(&layout_dto).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Renders a specific PDF page to DisplayList JSON
+    #[wasm_bindgen]
+    pub fn pdf_render_page_display_list(&self, page_idx: usize) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let mut dl = DisplayList::new();
+                pdf.render_page_to_display_list(page_idx, &mut dl);
+                serde_json::to_string(&dl).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Dispatches a structured PDF command (annotations, editing, page organization, security, OCR)
+    #[wasm_bindgen]
+    pub fn pdf_dispatch_command(&mut self, cmd_json: &str) -> Result<String, JsValue> {
+        let cmd: PdfCommandDto = serde_json::from_str(cmd_json)
+            .map_err(|e| JsValue::from_str(&format!("Invalid command JSON: {}", e)))?;
+
+        match &mut self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                match cmd {
+                    PdfCommandDto::AddAnnotation {
+                        page_idx,
+                        kind,
+                        rect,
+                        color_hex,
+                        text,
+                        author,
+                        points,
+                        stamp_type,
+                    } => {
+                        let col = color_hex.as_deref().map(parse_hex_color).unwrap_or(Color::rgb(224, 49, 49));
+                        let r = rect.map(|[x, y, w, h]| Rect::new(x, y, w, h)).unwrap_or(Rect::new(54.0, 100.0, 120.0, 30.0));
+                        let id = format!("annot-{}", pdf.annotations.get(&page_idx).map(|a| a.len()).unwrap_or(0) + 1);
+                        let annot = match kind.to_lowercase().as_str() {
+                            "highlight" => Annotation {
+                                id: id.clone(),
+                                page_index: page_idx,
+                                bounds: r,
+                                kind: AnnotationKind::Highlight {
+                                    color: col,
+                                    opacity: 0.45,
+                                },
+                                created_at_sec: 0,
+                            },
+                            "underline" => Annotation {
+                                id: id.clone(),
+                                page_index: page_idx,
+                                bounds: r,
+                                kind: AnnotationKind::Underline { color: col },
+                                created_at_sec: 0,
+                            },
+                            "squiggly" => Annotation {
+                                id: id.clone(),
+                                page_index: page_idx,
+                                bounds: r,
+                                kind: AnnotationKind::Squiggly { color: col },
+                                created_at_sec: 0,
+                            },
+                            "strikethrough" => Annotation {
+                                id: id.clone(),
+                                page_index: page_idx,
+                                bounds: r,
+                                kind: AnnotationKind::Strikethrough { color: col },
+                                created_at_sec: 0,
+                            },
+                            "sticky_note" => Annotation::sticky_note(
+                                &id,
+                                page_idx,
+                                Point::new(r.x, r.y),
+                                &author.unwrap_or_else(|| "User".to_string()),
+                                &text.unwrap_or_else(|| "Note".to_string()),
+                            ),
+                            "stamp" => {
+                                let st = match stamp_type.as_deref() {
+                                    Some("Confidential") => StampType::Confidential,
+                                    Some("Draft") => StampType::Draft,
+                                    Some("Rejected") => StampType::Rejected,
+                                    _ => StampType::Approved,
+                                };
+                                Annotation::stamp(
+                                    &id,
+                                    page_idx,
+                                    Rect::new(r.x, r.y, 140.0, 48.0),
+                                    st,
+                                    &author.unwrap_or_else(|| "Authorized".to_string()),
+                                    "2026-10-29",
+                                )
+                            }
+                            "free_text" => Annotation::free_text(
+                                &id,
+                                page_idx,
+                                r,
+                                &text.unwrap_or_default(),
+                                11.0,
+                                col,
+                                Color::rgb(255, 255, 255),
+                                Color::rgb(222, 226, 230),
+                            ),
+                            "callout" => Annotation::callout(
+                                &id,
+                                page_idx,
+                                Point::new(r.x, r.y),
+                                Rect::new(r.x + 30.0, r.y + 20.0, r.width.max(120.0), r.height.max(40.0)),
+                                &text.unwrap_or_default(),
+                                col,
+                            ),
+                            "measurement" => {
+                                let start = Point::new(r.x, r.y);
+                                let end = Point::new(r.x + r.width, r.y + r.height);
+                                Annotation::measurement(&id, page_idx, start, end, 0.352778, "mm")
+                            }
+                            "perimeter" => {
+                                let pts: Vec<Point> = points.unwrap_or_default().into_iter().map(|[x, y]| Point::new(x, y)).collect();
+                                Annotation::perimeter(&id, page_idx, pts, 0.352778, "mm")
+                            }
+                            "area_polygon" => {
+                                let pts: Vec<Point> = points.unwrap_or_default().into_iter().map(|[x, y]| Point::new(x, y)).collect();
+                                Annotation::area_polygon(&id, page_idx, pts, 0.352778, "mm")
+                            }
+                            "cloud_polygon" => {
+                                let pts: Vec<Point> = points.unwrap_or_default().into_iter().map(|[x, y]| Point::new(x, y)).collect();
+                                Annotation::cloud_polygon(&id, page_idx, pts, col, Some(Color::rgba(col.r, col.g, col.b, 30)))
+                            }
+                            _ => Annotation::highlight(&id, page_idx, r),
+                        };
+                        pdf.add_annotation(page_idx, annot);
+                    }
+                    PdfCommandDto::DeleteAnnotation { page_idx, index } => {
+                        if let Some(annots) = pdf.annotations.get_mut(&page_idx) {
+                            if index < annots.len() {
+                                annots.remove(index);
+                            }
+                        }
+                    }
+                    PdfCommandDto::EditParagraph {
+                        page_idx,
+                        click_x,
+                        click_y,
+                        new_text,
+                    } => {
+                        if let Some(page) = pdf.pages.get_mut(page_idx) {
+                            if let Some(mut session) = PdfEditSession::new(page, Point::new(click_x, click_y)) {
+                                session.current_text = new_text;
+                                session.cursor_pos = session.current_text.len();
+                                session.commit(page);
+                            } else if let Some(first) = page.text_elements.first_mut() {
+                                first.text = new_text;
+                            }
+                        }
+                    }
+                    PdfCommandDto::RotatePage { page_idx, degrees } => {
+                        if let Some(page) = pdf.pages.get_mut(page_idx) {
+                            PageOrganizer::rotate_page(page, degrees);
+                        }
+                    }
+                    PdfCommandDto::CropPage {
+                        page_idx,
+                        x,
+                        y,
+                        width,
+                        height,
+                    } => {
+                        if let Some(page) = pdf.pages.get_mut(page_idx) {
+                            PageOrganizer::crop_page(page, Rect::new(x, y, width, height));
+                        }
+                    }
+                    PdfCommandDto::DeletePage { page_idx } => {
+                        PageOrganizer::delete_pages(&mut pdf.pages, &[page_idx]);
+                    }
+                    PdfCommandDto::InsertBlankPage {
+                        page_idx,
+                        width,
+                        height,
+                    } => {
+                        let w = width.unwrap_or(595.0);
+                        let h = height.unwrap_or(842.0);
+                        let new_page = PdfPage {
+                            page_index: page_idx,
+                            width: w,
+                            height: h,
+                            rotation: 0,
+                            crop_box: Rect::new(0.0, 0.0, w, h),
+                            text_elements: Vec::new(),
+                            vector_paths: Vec::new(),
+                            raw_stream: Vec::new(),
+                        };
+                        let insert_at = page_idx.min(pdf.pages.len());
+                        pdf.pages.insert(insert_at, new_page);
+                        for (i, p) in pdf.pages.iter_mut().enumerate() {
+                            p.page_index = i;
+                        }
+                    }
+                    PdfCommandDto::ReorderPages { new_order } => {
+                        PageOrganizer::reorder_pages(&mut pdf.pages, &new_order);
+                    }
+                    PdfCommandDto::ApplyWatermark {
+                        text,
+                        opacity,
+                        font_size,
+                        angle_deg,
+                    } => {
+                        PageOrganizer::apply_watermark(
+                            &mut pdf.pages,
+                            &text,
+                            font_size.unwrap_or(48.0),
+                            opacity.unwrap_or(0.18),
+                            angle_deg.unwrap_or(-45.0),
+                            Color::rgb(220, 53, 69),
+                        );
+                    }
+                    PdfCommandDto::ApplyBatesNumbering {
+                        prefix,
+                        start_number,
+                        digits,
+                        position,
+                    } => {
+                        let pos = match position.as_deref() {
+                            Some("TopLeft") => BatesPosition::TopLeft,
+                            Some("TopRight") => BatesPosition::TopRight,
+                            Some("BottomLeft") => BatesPosition::BottomLeft,
+                            Some("BottomCenter") => BatesPosition::BottomCenter,
+                            _ => BatesPosition::BottomRight,
+                        };
+                        PageOrganizer::apply_bates_numbering(
+                            &mut pdf.pages,
+                            &prefix,
+                            start_number as u32,
+                            digits,
+                            pos,
+                        );
+                    }
+                    PdfCommandDto::RunOcr { page_idx, mode } => {
+                        if let Some(page) = pdf.pages.get_mut(page_idx) {
+                            let opt = OcrOptions {
+                                mode: if mode.as_deref() == Some("editable") {
+                                    OcrMode::EditableReconstruction
+                                } else {
+                                    OcrMode::SearchableLayer
+                                },
+                                dpi: 300,
+                                language: "eng".to_string(),
+                            };
+                            OcrEngine::run_ocr_on_page(page, &opt);
+                        }
+                    }
+                    PdfCommandDto::RedactRegion {
+                        page_idx,
+                        x,
+                        y,
+                        width,
+                        height,
+                        label,
+                    } => {
+                        pdf.redact_region(page_idx, Rect::new(x, y, width, height), label.as_deref());
+                    }
+                    PdfCommandDto::CompressDocument { level } => {
+                        let lvl = match level.as_deref() {
+                            Some("high") => CompressionLevel::High,
+                            Some("extreme") => CompressionLevel::Extreme,
+                            _ => CompressionLevel::Standard,
+                        };
+                        pdf.compress(lvl);
+                    }
+                    PdfCommandDto::FlattenForms => {
+                        for page in &mut pdf.pages {
+                            PdfSecurity::flatten_forms(page, &[]);
+                        }
+                    }
+                }
+                self.pdf_get_document_summary()
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Converts active PDF document into a Writer (.docx) Document model
+    #[wasm_bindgen]
+    pub fn pdf_convert_to_writer(&mut self) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let writer_doc = pdf.to_writer_document();
+                self.doc = ActiveDoc::Writer(writer_doc);
+                self.active_module = ActiveModule::Writer;
+                Ok(self.writer_get_metadata_json())
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Converts active PDF document into a Spreadsheets (.xlsx) Workbook model
+    #[wasm_bindgen]
+    pub fn pdf_convert_to_sheets(&mut self) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let workbook = pdf.to_sheets_workbook(PdfToExcelMode::OneSheetPerTable);
+                self.doc = ActiveDoc::Sheets(workbook);
+                self.active_module = ActiveModule::Spreadsheets;
+                Ok(self.sheets_get_metadata_json())
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Converts active PDF document into a Presentation (.pptx) Deck model
+    #[wasm_bindgen]
+    pub fn pdf_convert_to_slides(&mut self) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let deck = pdf.to_slides_deck();
+                self.doc = ActiveDoc::Slides(deck);
+                self.active_module = ActiveModule::Presentation;
+                self.slides_get_deck_summary()
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// Computes responsive single-column text reflow for reading mode
+    #[wasm_bindgen]
+    pub fn pdf_reflow_page_json(&self, page_idx: usize, target_width: f64, font_scale: f64) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let page = pdf.pages.get(page_idx).ok_or_else(|| JsValue::from_str("Invalid page index"))?;
+                let reflowed = reflow_page_to_stream(page, target_width, font_scale);
+                #[derive(Serialize)]
+                struct TextItem {
+                    text: String,
+                    bounds: [f64; 4],
+                    font_name: String,
+                    font_size: f64,
+                    baseline: f64,
+                }
+                let items: Vec<TextItem> = reflowed.into_iter().map(|e| TextItem {
+                    text: e.text,
+                    bounds: [e.bounds.x, e.bounds.y, e.bounds.width, e.bounds.height],
+                    font_name: e.font_name,
+                    font_size: e.font_size,
+                    baseline: e.baseline,
+                }).collect();
+                serde_json::to_string(&items).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
     }
 
     #[wasm_bindgen]

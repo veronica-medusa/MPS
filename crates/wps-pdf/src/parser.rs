@@ -823,14 +823,16 @@ impl<'a> PdfParser<'a> {
                             // Convert PDF bottom-left origin to OpenWPS top-left origin
                             let screen_y = (page_height - text_y - height).max(0.0);
 
-                            text_elements.push(PdfTextElement {
-                                text: text.clone(),
-                                bounds: Rect::new(text_x, screen_y, width, height),
-                                font_name: current_font.clone(),
-                                font_size: current_font_size,
-                                color: current_fill_color,
-                                baseline: screen_y + height * 0.8,
-                            });
+                            if !text.trim().is_empty() {
+                                text_elements.push(PdfTextElement {
+                                    text: text.clone(),
+                                    bounds: Rect::new(text_x, screen_y, width, height),
+                                    font_name: current_font.clone(),
+                                    font_size: current_font_size,
+                                    color: current_fill_color,
+                                    baseline: screen_y + height * 0.8,
+                                });
+                            }
                             text_x += width;
                         }
                     }

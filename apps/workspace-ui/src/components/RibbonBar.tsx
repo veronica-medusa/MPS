@@ -41,6 +41,23 @@ import {
   FileText,
   Bookmark,
   Plus,
+  RotateCw,
+  RotateCcw,
+  Crop,
+  Trash2,
+  Ruler,
+  MessageSquare,
+  Stamp,
+  ShieldCheck,
+  KeyRound,
+  Type,
+  FileSpreadsheet,
+  Presentation,
+  Cloud,
+  Eraser,
+  FileSignature,
+  ArrowRight,
+  ShieldAlert,
 } from 'lucide-react';
 import { ActiveRibbonTab, DocumentType, RibbonMode, SmartToolboxAction } from '../types';
 
@@ -155,7 +172,121 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
         }`}
       >
         {/* ===================== HOME TAB ===================== */}
-        {activeTab === 'home' && (
+        {activeTab === 'home' && docType === 'pdf' ? (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* View & Edit Modes */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_set_mode', 'read')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Continuous Page Read View"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Read View</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_set_mode', 'edit_content')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm bg-mercury-pdf text-white font-semibold shadow-sm hover:opacity-95 transition"
+                title="Direct Inline Paragraph & Line Reflow Editing"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Edit PDF Like Word</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_set_mode', 'reflow')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Responsive Single-Column Reading Mode"
+              >
+                <Columns className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Reflow Mode</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_set_mode', 'organize')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Visual Page Organizer Grid"
+              >
+                <Layers className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Page Grid</span>
+              </button>
+            </div>
+
+            {/* Quick Annotation Tools */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'highlight', color: '#ffeb3b' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm bg-yellow-400/20 text-yellow-700 dark:text-yellow-300 font-medium"
+                title="Highlight Selection"
+              >
+                <Highlighter className="w-3.5 h-3.5" />
+                <span>Highlight</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'sticky_note', text: 'Important observation', author: 'Auditor' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Add Sticky Note"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+                <span>Sticky Note</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'stamp', stamp_type: 'Approved' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 font-medium"
+                title="Stamp Approved"
+              >
+                <Stamp className="w-3.5 h-3.5" />
+                <span>Approved Stamp</span>
+              </button>
+            </div>
+
+            {/* Instant Cross-Engine Export */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_to_word')}
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-writer/40 text-mercury-writer hover:bg-mercury-writer/10 font-semibold transition"
+                title="Convert PDF to Word (.docx) AST"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>PDF &rarr; Word</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_to_excel')}
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-sheets/40 text-mercury-sheets hover:bg-mercury-sheets/10 font-semibold transition"
+                title="Convert PDF to Excel (.xlsx) Workbook"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>PDF &rarr; Excel</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_to_ppt')}
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-slides/40 text-mercury-slides hover:bg-mercury-slides/10 font-semibold transition"
+                title="Convert PDF to PowerPoint (.pptx) Deck"
+              >
+                <Presentation className="w-3.5 h-3.5" />
+                <span>PDF &rarr; PPT</span>
+              </button>
+            </div>
+
+            {/* Quick Security & Redact */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => onExecuteCommand('pdf_redact_region')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-red-500/30 text-red-600 hover:bg-red-500/10 font-medium"
+                title="Permanently scrub bytes and redact region"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Redact Area</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_open_sidebar', 'search_redact')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Search and Redact All Occurrences"
+              >
+                <Search className="w-3.5 h-3.5 text-mercury-ink-secondary" />
+                <span>Search & Redact</span>
+              </button>
+            </div>
+          </div>
+        ) : activeTab === 'home' && (
           <div className="flex items-center space-x-3 text-xs">
             {/* Clipboard Group */}
             <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
@@ -894,56 +1025,435 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
           </div>
         )}
 
-        {/* ===================== PDF TOOLS ===================== */}
-        {(activeTab === 'pdf_annotate' || activeTab === 'pdf_edit' || activeTab === 'pdf_organize' || activeTab === 'pdf_convert') && (
-          <div className="flex items-center space-x-2 text-xs">
-            <button
-              onClick={() => onExecuteCommand('pdf_highlight')}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-sm bg-yellow-400/20 text-yellow-700 dark:text-yellow-300 font-medium"
-            >
-              <Highlighter className="w-3.5 h-3.5" />
-              <span>Highlight</span>
-            </button>
-            <button
-              onClick={() => onExecuteCommand('pdf_freehand_ink')}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <PenTool className="w-3.5 h-3.5 text-mercury-pdf" />
-              <span>Freehand Ink</span>
-            </button>
-            <button
-              onClick={() => onExecuteCommand('pdf_direct_edit')}
-              className="flex items-center space-x-1 px-3 py-1 rounded-mercury-sm bg-mercury-pdf text-white font-medium shadow-sm"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Edit PDF Like Word</span>
-            </button>
-            <button
-              onClick={() => onExecuteCommand('pdf_ocr')}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <FileCheck2 className="w-3.5 h-3.5 text-mercury-pdf" />
-              <span>Local OCR (ocrs)</span>
-            </button>
-            <button
-              onClick={() => onExecuteCommand('pdf_to_word')}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <FileDown className="w-3.5 h-3.5 text-mercury-writer" />
-              <span>PDF &rarr; Word (.docx)</span>
-            </button>
-            <button
-              onClick={() => onExecuteCommand('pdf_redact')}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-sm border border-red-500/30 text-red-600 hover:bg-red-500/10"
-            >
-              <Scissors className="w-3.5 h-3.5" />
-              <span>Redact</span>
-            </button>
+        {/* ===================== PDF ANNOTATE TAB ===================== */}
+        {activeTab === 'pdf_annotate' && (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Text Markup Group */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'highlight', color: '#ffeb3b' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm bg-yellow-400/20 text-yellow-700 dark:text-yellow-300 font-medium hover:opacity-90"
+                title="Highlight (Yellow)"
+              >
+                <Highlighter className="w-3.5 h-3.5" />
+                <span>Highlight</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'underline', color: '#5266eb' })}
+                className="p-1.5 rounded-mercury-sm hover:bg-mercury-lavender dark:hover:bg-mercury-night text-mercury-primary"
+                title="Underline Text"
+              >
+                <Underline className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'strikethrough', color: '#e03131' })}
+                className="p-1.5 rounded-mercury-sm hover:bg-mercury-lavender dark:hover:bg-mercury-night text-red-600"
+                title="Strikethrough"
+              >
+                <Strikethrough className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'squiggly', color: '#e8590c' })}
+                className="p-1.5 rounded-mercury-sm hover:bg-mercury-lavender dark:hover:bg-mercury-night text-amber-600"
+                title="Squiggly Underline"
+              >
+                <span className="font-bold underline decoration-wavy text-xs">~</span>
+              </button>
+            </div>
+
+            {/* Note, Free Text & Callout */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'sticky_note', text: 'Review comment', author: 'Reviewer' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Add Sticky Note"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+                <span>Sticky Note</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'free_text', text: 'New Note', color: '#28253b' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Free Text Box"
+              >
+                <Type className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Free Text</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'callout', text: 'Action Item', color: '#e03131' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Callout Box with Leader Line"
+              >
+                <ArrowRight className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Callout Box</span>
+              </button>
+            </div>
+
+            {/* Shapes & Cloud Polygon */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'shape', shape_type: 'Rectangle', color: '#e03131' })}
+                className="p-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Rectangle Shape"
+              >
+                <span className="w-3 h-3 border border-mercury-pdf inline-block"></span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'shape', shape_type: 'Ellipse', color: '#e03131' })}
+                className="p-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Ellipse Shape"
+              >
+                <span className="w-3 h-3 border border-mercury-pdf rounded-full inline-block"></span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'cloud_polygon', color: '#e03131' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                title="Cloud Polygon with Scalloped Arcs"
+              >
+                <Cloud className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Cloud</span>
+              </button>
+            </div>
+
+            {/* Freehand Ink */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_freehand_ink')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Freehand Ink Drawing"
+              >
+                <PenTool className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Ink Pen</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_clear_ink')}
+                className="p-1.5 rounded-mercury-sm hover:bg-mercury-lavender dark:hover:bg-mercury-night text-mercury-ink-secondary"
+                title="Ink Eraser"
+              >
+                <Eraser className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Stamps Gallery */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              {[
+                { label: 'Approved', color: '#0ca678' },
+                { label: 'Confidential', color: '#e03131' },
+                { label: 'Draft', color: '#f59f00' },
+                { label: 'Rejected', color: '#fa5252' },
+              ].map((st) => (
+                <button
+                  key={st.label}
+                  onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'stamp', stamp_type: st.label })}
+                  className="px-2 py-1 rounded-mercury-sm border text-[11px] font-bold uppercase transition"
+                  style={{ borderColor: `${st.color}50`, color: st.color }}
+                  title={`Apply ${st.label} Stamp`}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Precision Calibrated Measurement Tools */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'measurement' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Calibrated Distance Ruler Tool"
+              >
+                <Ruler className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Distance Ruler</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'perimeter' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Perimeter Measurement Tool"
+              >
+                <span>Perimeter</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_annotation', { kind: 'area_polygon' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Shoelace Area Measurement Tool"
+              >
+                <span>Area Tool</span>
+              </button>
+            </div>
           </div>
         )}
 
-        {/* ===================== REVIEW & TRACK CHANGES ===================== */}
-        {activeTab === 'review' && (
+        {/* ===================== PDF EDIT TAB ===================== */}
+        {activeTab === 'pdf_edit' && (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Inline Editing Toggle */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_toggle_edit_content')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm bg-mercury-pdf text-white font-semibold shadow-sm hover:opacity-95 transition"
+                title="Direct Inline Paragraph & Line Reflow Editing"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Edit PDF Like Word</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_add_text_block')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Add New Text Block"
+              >
+                <Plus className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Add Text</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_crop_page')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Crop Page Margins"
+              >
+                <Crop className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Crop Page</span>
+              </button>
+            </div>
+
+            {/* Watermark Studio */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Watermark:</span>
+              <button
+                onClick={() => onExecuteCommand('pdf_apply_watermark', 'CONFIDENTIAL')}
+                className="px-2.5 py-1.5 rounded-mercury-sm border border-red-500/30 text-red-600 hover:bg-red-500/10 font-medium"
+              >
+                CONFIDENTIAL
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_apply_watermark', 'DRAFT')}
+                className="px-2.5 py-1.5 rounded-mercury-sm border border-amber-500/30 text-amber-600 hover:bg-amber-500/10 font-medium"
+              >
+                DRAFT
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_apply_watermark', 'COPY')}
+                className="px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/40 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+              >
+                COPY
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_remove_watermark')}
+                className="px-2 py-1.5 text-mercury-ink-secondary hover:text-red-500"
+                title="Remove Watermark"
+              >
+                Remove
+              </button>
+            </div>
+
+            {/* Bates Numbering */}
+            <div className="flex items-center space-x-1">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Bates Stamping:</span>
+              <button
+                onClick={() => onExecuteCommand('pdf_apply_bates', { prefix: 'CONF-LIT-', start: 1, digits: 6, position: 'BottomRight' })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-pdf text-mercury-pdf hover:bg-mercury-pdf/10 font-semibold"
+                title="Apply Bates Numbering (CONF-LIT-000001)"
+              >
+                <FileCode2 className="w-3.5 h-3.5" />
+                <span>Apply Bates Stamping</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== PDF ORGANIZE TAB ===================== */}
+        {activeTab === 'pdf_organize' && (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Page Manipulation Group */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_rotate_page', 90)}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Rotate Clockwise 90°"
+              >
+                <RotateCw className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Rotate 90° CW</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_rotate_page', -90)}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Rotate Counter-Clockwise 90°"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Rotate 90° CCW</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_insert_blank_page')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Insert Blank Page"
+              >
+                <Plus className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Insert Blank</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_delete_page')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-red-500/30 text-red-600 hover:bg-red-500/10 font-medium"
+                title="Delete Selected Page"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Page</span>
+              </button>
+            </div>
+
+            {/* Split & Merge */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_split_document', { mode: 'every_n', count: 1 })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Split PDF into multiple files"
+              >
+                <Split className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Split PDF</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_merge_documents')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Merge external PDF into this document"
+              >
+                <Combine className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Merge PDFs</span>
+              </button>
+            </div>
+
+            {/* Compress PDF */}
+            <div className="flex items-center space-x-1">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Compress:</span>
+              <button
+                onClick={() => onExecuteCommand('pdf_compress', 'standard')}
+                className="px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Standard Compression (Balanced Quality)"
+              >
+                Standard
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_compress', 'high')}
+                className="px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="High Flate Stream Compression"
+              >
+                High
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_compress', 'extreme')}
+                className="px-2.5 py-1.5 rounded-mercury-sm border border-mercury-pdf text-mercury-pdf hover:bg-mercury-pdf/10 font-semibold"
+                title="Extreme Minification"
+              >
+                Extreme
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== PDF CONVERT TAB ===================== */}
+        {activeTab === 'pdf_convert' && (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Pure-Rust Local OCR */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_ocr', 'searchable')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm bg-mercury-pdf text-white font-semibold shadow-sm hover:opacity-95 transition"
+                title="Inject invisible 3 Tr searchable text layer over scanned PDF pages"
+              >
+                <FileCheck2 className="w-3.5 h-3.5" />
+                <span>OCR Searchable Layer</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_ocr', 'editable')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Run OCR and reconstruct editable paragraphs"
+              >
+                <Type className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>OCR Editable Reconstruction</span>
+              </button>
+            </div>
+
+            {/* Instant Cross-Engine AST Converters */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => onExecuteCommand('pdf_to_word')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm border border-mercury-writer/50 text-mercury-writer hover:bg-mercury-writer/10 font-bold transition shadow-xs"
+                title="Convert PDF to live Writer document tab (.docx)"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Convert to Word (.docx)</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_to_excel')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm border border-mercury-sheets/50 text-mercury-sheets hover:bg-mercury-sheets/10 font-bold transition shadow-xs"
+                title="Extract tables and convert to live Spreadsheets tab (.xlsx)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Convert to Excel (.xlsx)</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_to_ppt')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm border border-mercury-slides/50 text-mercury-slides hover:bg-mercury-slides/10 font-bold transition shadow-xs"
+                title="Convert slides and vector scenes to live Presentation tab (.pptx)"
+              >
+                <Presentation className="w-3.5 h-3.5" />
+                <span>Convert to PPT (.pptx)</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== REVIEW & TRACK CHANGES (PDF & GENERAL) ===================== */}
+        {activeTab === 'review' && docType === 'pdf' ? (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Permanent Redaction Studio */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_redact_region')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm bg-red-600 text-white font-semibold shadow-sm hover:opacity-95 transition"
+                title="Permanently remove sensitive bytes from stream with opaque overlay"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Permanent Redact Area</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_open_sidebar', 'search_redact')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-red-500/30 text-red-600 hover:bg-red-500/10 font-medium"
+                title="Search and Redact PII Across All Pages"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Search & Redact PII</span>
+              </button>
+            </div>
+
+            {/* Interactive Forms & Signatures */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('pdf_sign_document')}
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-pdf hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Digital Signature (FIPS 180-4 SHA-256)"
+              >
+                <FileSignature className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Sign Document</span>
+              </button>
+              <button
+                onClick={() => onExecuteCommand('pdf_flatten_forms')}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                title="Flatten Interactive AcroForms into static vectors"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-mercury-pdf" />
+                <span>Flatten Forms</span>
+              </button>
+            </div>
+
+            {/* AES-256 Security & Encryption */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => onExecuteCommand('pdf_encrypt_document')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm border border-mercury-pdf text-mercury-pdf hover:bg-mercury-pdf/10 font-semibold transition"
+                title="Encrypt PDF with FIPS 197 AES-256 Standard"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>AES-256 Encrypt</span>
+              </button>
+            </div>
+          </div>
+        ) : activeTab === 'review' && (
           <div className="flex items-center space-x-2 text-xs">
             <button
               onClick={() => onExecuteCommand('toggle_track_changes')}

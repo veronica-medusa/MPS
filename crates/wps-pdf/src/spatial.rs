@@ -9,6 +9,8 @@ pub enum BlockKind {
     Paragraph,
     ListItem,
     TableCell,
+    HeaderBlock,
+    FooterBlock,
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +72,7 @@ pub struct SpatialReconstructor;
 impl SpatialReconstructor {
     pub fn reconstruct_page(page: &PdfPage) -> SpatialPageLayout {
         // Step 1: Detect tables via vector line intersections
-        let tables = Self::detect_tables(page);
+        let mut tables = Self::detect_tables(page);
 
         // Filter out text elements that fall inside detected table cells
         let mut non_table_elements = Vec::new();
@@ -88,11 +90,24 @@ impl SpatialReconstructor {
             }
         }
 
+        // Step 1b: Detect borderless tables from remaining elements
+        let (borderless_tables, remaining_elements) = Self::detect_borderless_tables(&non_table_elements);
+        tables.extend(borderless_tables);
+
         // Step 2: Cluster glyph runs into text lines
-        let lines = Self::cluster_elements_into_lines(&non_table_elements);
+        let lines = Self::cluster_elements_into_lines(&remaining_elements);
 
         // Step 3: Perform Recursive XY-Cut on text lines
-        let blocks = Self::recursive_xy_cut(&lines, Rect::new(0.0, 0.0, page.width, page.height));
+        let mut blocks = Self::recursive_xy_cut(&lines, Rect::new(0.0, 0.0, page.width, page.height));
+
+        // Step 4: Classify HeaderBlock (< 6% page height with small text) and FooterBlock (> 94% page height)
+        for block in &mut blocks {
+            if block.bounds.y < page.height * 0.06 && block.font_size <= 10.0 {
+                block.kind = BlockKind::HeaderBlock;
+            } else if block.bounds.y > page.height * 0.94 && block.font_size <= 10.0 {
+                block.kind = BlockKind::FooterBlock;
+            }
+        }
 
         SpatialPageLayout {
             page_index: page.page_index,
@@ -100,6 +115,155 @@ impl SpatialReconstructor {
             blocks,
             tables,
         }
+    }
+
+    /// Detects borderless aligned tables with multi-column text clusters
+    pub fn detect_borderless_tables(elements: &[PdfTextElement]) -> (Vec<ReconstructedTable>, Vec<PdfTextElement>) {
+        if elements.len() < 4 {
+            return (Vec::new(), elements.to_vec());
+        }
+
+        let mut sorted = elements.to_vec();
+        sorted.sort_by(|a, b| a.baseline.partial_cmp(&b.baseline).unwrap());
+
+        let mut lines_of_elems: Vec<Vec<PdfTextElement>> = Vec::new();
+        for elem in sorted {
+            if let Some(last_line) = lines_of_elems.last_mut() {
+                if (elem.baseline - last_line[0].baseline).abs() < 4.0 {
+                    last_line.push(elem);
+                    continue;
+                }
+            }
+            lines_of_elems.push(vec![elem]);
+        }
+
+        for line in &mut lines_of_elems {
+            line.sort_by(|a, b| a.bounds.x.partial_cmp(&b.bounds.x).unwrap());
+        }
+
+        let mut table_candidates: Vec<Vec<Vec<PdfTextElement>>> = Vec::new();
+        let mut current_table_lines: Vec<Vec<PdfTextElement>> = Vec::new();
+
+        for line in lines_of_elems {
+            let is_multi_col = if line.len() >= 2 {
+                let mut has_gutter = false;
+                for i in 1..line.len() {
+                    let gap = line[i].bounds.x - (line[i - 1].bounds.x + line[i - 1].bounds.width);
+                    if gap >= 15.0 {
+                        has_gutter = true;
+                        break;
+                    }
+                }
+                has_gutter
+            } else {
+                false
+            };
+
+            if is_multi_col {
+                let gap_ok = if let Some(prev) = current_table_lines.last() {
+                    let dy = line[0].bounds.y - (prev[0].bounds.y + prev[0].bounds.height);
+                    dy <= prev[0].font_size * 2.5
+                } else {
+                    true
+                };
+
+                if gap_ok {
+                    current_table_lines.push(line);
+                } else {
+                    if current_table_lines.len() >= 3 {
+                        table_candidates.push(current_table_lines);
+                    }
+                    current_table_lines = vec![line];
+                }
+            } else {
+                if current_table_lines.len() >= 3 {
+                    table_candidates.push(current_table_lines);
+                }
+                current_table_lines = Vec::new();
+            }
+        }
+        if current_table_lines.len() >= 3 {
+            table_candidates.push(current_table_lines);
+        }
+
+        if table_candidates.is_empty() {
+            return (Vec::new(), elements.to_vec());
+        }
+
+        let mut reconstructed_tables = Vec::new();
+        let mut table_element_ids = std::collections::HashSet::new();
+
+        for candidate in table_candidates {
+            let num_rows = candidate.len();
+            let mut all_x: Vec<f64> = candidate.iter().flat_map(|line| line.iter().map(|e| e.bounds.x)).collect();
+            all_x.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+            let mut col_starts: Vec<f64> = Vec::new();
+            for x in all_x {
+                if let Some(last) = col_starts.last() {
+                    if (x - last).abs() < 25.0 {
+                        continue;
+                    }
+                }
+                col_starts.push(x);
+            }
+
+            let num_cols = col_starts.len();
+            if num_cols < 2 {
+                continue;
+            }
+
+            let mut min_x = f64::MAX;
+            let mut min_y = f64::MAX;
+            let mut max_x = f64::MIN;
+            let mut max_y = f64::MIN;
+
+            let mut cells = Vec::new();
+            for (r, line) in candidate.iter().enumerate() {
+                for elem in line {
+                    min_x = min_x.min(elem.bounds.x);
+                    min_y = min_y.min(elem.bounds.y);
+                    max_x = max_x.max(elem.bounds.x + elem.bounds.width);
+                    max_y = max_y.max(elem.bounds.y + elem.bounds.height);
+
+                    let mut best_col = 0;
+                    let mut min_dist = f64::MAX;
+                    for (c_idx, &cx) in col_starts.iter().enumerate() {
+                        let dist = (elem.bounds.x - cx).abs();
+                        if dist < min_dist {
+                            min_dist = dist;
+                            best_col = c_idx;
+                        }
+                    }
+
+                    cells.push(ReconstructedCell {
+                        row: r,
+                        col: best_col,
+                        row_span: 1,
+                        col_span: 1,
+                        bounds: elem.bounds,
+                        text: elem.text.clone(),
+                        background: None,
+                    });
+
+                    table_element_ids.insert((elem.bounds.x as i64, elem.bounds.y as i64, elem.text.clone()));
+                }
+            }
+
+            let bounds = Rect::new(min_x, min_y, (max_x - min_x).max(20.0), (max_y - min_y).max(20.0));
+            reconstructed_tables.push(ReconstructedTable {
+                bounds,
+                rows: num_rows,
+                cols: num_cols,
+                cells,
+            });
+        }
+
+        let remaining = elements.iter().filter(|e| {
+            !table_element_ids.contains(&(e.bounds.x as i64, e.bounds.y as i64, e.text.clone()))
+        }).cloned().collect();
+
+        (reconstructed_tables, remaining)
     }
 
     /// Clusters adjacent text elements on the same horizontal baseline into cohesive lines

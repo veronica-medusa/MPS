@@ -4,9 +4,9 @@
 
 ## 1. Executive Status Dashboard
 
-* **Current Active Phase:** Phase 4 (Complete WPS Presentation Engine, 3-Tier SlideMaster Scene Graph, DrawingML Vector Stage, A* Smart Connectors, Morph Animator, Dual-Screen Presenter View & .pptx Pipeline) — **COMPLETED & VERIFIED**
-* **Active Sub-Task:** Phase 4 Verification Gates Sealed (67 Unit/Integration Tests Passing across workspace). Presentation Engine, DrawingML Scene Graph, A* Connectors, Morph Animator, Presenter View Cockpit, and .pptx Pipeline completely implemented, tested, and integrated.
-* **Overall Project Status:** Phases 0, 1, 2, 3, and 4 Verified & Sealed (67 Workspace Unit & Integration Tests Passing). Ready for Phase 5 / Ship.
+* **Current Active Phase:** Phase 5 Verified & Sealed (WPS PDF Toolkit, ISO 32000 Engine, XY-Cut/DBSCAN Spatial Layout Reconstructor, 11+ Annotations, Page Organizer, OCR & AES-256 Security). Ready for Phase 6 (Embedded Python Bridge, CRDT Real-Time Collaboration & AST-Grounded WPS AI).
+* **Active Sub-Task:** Phase 5 Gate Audit Complete: 73/73 Workspace Tests Passing (14 unit & integration tests in `wps-pdf`), WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified.
+* **Overall Project Status:** Phases 0, 1, 2, 3, 4, and 5 Verified & Sealed (73 Workspace Unit & Integration Tests Passing).
 * **Last Updated:** 2026-10-29
 
 ---
@@ -25,12 +25,11 @@
     * AI & Python: Iris (`#7048E8`)
 * **Verified UI Components:**
   * Unified Polymorphic Tab Bar (Writer, Sheets, Slides, PDF)
-  * Contextual Mercury Ribbon Bar (Home, Insert, Formulas 150+, Data & Pivot, WPS Smart Toolbox, View with Spotlight, AI)
-  * High-Density Formula Bar with Name Box, `fx` Function Picker, and Formula Autocomplete
-  * Interactive Sheet Tab Bar with Sheet Switcher, Add Sheet (+), and Inline Rename
-  * Hardware-Accelerated Grid Canvas with Reading View Spotlight Crosshairs and Marching-Ants Selection
-  * Live Selection Statistics in Status Bar (Sum, Average, Count, Min, Max)
-  * WPS Smart Toolbox Modal (Merge Without Data Loss, Unmerge & Fill, Range Arithmetic, Prefix/Suffix, Case Conversion, Regex Extractor, Split Sheet, Sheet Comparator, Data Hygiene)
+  * Contextual Mercury Ribbon Bar (Home, Insert, Formulas 150+, Data & Pivot, WPS Smart Toolbox, View with Spotlight, AI, PDF Annotate, PDF Edit, PDF Organize, PDF Convert, Security & Sign)
+  * Left Navigation Rail with 4 switchable tabs: Pages / Thumbnails with drag-reorder & rotate, Spatial Outline Bookmarks, Annotations & Sticky Notes list, and Search & Permanent Redact PII
+  * Multi-Mode PDF Canvas Viewport: Read View, "Edit PDF Like Word" inline paragraph reflow editing with dashed Mercury Crimson `#E03131` bounding boxes, Responsive Reflow Reading View (with 1.0x, 1.25x, 1.5x font scales), and Visual Page Organizer Grid
+  * Floating Mercury Selection Popover for fast text annotation, highlighting, sticky notes, redaction, and WPS AI explanation
+  * Instant In-Memory Cross-Engine Tab Conversion: One-click "PDF to Word", "PDF to Excel", and "PDF to PPT" appending live editable tabs without disk roundtrips
 
 ---
 
@@ -44,14 +43,14 @@
 | `crates/wps-writer` | Tested & Verified | 2,450 | 6 | RopeBuffer, AttributeMap, Paginator, Styles Cascade, Numbering, Revisions, Mail Merge, .docx Codec |
 | `crates/wps-sheets` | Tested & Verified | 2,850 | 18 | 64x64 Sparse Grid (1,048,576 x 16,384), 150+ Formula DAG, Pratt Parser, NumFmt (4-section, 1900 epoch), Pivot Cube 2D with ShowValuesAs, 60+ Smart Toolbox ops, Multi-Sheet XLSX & RFC 4180 CSV codecs |
 | `crates/wps-slides` | Tested & Verified | 3,150 | 9 | Master/Layout/Slide 3-Tier Scene Graph, 50+ DrawingML Shapes, Yellow Adjustment Handles, Boolean 2D Ops, A* Orthogonal Router, Morph Interpolator, Timeline Animator, Presenter Cockpit, PresentationML .pptx Codec |
-| `crates/wps-pdf` | Tested & Verified | 1,420 | 8 | ISO 32000, XY-Cut/DBSCAN Reconstructor, Inline Editor, OCR, Sign |
+| `crates/wps-pdf` | Tested & Verified | 3,350 | 14 | ISO 32000 Stream Parser, Recursive XY-Cut & Borderless Table Layout Reconstructor, Inline Word-Like Editor, 11+ Annotation Suite (CloudPolygon & Calibrated Tools), Page Organizer (Split, Merge, Bates, Watermark, Deflate), Pure-Rust OCR (`3 Tr`), AcroForms, FIPS 197 AES-256 Encryption & Permanent Byte-Level Redaction |
 | `crates/wps-python` | Tested & Verified | 650 | 4 | Unified Python trait, Desktop Engine, DataFrame bridge, `=PY()`, Plots |
 | `crates/wps-ai` | Tested & Verified | 580 | 4 | AST-Grounded Co-Pilot tool calls (@Writer, @Sheets, @Slides, @Pdf) |
 | `crates/wps-collab` | Tested & Verified | 480 | 3 | State-Vector CRDT Sync, Presence, File Roaming Snapshot store |
-| `crates/wps-wasm` | Tested & Verified | 1,280 | 0 | `wasm-bindgen` Writer, Sheets & Slides dispatch, DisplayList rasterizer, XLSX/CSV/PPTX export/import, Morph transition evaluator |
+| `crates/wps-wasm` | Tested & Verified | 2,450 | 0 | `wasm-bindgen` Writer, Sheets, Slides & PDF dispatch, DisplayList rasterizer, XLSX/CSV/PPTX/PDF export/import, Morph transition evaluator, layout JSON & reflow engine |
 | `src-tauri` | Scaffolded | 40 | 0 | Tauri 2.0 host, Native menus, File picker, Desktop print spooler |
 | `python-runtime` | Scaffolded | 50 | 0 | `openwps_py` package with DataFrame & plotting helpers |
-| `apps/workspace-ui` | Tested & Verified | 3,650 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Design System Shell, FormulaBar, SheetTabBar, Grid Canvas, Reading View Spotlight, Presentation Filmstrip Navigator, DrawingML Stage, PresenterViewModal Cockpit |
+| `apps/workspace-ui` | Tested & Verified | 4,950 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Shell, FormulaBar, SheetTabBar, Grid Canvas, Presentation Filmstrip & PresenterViewModal, PDF 4-Tab Left Rail, "Edit PDF Like Word" Canvas, Reflow Viewer, Selection Popover |
 
 ---
 

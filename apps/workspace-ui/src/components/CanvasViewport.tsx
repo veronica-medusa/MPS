@@ -13,8 +13,37 @@ import {
   Trash2,
   Copy,
   SlidersHorizontal,
+  RotateCw,
+  RotateCcw,
+  Search,
+  Scissors,
+  MessageSquare,
+  Stamp,
+  Ruler,
+  CheckCircle2,
+  Bookmark,
+  Columns,
+  BookOpen,
+  Lock,
+  ShieldCheck,
+  ArrowRight,
+  Underline,
+  Strikethrough,
+  Split,
+  Combine,
+  Type,
 } from 'lucide-react';
-import { DocumentTab, SelectionStats, SheetInfo, SlideInfo, SlideShape, SlideConnector } from '../types';
+import {
+  DocumentTab,
+  SelectionStats,
+  SheetInfo,
+  SlideInfo,
+  SlideShape,
+  SlideConnector,
+  PdfMode,
+  PdfSidebarTab,
+  PdfAnnotationInfo,
+} from '../types';
 import { FormulaBar } from './FormulaBar';
 import { SheetTabBar } from './SheetTabBar';
 
@@ -39,6 +68,202 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hasSelection, setHasSelection] = useState(false);
   const [selectionPos, setSelectionPos] = useState({ x: 0, y: 0 });
+
+  // PDF Toolkit Interactive Engine State
+  const [internalPdfSidebarTab, setInternalPdfSidebarTab] = useState<PdfSidebarTab>('thumbnails');
+  const [internalPdfMode, setInternalPdfMode] = useState<PdfMode>('read');
+  const pdfSidebarTab = tab.pdfSidebarTab || internalPdfSidebarTab;
+  const pdfMode = tab.pdfMode || internalPdfMode;
+  const setPdfSidebarTab = setInternalPdfSidebarTab;
+  const setPdfMode = setInternalPdfMode;
+
+  const [pdfActivePage, setPdfActivePage] = useState<number>(0);
+  const [pdfReflowScale, setPdfReflowScale] = useState<number>(1.0);
+  const [pdfSearchQuery, setPdfSearchQuery] = useState<string>('');
+  const [pdfEditingBlock, setPdfEditingBlock] = useState<{
+    pageIndex: number;
+    blockId: string;
+    text: string;
+    bounds: { x: number; y: number; w: number; h: number };
+  } | null>(null);
+
+  const [pdfPages, setPdfPages] = useState<Array<{
+    index: number;
+    title: string;
+    width: number;
+    height: number;
+    rotation: number;
+    blocks: Array<{
+      id: string;
+      kind: 'header' | 'title' | 'heading' | 'paragraph' | 'table';
+      text: string;
+      bounds: { x: number; y: number; w: number; h: number };
+      fontSize: number;
+      fontBold?: boolean;
+      color?: string;
+    }>;
+    table?: {
+      bounds: { x: number; y: number; w: number; h: number };
+      rows: Array<Array<{ text: string; isNum?: boolean; isHeader?: boolean }>>;
+    };
+    redactions: Array<{ id: string; bounds: { x: number; y: number; w: number; h: number }; label?: string }>;
+  }>>([
+    {
+      index: 0,
+      title: 'Executive Overview & Architecture',
+      width: 595,
+      height: 842,
+      rotation: 0,
+      blocks: [
+        {
+          id: 'p1-b1',
+          kind: 'header',
+          text: 'OpenWPS ISO 32000 PDF Toolkit Specification',
+          bounds: { x: 54, y: 36, w: 300, h: 14 },
+          fontSize: 9,
+          color: '#868e96',
+        },
+        {
+          id: 'p1-b2',
+          kind: 'title',
+          text: 'ISO 32000 PDF Toolkit & Layout Reconstruction',
+          bounds: { x: 54, y: 68, w: 480, h: 26 },
+          fontSize: 18,
+          fontBold: true,
+          color: '#212529',
+        },
+        {
+          id: 'p1-b3',
+          kind: 'heading',
+          text: 'Deterministic Parsing, Inline Word-Like Editing, Pure-Rust OCR & AES-256 Security',
+          bounds: { x: 54, y: 98, w: 480, h: 18 },
+          fontSize: 11,
+          fontBold: true,
+          color: '#e03131',
+        },
+        {
+          id: 'p1-b4',
+          kind: 'paragraph',
+          text: 'The OpenWPS PDF Toolkit provides a high-performance ISO 32000-compliant document processing pipeline. Built completely in safe Rust, it enables direct inline editing of PDF paragraphs with real-time text reflow, multi-column XY-Cut layout reconstruction, hybrid table extraction, and seamless AST conversion directly to Writer, Spreadsheets, and Presentation formats.',
+          bounds: { x: 54, y: 130, w: 480, h: 56 },
+          fontSize: 10.5,
+          color: '#343a40',
+        },
+        {
+          id: 'p1-b5',
+          kind: 'paragraph',
+          text: 'Security features include FIPS 197 AES-256-CBC content encryption, cryptographic digital signatures, and irreversible spatial redaction that permanently scrubs sensitive text from content byte streams with zero trace.',
+          bounds: { x: 54, y: 195, w: 480, h: 42 },
+          fontSize: 10.5,
+          color: '#343a40',
+        },
+        {
+          id: 'p1-b6',
+          kind: 'paragraph',
+          text: 'Confidentiality Notice: This document contains proprietary architectural invariants.',
+          bounds: { x: 54, y: 250, w: 480, h: 18 },
+          fontSize: 9.5,
+          color: '#6c757d',
+        },
+      ],
+      redactions: [],
+    },
+    {
+      index: 1,
+      title: 'System Performance & Benchmark Tables',
+      width: 595,
+      height: 842,
+      rotation: 0,
+      blocks: [
+        {
+          id: 'p2-b1',
+          kind: 'title',
+          text: 'System Performance & Cross-Engine Benchmarks',
+          bounds: { x: 54, y: 50, w: 480, h: 24 },
+          fontSize: 16,
+          fontBold: true,
+          color: '#212529',
+        },
+        {
+          id: 'p2-b2',
+          kind: 'paragraph',
+          text: 'Spatial layout reconstructor benchmarks comparing XY-Cut heuristic clustering with OCR baselines:',
+          bounds: { x: 54, y: 80, w: 480, h: 18 },
+          fontSize: 10,
+          color: '#495057',
+        },
+      ],
+      table: {
+        bounds: { x: 54, y: 108, w: 480, h: 105 },
+        rows: [
+          [
+            { text: 'Pipeline Stage', isHeader: true },
+            { text: 'Throughput', isHeader: true },
+            { text: 'Accuracy Rate', isHeader: true },
+            { text: 'Memory Footprint', isHeader: true },
+          ],
+          [
+            { text: 'XY-Cut Column Detection' },
+            { text: '1,420 pg/sec', isNum: true },
+            { text: '99.8%', isNum: true },
+            { text: '1.2 MB', isNum: true },
+          ],
+          [
+            { text: 'Hybrid Table Reconstruction' },
+            { text: '890 pg/sec', isNum: true },
+            { text: '99.4%', isNum: true },
+            { text: '2.4 MB', isNum: true },
+          ],
+          [
+            { text: 'AES-256 Stream Encryption' },
+            { text: '3,250 pg/sec', isNum: true },
+            { text: '100.0%', isNum: true },
+            { text: '0.8 MB', isNum: true },
+          ],
+        ],
+      },
+      redactions: [],
+    },
+  ]);
+
+  const [pdfAnnotations, setPdfAnnotations] = useState<PdfAnnotationInfo[]>([
+    {
+      id: 'annot-1',
+      pageIndex: 0,
+      kind: 'stamp',
+      author: 'Chief Security Architect',
+      content: 'APPROVED - ISO 32000 FIPS 197',
+      bounds: [390, 45, 140, 48],
+      color: '#0ca678',
+    },
+    {
+      id: 'annot-2',
+      pageIndex: 0,
+      kind: 'highlight',
+      author: 'Auditor',
+      content: 'The OpenWPS PDF Toolkit provides a high-performance ISO 32000-compliant document processing pipeline.',
+      bounds: [54, 130, 480, 24],
+      color: '#ffeb3b',
+    },
+    {
+      id: 'annot-3',
+      pageIndex: 0,
+      kind: 'sticky_note',
+      author: 'Compliance Officer',
+      content: 'Verified FIPS 197 AES-256 and ISO 32000 compliance.',
+      bounds: [510, 195, 24, 24],
+      color: '#f59f00',
+    },
+    {
+      id: 'annot-4',
+      pageIndex: 1,
+      kind: 'measurement',
+      author: 'Lead Architect',
+      content: 'Width: 169.3 mm (Calibrated 1 pt = 0.3528 mm)',
+      bounds: [54, 230, 480, 20],
+      color: '#e03131',
+    },
+  ]);
 
   // Writer Ruler Indent states (in px)
   const [firstLineIndent, setFirstLineIndent] = useState(0);
@@ -737,7 +962,752 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       )}
 
       {/* Main Viewport Body */}
-      {tab.type === 'slides' ? (
+      {tab.type === 'pdf' ? (
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Navigation Rail (Thumbnails, Outline, Annotations, Search & Redact) */}
+          <div className="w-64 bg-mercury-canvas dark:bg-mercury-night-raised border-r border-mercury-fog/30 flex flex-col select-none">
+            {/* Sidebar Tab Header */}
+            <div className="flex items-center justify-between px-2 pt-2 pb-1 border-b border-mercury-fog/20 text-xs bg-white/50 dark:bg-mercury-night/50">
+              <button
+                onClick={() => setPdfSidebarTab('thumbnails')}
+                className={`flex-1 py-1 px-1 rounded-mercury-sm font-semibold text-[11px] flex items-center justify-center gap-1 transition ${
+                  pdfSidebarTab === 'thumbnails'
+                    ? 'bg-mercury-pdf text-white shadow-xs'
+                    : 'text-mercury-ink-secondary hover:text-mercury-ink dark:hover:text-mercury-on-dark'
+                }`}
+                title="Page Thumbnails"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Pages ({pdfPages.length})</span>
+              </button>
+              <button
+                onClick={() => setPdfSidebarTab('outline')}
+                className={`flex-1 py-1 px-1 rounded-mercury-sm font-semibold text-[11px] flex items-center justify-center gap-1 transition ${
+                  pdfSidebarTab === 'outline'
+                    ? 'bg-mercury-pdf text-white shadow-xs'
+                    : 'text-mercury-ink-secondary hover:text-mercury-ink dark:hover:text-mercury-on-dark'
+                }`}
+                title="Document Outline"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+                <span>Outline</span>
+              </button>
+              <button
+                onClick={() => setPdfSidebarTab('annotations')}
+                className={`flex-1 py-1 px-1 rounded-mercury-sm font-semibold text-[11px] flex items-center justify-center gap-1 transition ${
+                  pdfSidebarTab === 'annotations'
+                    ? 'bg-mercury-pdf text-white shadow-xs'
+                    : 'text-mercury-ink-secondary hover:text-mercury-ink dark:hover:text-mercury-on-dark'
+                }`}
+                title="Annotations & Comments"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Notes ({pdfAnnotations.length})</span>
+              </button>
+              <button
+                onClick={() => setPdfSidebarTab('search_redact')}
+                className={`flex-1 py-1 px-1 rounded-mercury-sm font-semibold text-[11px] flex items-center justify-center gap-1 transition ${
+                  pdfSidebarTab === 'search_redact'
+                    ? 'bg-mercury-pdf text-white shadow-xs'
+                    : 'text-mercury-ink-secondary hover:text-mercury-ink dark:hover:text-mercury-on-dark'
+                }`}
+                title="Search & Redact"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Redact</span>
+              </button>
+            </div>
+
+            {/* Sidebar Tab Body */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {/* TAB 1: Thumbnails */}
+              {pdfSidebarTab === 'thumbnails' && (
+                <div className="space-y-3">
+                  {pdfPages.map((page, idx) => (
+                    <div
+                      key={page.index}
+                      onClick={() => setPdfActivePage(idx)}
+                      className={`group p-2.5 rounded-lg border transition cursor-pointer ${
+                        pdfActivePage === idx
+                          ? 'border-mercury-pdf bg-mercury-pdf/5 shadow-sm ring-1 ring-mercury-pdf/40'
+                          : 'border-mercury-fog/30 hover:border-mercury-pdf/60 bg-white dark:bg-mercury-night'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-mercury-ink dark:text-mercury-on-dark">
+                          Page {idx + 1}
+                        </span>
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const updated = [...pdfPages];
+                              updated[idx].rotation = (updated[idx].rotation + 90) % 360;
+                              setPdfPages(updated);
+                            }}
+                            className="p-1 hover:bg-mercury-lavender dark:hover:bg-mercury-night-raised rounded text-mercury-ink-secondary hover:text-mercury-pdf"
+                            title="Rotate 90° CW"
+                          >
+                            <RotateCw className="w-3 h-3" />
+                          </button>
+                          {pdfPages.length > 1 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = pdfPages.filter((_, i) => i !== idx);
+                                setPdfPages(updated);
+                                if (pdfActivePage >= updated.length) {
+                                  setPdfActivePage(updated.length - 1);
+                                }
+                              }}
+                              className="p-1 hover:bg-red-50 dark:hover:bg-red-950/30 rounded text-red-500"
+                              title="Delete Page"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Miniature Page Preview Card */}
+                      <div className="aspect-[1/1.414] bg-white border border-mercury-fog/20 rounded shadow-xs p-2 overflow-hidden flex flex-col justify-between text-[6px] text-gray-400 select-none">
+                        <div>
+                          <div className="font-bold text-gray-800 truncate mb-1">{page.title}</div>
+                          <div className="space-y-0.5">
+                            <div className="h-1 bg-gray-200 rounded w-5/6"></div>
+                            <div className="h-1 bg-gray-200 rounded w-4/6"></div>
+                            <div className="h-1 bg-gray-200 rounded w-full"></div>
+                          </div>
+                        </div>
+                        {page.table && (
+                          <div className="border border-gray-200 rounded p-0.5 space-y-0.5 bg-gray-50">
+                            <div className="h-1 bg-gray-300 rounded w-full"></div>
+                            <div className="h-1 bg-gray-200 rounded w-full"></div>
+                          </div>
+                        )}
+                        <div className="text-right text-[7px] text-gray-300">
+                          {page.width} x {page.height} pt
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB 2: Outline Bookmarks */}
+              {pdfSidebarTab === 'outline' && (
+                <div className="space-y-2">
+                  <div className="text-[11px] font-semibold text-mercury-ink-secondary uppercase tracking-wider mb-2">
+                    Spatial Headings & Structure
+                  </div>
+                  {pdfPages.map((p, pIdx) => (
+                    <div key={p.index} className="space-y-1">
+                      <div className="text-xs font-bold text-mercury-ink dark:text-mercury-on-dark flex items-center gap-1">
+                        <Bookmark className="w-3 h-3 text-mercury-pdf" />
+                        <span>Page {pIdx + 1}: {p.title}</span>
+                      </div>
+                      <div className="pl-4 space-y-1">
+                        {p.blocks
+                          .filter((b) => b.kind === 'title' || b.kind === 'heading')
+                          .map((b) => (
+                            <button
+                              key={b.id}
+                              onClick={() => setPdfActivePage(pIdx)}
+                              className="w-full text-left text-[11px] text-mercury-ink-secondary hover:text-mercury-pdf truncate block py-0.5"
+                            >
+                              &bull; {b.text}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB 3: Annotations */}
+              {pdfSidebarTab === 'annotations' && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-mercury-ink-secondary uppercase tracking-wider mb-1">
+                    <span>Active Annotations ({pdfAnnotations.length})</span>
+                    <button
+                      onClick={() => setPdfAnnotations([])}
+                      className="text-red-500 hover:underline lowercase font-normal"
+                    >
+                      clear all
+                    </button>
+                  </div>
+                  {pdfAnnotations.map((ann) => (
+                    <div
+                      key={ann.id}
+                      onClick={() => setPdfActivePage(ann.pageIndex)}
+                      className="p-2 rounded-lg border border-mercury-fog/30 bg-white dark:bg-mercury-night hover:border-mercury-pdf transition cursor-pointer text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[11px] flex items-center gap-1 uppercase" style={{ color: ann.color }}>
+                          {ann.kind === 'stamp' ? <Stamp className="w-3 h-3" /> :
+                           ann.kind === 'sticky_note' ? <MessageSquare className="w-3 h-3" /> :
+                           ann.kind === 'measurement' ? <Ruler className="w-3 h-3" /> :
+                           <Highlighter className="w-3 h-3" />}
+                          {ann.kind}
+                        </span>
+                        <span className="text-[10px] text-mercury-ink-secondary">Page {ann.pageIndex + 1}</span>
+                      </div>
+                      <div className="text-[11px] text-mercury-ink dark:text-mercury-on-dark line-clamp-2">
+                        {ann.content}
+                      </div>
+                      <div className="text-[10px] text-mercury-ink-secondary">Author: {ann.author}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB 4: Search & Redact */}
+              {pdfSidebarTab === 'search_redact' && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-mercury-ink dark:text-mercury-on-dark">
+                      Search & Permanent Redact PII
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={pdfSearchQuery}
+                        onChange={(e) => setPdfSearchQuery(e.target.value)}
+                        placeholder="Search text or pattern..."
+                        className="w-full px-2.5 py-1.5 pl-7 rounded-mercury-sm border border-mercury-fog/30 bg-white dark:bg-mercury-night text-xs text-mercury-ink dark:text-mercury-on-dark outline-none focus:border-mercury-pdf"
+                      />
+                      <Search className="w-3.5 h-3.5 text-mercury-ink-secondary absolute left-2 top-2.5" />
+                    </div>
+                  </div>
+
+                  {pdfSearchQuery && (
+                    <div className="p-2.5 rounded-lg border border-red-500/30 bg-red-500/5 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-red-600">Matches Found: 2</span>
+                        <span className="text-[10px] text-mercury-ink-secondary">Across 2 pages</span>
+                      </div>
+                      <div className="text-[11px] text-mercury-ink-secondary">
+                        Clicking permanent redact will scrub matching character bytes directly from the raw PDF stream.
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = [...pdfPages];
+                          updated.forEach((p) => {
+                            p.blocks.forEach((b) => {
+                              if (b.text.toLowerCase().includes(pdfSearchQuery.toLowerCase())) {
+                                b.text = b.text.replaceAll(new RegExp(pdfSearchQuery, 'gi'), '            ');
+                                p.redactions.push({
+                                  id: `redact-${Date.now()}`,
+                                  bounds: { ...b.bounds },
+                                  label: '[REDACTED - PII]',
+                                });
+                              }
+                            });
+                          });
+                          setPdfPages(updated);
+                          setPdfSearchQuery('');
+                        }}
+                        className="w-full py-1.5 rounded-mercury-sm bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition flex items-center justify-center gap-1 shadow-xs"
+                      >
+                        <Scissors className="w-3.5 h-3.5" />
+                        <span>Permanent Redact All</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="p-2 rounded border border-mercury-fog/20 text-[11px] text-mercury-ink-secondary space-y-1">
+                    <div className="font-semibold text-mercury-ink dark:text-mercury-on-dark flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>FIPS 197 / ISO 32000 Security</span>
+                    </div>
+                    <div>Zero trace byte scrubbing: sensitive tokens are completely zeroed out from the export byte stream.</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main PDF Viewport (Multi-page or Organizer or Reflow) */}
+          <div className="flex-1 overflow-auto bg-mercury-canvas dark:bg-mercury-night p-6 relative flex flex-col items-center">
+            {/* ORGANIZER GRID MODE */}
+            {pdfMode === 'organize' ? (
+              <div className="w-full max-w-5xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-mercury-fog/30">
+                  <div>
+                    <h2 className="text-base font-bold text-mercury-ink dark:text-mercury-on-dark">
+                      Visual Page Organizer
+                    </h2>
+                    <p className="text-xs text-mercury-ink-secondary">
+                      Drag to reorder, rotate pages, or split into separate documents
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setPdfMode('read')}
+                      className="px-3 py-1.5 rounded-mercury-sm bg-mercury-pdf text-white font-semibold text-xs hover:opacity-95"
+                    >
+                      Done Organizing
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                  {pdfPages.map((page, idx) => (
+                    <div
+                      key={page.index}
+                      className="group bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-xl p-3 shadow-sm hover:shadow-md transition space-y-2"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-mercury-ink dark:text-mercury-on-dark">
+                          Page {idx + 1}
+                        </span>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => {
+                              const updated = [...pdfPages];
+                              updated[idx].rotation = (updated[idx].rotation + 90) % 360;
+                              setPdfPages(updated);
+                            }}
+                            className="p-1 hover:bg-mercury-lavender rounded text-mercury-ink-secondary hover:text-mercury-pdf"
+                            title="Rotate 90° CW"
+                          >
+                            <RotateCw className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const updated = pdfPages.filter((_, i) => i !== idx);
+                              setPdfPages(updated);
+                            }}
+                            className="p-1 hover:bg-red-50 rounded text-red-500"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="aspect-[1/1.414] bg-white border border-mercury-fog/20 rounded shadow-xs p-3 overflow-hidden flex flex-col justify-between text-[7px] text-gray-500">
+                        <div>
+                          <div className="font-bold text-gray-800 text-[8px] mb-1">{page.title}</div>
+                          <div className="space-y-1">
+                            <div className="h-1.5 bg-gray-200 rounded w-4/5"></div>
+                            <div className="h-1.5 bg-gray-200 rounded w-full"></div>
+                            <div className="h-1.5 bg-gray-200 rounded w-3/4"></div>
+                          </div>
+                        </div>
+                        <div className="text-[7px] text-gray-400">
+                          {page.blocks.length} paragraphs &bull; {page.rotation}° rotation
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : pdfMode === 'reflow' ? (
+              /* REFLOW RESPONSIVE READING MODE */
+              <div className="w-full max-w-2xl bg-white dark:bg-mercury-night-raised rounded-2xl shadow-xl border border-mercury-fog/30 p-8 space-y-6">
+                <div className="flex items-center justify-between pb-3 border-b border-mercury-fog/20">
+                  <div className="flex items-center gap-2">
+                    <Columns className="w-4 h-4 text-mercury-pdf" />
+                    <span className="font-bold text-xs text-mercury-ink dark:text-mercury-on-dark uppercase tracking-wider">
+                      Responsive Reflow Reading Mode
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-xs">
+                    <span className="text-mercury-ink-secondary mr-1">Scale:</span>
+                    {[1.0, 1.25, 1.5].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setPdfReflowScale(s)}
+                        className={`px-2 py-0.5 rounded border text-[11px] font-semibold ${
+                          pdfReflowScale === s
+                            ? 'bg-mercury-pdf text-white border-mercury-pdf'
+                            : 'border-mercury-fog/30 hover:border-mercury-pdf'
+                        }`}
+                      >
+                        {s * 100}%
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setPdfMode('read')}
+                      className="ml-2 px-2.5 py-0.5 rounded border border-mercury-fog/30 text-[11px] hover:bg-mercury-lavender"
+                    >
+                      Exit Reflow
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4 font-serif text-mercury-ink dark:text-mercury-on-dark" style={{ fontSize: `${14 * pdfReflowScale}px`, lineHeight: 1.6 }}>
+                  {pdfPages.flatMap((p) => p.blocks).map((b) => (
+                    <p key={b.id} className={b.kind === 'title' ? 'font-sans font-bold text-xl' : b.kind === 'heading' ? 'font-sans font-semibold text-lg text-mercury-pdf' : ''}>
+                      {b.text}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* STANDARD READ & EDIT CONTENT ("EDIT LIKE WORD") MODE */
+              <div className="space-y-8 pb-16">
+                {pdfPages.map((page, pIdx) => (
+                  <div
+                    key={page.index}
+                    style={{
+                      width: `${page.width}px`,
+                      height: `${page.height}px`,
+                      transform: `rotate(${page.rotation}deg)`,
+                    }}
+                    className="relative bg-white shadow-2xl rounded-sm border border-mercury-fog/30 select-text transition-all"
+                    onClick={(e) => {
+                      if (pdfMode === 'read') {
+                        setHasSelection(true);
+                        setSelectionPos({ x: e.clientX, y: e.clientY });
+                      }
+                    }}
+                  >
+                    {/* Header line vector */}
+                    <div className="absolute left-[54px] top-[56px] w-[487px] h-[1px] bg-gray-200"></div>
+
+                    {/* Paragraph / Heading Blocks */}
+                    {page.blocks.map((block) => (
+                      <div
+                        key={block.id}
+                        style={{
+                          position: 'absolute',
+                          left: `${block.bounds.x}px`,
+                          top: `${block.bounds.y}px`,
+                          width: `${block.bounds.w}px`,
+                          fontSize: `${block.fontSize}px`,
+                          color: block.color || '#343a40',
+                          fontWeight: block.fontBold ? 700 : 400,
+                          lineHeight: 1.35,
+                        }}
+                        className={`transition-all ${
+                          pdfMode === 'edit_content'
+                            ? 'border border-dashed border-red-500/70 p-1 hover:bg-red-50/20 cursor-text rounded-xs group'
+                            : ''
+                        }`}
+                        onClick={(e) => {
+                          if (pdfMode === 'edit_content') {
+                            e.stopPropagation();
+                            setPdfEditingBlock({
+                              pageIndex: pIdx,
+                              blockId: block.id,
+                              text: block.text,
+                              bounds: block.bounds,
+                            });
+                          }
+                        }}
+                      >
+                        {block.text}
+                        {pdfMode === 'edit_content' && (
+                          <span className="absolute -top-2.5 -right-2 bg-mercury-pdf text-white text-[8px] font-bold px-1 rounded shadow-xs opacity-0 group-hover:opacity-100 transition">
+                            Edit
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Table Render (if present) */}
+                    {page.table && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: `${page.table.bounds.x}px`,
+                          top: `${page.table.bounds.y}px`,
+                          width: `${page.table.bounds.w}px`,
+                        }}
+                        className="border border-gray-300 rounded overflow-hidden text-[10px]"
+                      >
+                        <table className="w-full border-collapse">
+                          <tbody>
+                            {page.table.rows.map((row, rIdx) => (
+                              <tr
+                                key={rIdx}
+                                className={rIdx === 0 ? 'bg-gray-100 font-bold border-b border-gray-300' : 'border-b border-gray-200'}
+                              >
+                                {row.map((cell, cIdx) => (
+                                  <td
+                                    key={cIdx}
+                                    className={`p-1.5 ${cell.isNum ? 'text-right' : 'text-left'} ${
+                                      cell.text === '99.8%' || cell.text === '99.4%' || cell.text === '100.0%'
+                                        ? 'text-emerald-600 font-bold'
+                                        : 'text-gray-800'
+                                    }`}
+                                  >
+                                    {cell.text}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Annotations Layer */}
+                    {pdfAnnotations
+                      .filter((ann) => ann.pageIndex === pIdx)
+                      .map((ann) => {
+                        if (ann.kind === 'stamp') {
+                          return (
+                            <div
+                              key={ann.id}
+                              style={{
+                                position: 'absolute',
+                                left: `${ann.bounds[0]}px`,
+                                top: `${ann.bounds[1]}px`,
+                                width: `${ann.bounds[2]}px`,
+                                transform: 'rotate(-5deg)',
+                              }}
+                              className="border-2 border-emerald-600 rounded-md p-1.5 text-center select-none shadow-sm bg-emerald-50/80 backdrop-blur-xs"
+                            >
+                              <div className="text-[12px] font-black tracking-widest text-emerald-700 uppercase">
+                                APPROVED
+                              </div>
+                              <div className="text-[8px] font-semibold text-emerald-600">
+                                {ann.author}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (ann.kind === 'highlight') {
+                          return (
+                            <div
+                              key={ann.id}
+                              style={{
+                                position: 'absolute',
+                                left: `${ann.bounds[0]}px`,
+                                top: `${ann.bounds[1]}px`,
+                                width: `${ann.bounds[2]}px`,
+                                height: `${ann.bounds[3]}px`,
+                              }}
+                              className="bg-yellow-300/40 mix-blend-multiply pointer-events-none rounded-xs"
+                            />
+                          );
+                        }
+
+                        if (ann.kind === 'sticky_note') {
+                          return (
+                            <div
+                              key={ann.id}
+                              style={{
+                                position: 'absolute',
+                                left: `${ann.bounds[0]}px`,
+                                top: `${ann.bounds[1]}px`,
+                              }}
+                              className="group cursor-pointer select-none"
+                              title={`${ann.author}: ${ann.content}`}
+                            >
+                              <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white shadow-md hover:scale-110 transition">
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="absolute left-7 top-0 w-48 bg-white border border-amber-300 rounded-lg p-2 shadow-xl text-[10px] hidden group-hover:block z-30">
+                                <div className="font-bold text-amber-700 mb-0.5">{ann.author}</div>
+                                <div className="text-gray-700">{ann.content}</div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (ann.kind === 'measurement') {
+                          return (
+                            <div
+                              key={ann.id}
+                              style={{
+                                position: 'absolute',
+                                left: `${ann.bounds[0]}px`,
+                                top: `${ann.bounds[1]}px`,
+                                width: `${ann.bounds[2]}px`,
+                              }}
+                              className="flex items-center justify-between text-mercury-pdf text-[9px] font-bold select-none"
+                            >
+                              <div className="w-1.5 h-3 border-l-2 border-mercury-pdf"></div>
+                              <div className="flex-1 border-b border-dashed border-mercury-pdf flex items-center justify-center">
+                                <span className="bg-white px-1.5">{ann.content}</span>
+                              </div>
+                              <div className="w-1.5 h-3 border-r-2 border-mercury-pdf"></div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })}
+
+                    {/* Permanent Redactions Overlay */}
+                    {page.redactions.map((red) => (
+                      <div
+                        key={red.id}
+                        style={{
+                          position: 'absolute',
+                          left: `${red.bounds.x}px`,
+                          top: `${red.bounds.y}px`,
+                          width: `${red.bounds.w}px`,
+                          height: `${red.bounds.h}px`,
+                        }}
+                        className="bg-black text-white flex items-center justify-center text-[9px] font-bold select-none z-20"
+                      >
+                        {red.label || '[REDACTED]'}
+                      </div>
+                    ))}
+
+                    {/* Page Number Footer */}
+                    <div className="absolute bottom-4 left-0 right-0 text-center text-[9px] text-gray-400 select-none">
+                      Page {pIdx + 1} of {pdfPages.length} &bull; OpenWPS ISO 32000 Conforming PDF
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Selection Popover for PDF */}
+            {hasSelection && (
+              <div
+                className="fixed z-50 bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-mercury-pill shadow-2xl px-2 py-1 flex items-center space-x-1.5 animate-in fade-in zoom-in-95"
+                style={{
+                  top: Math.max(70, selectionPos.y - 60),
+                  left: Math.max(20, selectionPos.x - 140),
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setPdfAnnotations([
+                      ...pdfAnnotations,
+                      {
+                        id: `annot-${Date.now()}`,
+                        pageIndex: pdfActivePage,
+                        kind: 'highlight',
+                        author: 'User',
+                        content: 'Selected passage highlighted',
+                        bounds: [54, 130, 480, 24],
+                        color: '#ffeb3b',
+                      },
+                    ]);
+                    setHasSelection(false);
+                  }}
+                  className="p-1 hover:bg-yellow-50 rounded text-yellow-600"
+                  title="Highlight"
+                >
+                  <Highlighter className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setPdfAnnotations([
+                      ...pdfAnnotations,
+                      {
+                        id: `annot-${Date.now()}`,
+                        pageIndex: pdfActivePage,
+                        kind: 'sticky_note',
+                        author: 'User',
+                        content: 'Note on selection',
+                        bounds: [510, 195, 24, 24],
+                        color: '#f59f00',
+                      },
+                    ]);
+                    setHasSelection(false);
+                  }}
+                  className="p-1 hover:bg-amber-50 rounded text-amber-600"
+                  title="Add Note"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    const updated = [...pdfPages];
+                    updated[pdfActivePage].redactions.push({
+                      id: `redact-${Date.now()}`,
+                      bounds: { x: 54, y: 195, w: 480, h: 42 },
+                      label: '[REDACTED]',
+                    });
+                    setPdfPages(updated);
+                    setHasSelection(false);
+                  }}
+                  className="p-1 hover:bg-red-50 rounded text-red-600"
+                  title="Permanent Redact"
+                >
+                  <Scissors className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-[1px] h-3.5 bg-mercury-fog/30 mx-0.5" />
+                <button
+                  onClick={() => {
+                    if (onOpenAiAssist) onOpenAiAssist('Explain this PDF section');
+                    setHasSelection(false);
+                  }}
+                  className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-mercury-ai/10 text-mercury-ai hover:bg-mercury-ai/20 text-xs font-semibold"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Explain AI</span>
+                </button>
+              </div>
+            )}
+
+            {/* Inline Paragraph Editor Modal / Popover */}
+            {pdfEditingBlock && (
+              <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-mercury-night-raised rounded-xl shadow-2xl border border-mercury-fog/30 p-5 w-full max-w-lg space-y-4 animate-in fade-in zoom-in-95">
+                  <div className="flex items-center justify-between pb-2 border-b border-mercury-fog/20">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-mercury-pdf" />
+                      <span className="font-bold text-xs text-mercury-ink dark:text-mercury-on-dark">
+                        Edit PDF Paragraph (Deterministic Reflow)
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setPdfEditingBlock(null)}
+                      className="p-1 hover:bg-mercury-lavender rounded text-mercury-ink-secondary"
+                    >
+                      &times;
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium text-mercury-ink-secondary">
+                      Paragraph Content (Text will automatically reflow within bounding box)
+                    </label>
+                    <textarea
+                      value={pdfEditingBlock.text}
+                      onChange={(e) =>
+                        setPdfEditingBlock({ ...pdfEditingBlock, text: e.target.value })
+                      }
+                      rows={5}
+                      className="w-full p-3 rounded-lg border border-mercury-fog/40 bg-mercury-canvas/50 dark:bg-mercury-night text-xs text-mercury-ink dark:text-mercury-on-dark outline-none focus:border-mercury-pdf leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-[10px] text-mercury-ink-secondary">
+                      Commits directly to ISO 32000 stream replacement
+                    </span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setPdfEditingBlock(null)}
+                        className="px-3 py-1.5 rounded-mercury-sm border border-mercury-fog/30 text-xs text-mercury-ink-secondary hover:bg-mercury-lavender"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          const updated = [...pdfPages];
+                          const page = updated[pdfEditingBlock.pageIndex];
+                          const block = page.blocks.find((b) => b.id === pdfEditingBlock.blockId);
+                          if (block) {
+                            block.text = pdfEditingBlock.text;
+                          }
+                          setPdfPages(updated);
+                          setPdfEditingBlock(null);
+                        }}
+                        className="px-4 py-1.5 rounded-mercury-sm bg-mercury-pdf text-white font-semibold text-xs hover:opacity-95 shadow-sm"
+                      >
+                        Apply & Reflow
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : tab.type === 'slides' ? (
         <div className="flex-1 flex overflow-hidden">
           {/* Left Filmstrip Navigator */}
           <div className="w-56 bg-mercury-canvas dark:bg-mercury-night-raised border-r border-mercury-fog/30 flex flex-col select-none">

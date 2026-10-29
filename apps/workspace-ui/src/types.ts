@@ -23,6 +23,30 @@ export interface SelectionStats {
   max: number;
 }
 
+export type PdfSidebarTab = 'thumbnails' | 'outline' | 'annotations' | 'search_redact';
+
+export type PdfMode = 'read' | 'edit_content' | 'annotate' | 'reflow' | 'organize';
+
+export interface PdfPageInfo {
+  index: number;
+  width: number;
+  height: number;
+  rotation: number;
+  textElementsCount: number;
+  vectorPathsCount: number;
+  annotationCount: number;
+}
+
+export interface PdfAnnotationInfo {
+  id: string;
+  pageIndex: number;
+  kind: string;
+  author: string;
+  content: string;
+  bounds: [number, number, number, number];
+  color: string;
+}
+
 export interface DocumentTab {
   id: string;
   title: string;
@@ -48,6 +72,12 @@ export interface DocumentTab {
   freezePane?: boolean;
   selectionSummary?: string;
   stats?: SelectionStats;
+  pdfMode?: PdfMode;
+  pdfSidebarTab?: PdfSidebarTab;
+  pdfSearchQuery?: string;
+  pdfWatermark?: string;
+  pdfBatesPrefix?: string;
+  pdfIsEncrypted?: boolean;
 }
 
 export type RibbonMode = 'classic' | 'compact';
@@ -67,6 +97,7 @@ export type ActiveRibbonTab =
   | 'pdf_edit'
   | 'pdf_organize'
   | 'pdf_convert'
+  | 'pdf_protect'
   | 'review'
   | 'view'
   | 'ai';

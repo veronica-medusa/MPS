@@ -13,10 +13,10 @@ use wps_core::geometry::{Point, Rect};
 use wps_render::{DisplayList, DrawCommand};
 
 pub use annotations::{Annotation, AnnotationKind, ShapeType, StampType};
-pub use converter::PdfConverter;
-pub use editor::PdfEditSession;
-pub use ocr::{OcrEngine, OcrWord};
-pub use organizer::{BatesPosition, PageOrganizer};
+pub use converter::{PdfConverter, PdfToExcelMode};
+pub use editor::{PdfEditSession, reflow_page_to_stream};
+pub use ocr::{OcrEngine, OcrMode, OcrOptions, OcrPageResult, OcrWord};
+pub use organizer::{BatesPosition, CompressionLevel, PageOrganizer, SplitMode};
 pub use parser::{PdfError, PdfMetadata, PdfObject, PdfPage, PdfParser, PdfTextElement, PdfVectorPath, PathOp};
 pub use security::{DigitalSignature, FormField, FormFieldKind, PdfPermissions, PdfSecurity};
 pub use spatial::{BlockKind, ReconstructedBlock, ReconstructedCell, ReconstructedTable, SpatialPageLayout, SpatialReconstructor};
@@ -44,7 +44,20 @@ impl PdfDocument {
     }
 
     pub fn load_from_bytes(data: &[u8]) -> Result<Self, PdfError> {
-        let mut parser = PdfParser::new(data);
+        Self::load_with_password(data, "")
+    }
+
+    pub fn load_with_password(data: &[u8], password: &str) -> Result<Self, PdfError> {
+        let decrypted_bytes = if data.windows(8).any(|w| w == b"/Encrypt") {
+            if password.is_empty() {
+                return Err(PdfError::Unsupported("Password required to decrypt PDF".to_string()));
+            }
+            PdfSecurity::decrypt_aes256(data, password)?
+        } else {
+            data.to_vec()
+        };
+
+        let mut parser = PdfParser::new(&decrypted_bytes);
         let pages = parser.parse()?;
 
         Ok(Self {
@@ -120,8 +133,40 @@ impl PdfDocument {
         PdfConverter::to_sheets_matrix(&self.pages)
     }
 
+    pub fn to_sheets_workbook(&self, mode: PdfToExcelMode) -> wps_sheets::Workbook {
+        PdfConverter::to_sheets_workbook(&self.title, &self.pages, mode)
+    }
+
     pub fn to_slides_deck(&self) -> wps_slides::scene_graph::PresentationDeck {
         PdfConverter::to_slides_deck(&self.title, &self.pages)
+    }
+
+    /// Encrypts the PDF document using AES-256 standard encryption
+    pub fn encrypt(&self, user_password: &str, owner_password: &str) -> Vec<u8> {
+        let raw_bytes = self.export_to_bytes();
+        PdfSecurity::encrypt_aes256(&raw_bytes, user_password, owner_password, &self.permissions)
+    }
+
+    /// Splits document into multiple chunk PDFs
+    pub fn split(&self, mode: SplitMode) -> Vec<(String, PdfDocument)> {
+        let chunks = PageOrganizer::split_pdf(&self.pages, mode);
+        chunks.into_iter().map(|(name, pages)| {
+            let mut doc = PdfDocument::new(&name);
+            doc.pages = pages;
+            (name, doc)
+        }).collect()
+    }
+
+    /// Compresses all page streams in the document
+    pub fn compress(&mut self, level: CompressionLevel) -> usize {
+        PageOrganizer::compress_pages(&mut self.pages, level)
+    }
+
+    /// Irreversibly redacts an area on a specific page
+    pub fn redact_region(&mut self, page_idx: usize, rect: Rect, label: Option<&str>) {
+        if let Some(page) = self.pages.get_mut(page_idx) {
+            PdfSecurity::redact_region(page, rect, label);
+        }
     }
 
     /// Serializes the PDF document into a standard ISO 32000 PDF file byte stream
@@ -160,12 +205,43 @@ impl PdfDocument {
 
             // Content Stream Object
             offsets.push(out.len());
-            let stream_len = page.raw_stream.len();
+            let stream_data = if page.raw_stream.is_empty() {
+                let mut s = Vec::new();
+                for path in &page.vector_paths {
+                    if let Some(fill) = path.fill_color {
+                        let r = fill.r as f64 / 255.0;
+                        let g = fill.g as f64 / 255.0;
+                        let b = fill.b as f64 / 255.0;
+                        let pdf_y = page.height - path.bounds.y - path.bounds.height;
+                        s.extend_from_slice(format!("{:.3} {:.3} {:.3} rg\n{:.2} {:.2} {:.2} {:.2} re\nf\n", r, g, b, path.bounds.x, pdf_y, path.bounds.width, path.bounds.height).as_bytes());
+                    }
+                    if let Some(stroke) = path.stroke_color {
+                        let r = stroke.r as f64 / 255.0;
+                        let g = stroke.g as f64 / 255.0;
+                        let b = stroke.b as f64 / 255.0;
+                        let pdf_y = page.height - path.bounds.y - path.bounds.height;
+                        s.extend_from_slice(format!("{:.3} {:.3} {:.3} RG\n{:.2} w\n{:.2} {:.2} {:.2} {:.2} re\nS\n", r, g, b, path.line_width.max(1.0), path.bounds.x, pdf_y, path.bounds.width, path.bounds.height).as_bytes());
+                    }
+                }
+                for elem in &page.text_elements {
+                    let pdf_y = page.height - elem.bounds.y - elem.bounds.height;
+                    let safe_text = elem.text.replace('\\', "\\\\").replace('(', "\\(").replace(')', "\\)");
+                    let r = elem.color.r as f64 / 255.0;
+                    let g = elem.color.g as f64 / 255.0;
+                    let b = elem.color.b as f64 / 255.0;
+                    s.extend_from_slice(format!("BT\n/F1 {:.2} Tf\n{:.3} {:.3} {:.3} rg\n1 0 0 1 {:.2} {:.2} Tm\n({}) Tj\nET\n", elem.font_size, r, g, b, elem.bounds.x, pdf_y, safe_text).as_bytes());
+                }
+                s
+            } else {
+                page.raw_stream.clone()
+            };
+
+            let stream_len = stream_data.len();
             out.extend_from_slice(format!(
                 "{} 0 obj\n<< /Length {} >>\nstream\n",
                 stream_obj_id, stream_len
             ).as_bytes());
-            out.extend_from_slice(&page.raw_stream);
+            out.extend_from_slice(&stream_data);
             out.extend_from_slice(b"\nendstream\nendobj\n");
         }
 

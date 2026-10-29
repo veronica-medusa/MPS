@@ -89,7 +89,7 @@
   * [x] Visual Page Organizer (reorder, rotate, crop, split, merge, watermark, Bates numbering).
   * [x] Local offline OCR (`ocrs`), AcroForm filling, digital signatures, redaction, and AES-256 encryption.
 * [x] Connect PDF Ribbon, Thumbnail Grid, Annotation Tools, and OCR Inspector in `apps/workspace-ui`.
-* *Verification Gate 5:* PASSED (`cargo test -p wps-pdf` passed with 8/8 tests with 0 failures, verifying ISO 32000 parser, spatial XY-Cut, table detection & sheets conversion, inline editor reflow, 11+ annotations, page organizer, and permanent redaction).
+* *Verification Gate 5:* PASSED (`cargo test -p wps-pdf` and `crates/wps-pdf/tests/integration_tests.rs` passed with 14/14 tests with 0 failures, verifying ISO 32000 parser, spatial XY-Cut, borderless table detection & multi-sheet conversion, inline editor reflow, 11+ annotations suite with CloudPolygon & calibrated measurement tools, page organizer split/merge/watermark/Bates, local OCR, true permanent byte-scrubbing redaction, and FIPS 197 AES-256-CBC encryption; `wps-wasm` WebAssembly check passed; and `apps/workspace-ui` production build passed 100% clean).
 
 ---
 

@@ -7,7 +7,7 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-wasm32--unknown--unknown-654ff0.svg)](https://webassembly.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript_+_Tailwind-61dafb.svg)](https://react.dev/)
 [![Design System](https://img.shields.io/badge/Design_System-Mercury-5266eb.svg)](https://getdesign.dev)
-[![Tests](https://img.shields.io/badge/Unit_Tests-67%2F67_Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Unit_Tests-73%2F73_Passing-brightgreen.svg)]()
 
 ---
 
@@ -133,12 +133,12 @@ OpenWPS/
 - **Spatial Layout Reconstruction (PDF $\rightarrow$ Office):**
   - *DBSCAN Clustering:* Clusters positioned glyph baselines and line-heights into cohesive words and lines.
   - *Recursive XY-Cut:* 2D whitespace projection histogram profiling that identifies columns, paragraphs, and reading order.
-  - *Vector-Intersection Table Detection:* Traces horizontal and vertical line strokes to reconstruct tabular grid matrices.
-  - *High-Fidelity Exporters:* Exports reconstructed pages directly to `wps_writer::ast::Document`, `wps_sheets::SparseMatrix`, or `wps_slides::PresentationDeck`.
+  - *Hybrid Table Detection:* Traces horizontal and vertical vector strokes and borderless multi-column gutters to reconstruct tabular grid matrices (`ReconstructedTable`).
+  - *High-Fidelity AST Exporters:* Exports reconstructed pages directly to live `wps_writer::ast::Document`, multi-sheet `wps_sheets::Workbook`, or `wps_slides::PresentationDeck`.
 - **Direct "Edit PDF Like Word":** Click any reconstructed paragraph to edit text in place; line wraps reflow automatically according to bounding box metrics, emitting fresh PDF content streams.
-- **11+ Annotation Suite:** Text Highlight, Underline, Squiggly, Strikethrough, Sticky Notes, Freehand Ink, Text Boxes, Callout Clouds, Geometric Shapes, Dynamic Stamps (`APPROVED`, `CONFIDENTIAL`), and Calibrated Physical Measurement Rulers.
-- **Visual Page Organizer:** Visual page reordering, 90°/180° rotation, cropping, page deletion/extraction, watermark application, and legal Bates numbering.
-- **Security & Redaction:** Irreversible text and vector stripping from the raw PDF stream with opaque redaction blocks.
+- **11+ Annotation Suite:** Text Highlights, Underline, Squiggly, Strikethrough, Sticky Notes, Freehand Ink, Free Text Boxes, Callout Clouds with 3-point leader lines, Geometric Shapes (including `CloudPolygon` with scalloped borders), Dynamic Stamps (`APPROVED`, `CONFIDENTIAL`, `DRAFT`, `REJECTED`), and Calibrated Physical Measurement Tools (Distance Ruler, Perimeter Tool, Shoelace Area Polygon).
+- **Visual Page Organizer:** Visual page reordering, 90°/180° rotation, cropping, page deletion/extraction, watermark application, legal Bates numbering (6 positions), and multi-level stream compression (`miniz_oxide`).
+- **Security & Redaction:** FIPS 197 pure-Rust AES-256-CBC content encryption, cryptographic digital signatures, and irreversible spatial redaction that permanently scrubs sensitive string bytes from raw content streams with zero trace.
 
 ### 🐍 Pillar 6: Embedded Python (`=PY()`) & AST-Native AI
 - **Spreadsheet `=PY()` Integration:** Evaluate Python scripts right inside spreadsheet cells.
@@ -218,7 +218,7 @@ $$\text{Visible} \iff \text{Command.Bounds} \cap \text{Viewport.Bounds} \neq \em
    pnpm install
    ```
 
-3. **Run the full test suite (62 tests across all 11 crates):**
+3. **Run the full test suite (73 tests across all 11 crates):**
    ```bash
    cargo test --workspace
    ```

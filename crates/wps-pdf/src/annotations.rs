@@ -46,6 +46,7 @@ pub enum AnnotationKind {
         stroke_color: Color,
         fill_color: Option<Color>,
         stroke_width: f64,
+        points: Vec<Point>,
     },
     Stamp {
         stamp_type: StampType,
@@ -58,6 +59,16 @@ pub enum AnnotationKind {
         scale_ratio: f64, // e.g. 1 pt = 0.352778 mm
         unit: String,     // "mm", "cm", "in"
     },
+    Perimeter {
+        points: Vec<Point>,
+        scale_ratio: f64,
+        unit: String,
+    },
+    AreaPolygon {
+        points: Vec<Point>,
+        scale_ratio: f64,
+        unit: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -66,6 +77,9 @@ pub enum ShapeType {
     Ellipse,
     Line,
     Arrow,
+    Polygon,
+    CloudPolygon,
+    PolyLine,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -142,6 +156,142 @@ impl Annotation {
             kind: AnnotationKind::Measurement {
                 start,
                 end,
+                scale_ratio,
+                unit: unit.to_string(),
+            },
+            created_at_sec: 0,
+        }
+    }
+
+    pub fn callout(id: &str, page_index: usize, anchor_point: Point, box_rect: Rect, text: &str, color: Color) -> Self {
+        let min_x = anchor_point.x.min(box_rect.x);
+        let min_y = anchor_point.y.min(box_rect.y);
+        let max_x = anchor_point.x.max(box_rect.x + box_rect.width);
+        let max_y = anchor_point.y.max(box_rect.y + box_rect.height);
+
+        Self {
+            id: id.to_string(),
+            page_index,
+            bounds: Rect::new(min_x, min_y, max_x - min_x, max_y - min_y),
+            kind: AnnotationKind::Callout {
+                text: text.to_string(),
+                anchor_point,
+                box_rect,
+                color,
+            },
+            created_at_sec: 0,
+        }
+    }
+
+    pub fn free_text(id: &str, page_index: usize, bounds: Rect, text: &str, font_size: f64, text_color: Color, background: Color, border_color: Color) -> Self {
+        Self {
+            id: id.to_string(),
+            page_index,
+            bounds,
+            kind: AnnotationKind::TextBox {
+                text: text.to_string(),
+                font_size,
+                text_color,
+                background,
+                border_color,
+            },
+            created_at_sec: 0,
+        }
+    }
+
+    pub fn cloud_polygon(id: &str, page_index: usize, points: Vec<Point>, stroke_color: Color, fill_color: Option<Color>) -> Self {
+        let mut min_x = f64::MAX;
+        let mut min_y = f64::MAX;
+        let mut max_x = f64::MIN;
+        let mut max_y = f64::MIN;
+        for p in &points {
+            min_x = min_x.min(p.x);
+            min_y = min_y.min(p.y);
+            max_x = max_x.max(p.x);
+            max_y = max_y.max(p.y);
+        }
+        let bounds = if points.is_empty() {
+            Rect::new(0.0, 0.0, 10.0, 10.0)
+        } else {
+            Rect::new(min_x, min_y, (max_x - min_x).max(10.0), (max_y - min_y).max(10.0))
+        };
+
+        Self {
+            id: id.to_string(),
+            page_index,
+            bounds,
+            kind: AnnotationKind::Shape {
+                shape_type: ShapeType::CloudPolygon,
+                stroke_color,
+                fill_color,
+                stroke_width: 1.5,
+                points,
+            },
+            created_at_sec: 0,
+        }
+    }
+
+    pub fn shape(id: &str, page_index: usize, shape_type: ShapeType, bounds: Rect, stroke_color: Color, fill_color: Option<Color>, stroke_width: f64, points: Vec<Point>) -> Self {
+        Self {
+            id: id.to_string(),
+            page_index,
+            bounds,
+            kind: AnnotationKind::Shape {
+                shape_type,
+                stroke_color,
+                fill_color,
+                stroke_width,
+                points,
+            },
+            created_at_sec: 0,
+        }
+    }
+
+    pub fn perimeter(id: &str, page_index: usize, points: Vec<Point>, scale_ratio: f64, unit: &str) -> Self {
+        let mut min_x = f64::MAX;
+        let mut min_y = f64::MAX;
+        let mut max_x = f64::MIN;
+        let mut max_y = f64::MIN;
+        for p in &points {
+            min_x = min_x.min(p.x);
+            min_y = min_y.min(p.y);
+            max_x = max_x.max(p.x);
+            max_y = max_y.max(p.y);
+        }
+        let bounds = Rect::new(min_x, min_y, (max_x - min_x).max(10.0), (max_y - min_y).max(10.0));
+
+        Self {
+            id: id.to_string(),
+            page_index,
+            bounds,
+            kind: AnnotationKind::Perimeter {
+                points,
+                scale_ratio,
+                unit: unit.to_string(),
+            },
+            created_at_sec: 0,
+        }
+    }
+
+    pub fn area_polygon(id: &str, page_index: usize, points: Vec<Point>, scale_ratio: f64, unit: &str) -> Self {
+        let mut min_x = f64::MAX;
+        let mut min_y = f64::MAX;
+        let mut max_x = f64::MIN;
+        let mut max_y = f64::MIN;
+        for p in &points {
+            min_x = min_x.min(p.x);
+            min_y = min_y.min(p.y);
+            max_x = max_x.max(p.x);
+            max_y = max_y.max(p.y);
+        }
+        let bounds = Rect::new(min_x, min_y, (max_x - min_x).max(10.0), (max_y - min_y).max(10.0));
+
+        Self {
+            id: id.to_string(),
+            page_index,
+            bounds,
+            kind: AnnotationKind::AreaPolygon {
+                points,
                 scale_ratio,
                 unit: unit.to_string(),
             },
@@ -269,7 +419,7 @@ impl Annotation {
                     origin: Point::new(box_rect.x + 6.0, box_rect.y + 14.0),
                 });
             }
-            AnnotationKind::Shape { shape_type, stroke_color, fill_color, stroke_width } => {
+            AnnotationKind::Shape { shape_type, stroke_color, fill_color, stroke_width, points } => {
                 match shape_type {
                     ShapeType::Rectangle => {
                         if let Some(fill) = fill_color {
@@ -304,6 +454,59 @@ impl Annotation {
                             color: *stroke_color,
                             width: *stroke_width,
                         });
+                    }
+                    ShapeType::Polygon => {
+                        if let Some(fill) = fill_color {
+                            dl.push(DrawCommand::FillRect { rect: self.bounds, color: *fill });
+                        }
+                        let n = points.len();
+                        for i in 0..n {
+                            let p1 = points[i];
+                            let p2 = points[(i + 1) % n];
+                            dl.push(DrawCommand::DrawLine { from: p1, to: p2, color: *stroke_color, width: *stroke_width });
+                        }
+                    }
+                    ShapeType::PolyLine => {
+                        for i in 1..points.len() {
+                            dl.push(DrawCommand::DrawLine { from: points[i - 1], to: points[i], color: *stroke_color, width: *stroke_width });
+                        }
+                    }
+                    ShapeType::CloudPolygon => {
+                        let pts = if points.is_empty() {
+                            vec![
+                                Point::new(self.bounds.x, self.bounds.y),
+                                Point::new(self.bounds.x + self.bounds.width, self.bounds.y),
+                                Point::new(self.bounds.x + self.bounds.width, self.bounds.y + self.bounds.height),
+                                Point::new(self.bounds.x, self.bounds.y + self.bounds.height),
+                            ]
+                        } else {
+                            points.clone()
+                        };
+                        if let Some(fill) = fill_color {
+                            dl.push(DrawCommand::FillRect { rect: self.bounds, color: *fill });
+                        }
+                        let n = pts.len();
+                        for i in 0..n {
+                            let p1 = pts[i];
+                            let p2 = pts[(i + 1) % n];
+                            let dx = p2.x - p1.x;
+                            let dy = p2.y - p1.y;
+                            let len = (dx * dx + dy * dy).sqrt();
+                            if len < 1.0 { continue; }
+                            let count = ((len / 14.0).round() as usize).max(1);
+                            for s in 0..count {
+                                let t0 = s as f64 / count as f64;
+                                let t1 = (s + 1) as f64 / count as f64;
+                                let a = Point::new(p1.x + dx * t0, p1.y + dy * t0);
+                                let b = Point::new(p1.x + dx * t1, p1.y + dy * t1);
+                                let mid = Point::new((a.x + b.x) * 0.5, (a.y + b.y) * 0.5);
+                                let norm_x = -dy / len * 4.5;
+                                let norm_y = dx / len * 4.5;
+                                let peak = Point::new(mid.x + norm_x, mid.y + norm_y);
+                                dl.push(DrawCommand::DrawLine { from: a, to: peak, color: *stroke_color, width: *stroke_width });
+                                dl.push(DrawCommand::DrawLine { from: peak, to: b, color: *stroke_color, width: *stroke_width });
+                            }
+                        }
                     }
                 }
             }
@@ -371,6 +574,49 @@ impl Annotation {
                     color: measurement_color,
                     origin: Point::new(mid_x, mid_y),
                 });
+            }
+            AnnotationKind::Perimeter { points, scale_ratio, unit } => {
+                let mut total_length = 0.0;
+                for i in 1..points.len() {
+                    let p1 = points[i - 1];
+                    let p2 = points[i];
+                    let dist = ((p2.x - p1.x).powi(2) + (p2.y - p1.y).powi(2)).sqrt();
+                    total_length += dist;
+                    dl.push(DrawCommand::DrawLine { from: p1, to: p2, color: Color::rgb(0, 122, 255), width: 2.0 });
+                }
+                let scaled = total_length * scale_ratio;
+                if let Some(first) = points.first() {
+                    dl.push(DrawCommand::DrawTextRun {
+                        text: format!("Perimeter: {:.2} {}", scaled, unit),
+                        font_family: "Inter".to_string(),
+                        font_size_px: 11.0,
+                        bold: true,
+                        italic: false,
+                        color: Color::rgb(0, 122, 255),
+                        origin: Point::new(first.x, first.y - 6.0),
+                    });
+                }
+            }
+            AnnotationKind::AreaPolygon { points, scale_ratio, unit } => {
+                let mut area_sum = 0.0;
+                let n = points.len();
+                for i in 0..n {
+                    let j = (i + 1) % n;
+                    area_sum += points[i].x * points[j].y - points[j].x * points[i].y;
+                    dl.push(DrawCommand::DrawLine { from: points[i], to: points[j], color: Color::rgb(46, 125, 50), width: 2.0 });
+                }
+                let real_area = (area_sum.abs() * 0.5) * (scale_ratio * scale_ratio);
+                if let Some(first) = points.first() {
+                    dl.push(DrawCommand::DrawTextRun {
+                        text: format!("Area: {:.2} sq {}", real_area, unit),
+                        font_family: "Inter".to_string(),
+                        font_size_px: 11.0,
+                        bold: true,
+                        italic: false,
+                        color: Color::rgb(46, 125, 50),
+                        origin: Point::new(first.x, first.y - 6.0),
+                    });
+                }
             }
         }
     }
