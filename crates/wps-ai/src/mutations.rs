@@ -116,8 +116,8 @@ impl MutationApplicator {
                 );
                 title_shape.fill = ShapeFill::None;
                 title_shape.stroke = None;
-                title_shape.text = Some(title.clone());
-                slide.shapes.push(title_shape);
+                title_shape = title_shape.with_text(title);
+                slide.add_shape(title_shape);
 
                 // Body bullets shape
                 let bullets_text = bullet_points.iter().map(|b| format!("• {}", b)).collect::<Vec<_>>().join("\n");
@@ -128,8 +128,8 @@ impl MutationApplicator {
                 );
                 body_shape.fill = ShapeFill::None;
                 body_shape.stroke = None;
-                body_shape.text = Some(bullets_text);
-                slide.shapes.push(body_shape);
+                body_shape = body_shape.with_text(&bullets_text);
+                slide.add_shape(body_shape);
 
                 deck.add_slide(slide);
                 true

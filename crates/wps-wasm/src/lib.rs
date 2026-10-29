@@ -11,7 +11,16 @@ use wps_sheets::pivot::{PivotConfig, PivotCube};
 use wps_sheets::smart_toolbox::SmartToolbox;
 use wps_sheets::sparse_matrix::SparseMatrix;
 use wps_sheets::xlsx::XlsxCodec;
-use wps_slides::scene_graph::PresentationDeck as SlidesDeck;
+use wps_slides::{
+    animator::{AnimationCategory, AnimationEffect, KeyframeAnimation},
+    boolean_ops::{BooleanOp, BooleanShapeEngine},
+    connector::{ConnectionPort, ConnectorRouting, SmartConnector},
+    morph::{MorphInterpolator, MorphType, SlideTransition},
+    pptx::PptxCodec,
+    scene_graph::{PresentationDeck as SlidesDeck, Slide, SlideNode},
+    shape::{ParametricShape, ShapeFill, ShapeGeometryType},
+    theme::SlideTheme,
+};
 use wps_pdf::{PdfDocument, PdfPage};
 use wps_python::{NativePythonEngine, PythonEngine};
 use wps_ai::{AgentRouter, AiDomain, MutationApplicator};
@@ -261,6 +270,117 @@ pub enum SheetsCommandDto {
     },
 }
 
+fn create_default_slides_doc() -> SlidesDeck {
+    let mut deck = SlidesDeck::new("OpenWPS Product Presentation");
+    deck.master.theme = SlideTheme::coral_sunset();
+
+    // Slide 1: Title Slide
+    let mut s1 = Slide::new("slide-1", "OpenWPS Presentation", "layout-title");
+    let mut title_shape = ParametricShape::new("s1-title", ShapeGeometryType::RoundedRectangle, Rect::new(100.0, 140.0, 760.0, 110.0));
+    title_shape.fill = ShapeFill::Solid(deck.master.theme.color_scheme.accent1);
+    title_shape.name = "!!HeroCard".to_string();
+    title_shape = title_shape.with_text("OpenWPS Presentation Engine\nDrawingML & 3-Tier SlideMaster");
+    s1.add_shape(title_shape);
+    s1.speaker_notes = "Welcome investors and engineering team to the OpenWPS Presentation architecture overview.".to_string();
+    deck.slides[0] = s1;
+
+    // Slide 2: Shapes & Smart Connectors
+    let mut s2 = Slide::new("slide-2", "DrawingML & A* Connectors", "layout-content");
+    let mut box1 = ParametricShape::new("s2-box1", ShapeGeometryType::FlowchartProcess, Rect::new(80.0, 180.0, 180.0, 90.0));
+    box1.fill = ShapeFill::Solid(Color::rgb(82, 102, 235));
+    box1 = box1.with_text("Rust WebAssembly\nCore Engine");
+    s2.add_shape(box1);
+
+    let mut box2 = ParametricShape::new("s2-box2", ShapeGeometryType::Diamond, Rect::new(420.0, 160.0, 160.0, 130.0));
+    box2.fill = ShapeFill::Solid(Color::rgb(12, 166, 120));
+    box2 = box2.with_text("Reactive Decision\nValidator");
+    s2.add_shape(box2);
+
+    let mut conn = SmartConnector::new("s2-conn1", "s2-box1", "s2-box2");
+    conn.start_port = ConnectionPort::Right;
+    conn.end_port = ConnectionPort::Left;
+    conn.routing = ConnectorRouting::Orthogonal;
+    conn.color = Color::rgb(40, 37, 59);
+    conn.stroke_width = 2.5;
+    s2.add_connector(conn);
+    s2.speaker_notes = "Demonstrating collision-free A* orthogonal connector routing connecting flowchart components.".to_string();
+    deck.add_slide(s2);
+
+    // Slide 3: Morph Transition Target
+    let mut s3 = Slide::new("slide-3", "60 FPS Morph Transition", "layout-blank");
+    s3.transition = Some(SlideTransition {
+        name: "Morph".to_string(),
+        duration_ms: 1500,
+        morph_type: MorphType::ByObject,
+    });
+    let mut morphed_hero = ParametricShape::new("s3-hero", ShapeGeometryType::Star5, Rect::new(320.0, 120.0, 320.0, 300.0));
+    morphed_hero.name = "!!HeroCard".to_string();
+    morphed_hero.fill = ShapeFill::Solid(deck.master.theme.color_scheme.accent1);
+    morphed_hero = morphed_hero.with_text("Seamless Morph\nKeyframe Interpolator");
+    s3.add_shape(morphed_hero);
+    s3.speaker_notes = "Press Preview Transition in the Ribbon to watch the rounded rectangle seamlessly morph into a 5-point star.".to_string();
+    deck.add_slide(s3);
+
+    deck
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum SlidesCommandDto {
+    AddSlide { title: String, layout_id: Option<String> },
+    DuplicateSlide { index: usize },
+    DeleteSlide { index: usize },
+    MoveSlide { from: usize, to: usize },
+    InsertShape {
+        slide_idx: usize,
+        geometry: String,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        fill_hex: Option<String>,
+        text: Option<String>,
+    },
+    UpdateShapeAdjustment {
+        slide_idx: usize,
+        shape_id: String,
+        handle_index: usize,
+        x: f64,
+        y: f64,
+    },
+    InsertConnector {
+        slide_idx: usize,
+        start_id: String,
+        end_id: String,
+        routing: Option<String>,
+    },
+    ApplyTheme {
+        theme_name: String,
+    },
+    SetSlideTransition {
+        slide_idx: usize,
+        transition_name: String,
+        duration_ms: Option<u32>,
+        morph_type: Option<String>,
+    },
+    AddAnimation {
+        slide_idx: usize,
+        shape_id: String,
+        category: String,
+        effect: String,
+    },
+    ExecuteBooleanOp {
+        slide_idx: usize,
+        shape_a_id: String,
+        shape_b_id: String,
+        op: String,
+    },
+    UpdateSpeakerNotes {
+        slide_idx: usize,
+        notes: String,
+    },
+}
+
 #[wasm_bindgen]
 pub struct WpsWasmEngine {
     active_module: ActiveModule,
@@ -284,7 +404,7 @@ impl WpsWasmEngine {
         let doc = match active_module {
             ActiveModule::Writer => ActiveDoc::Writer(create_default_writer_doc()),
             ActiveModule::Spreadsheets => ActiveDoc::Sheets(create_default_sheets_doc()),
-            ActiveModule::Presentation => ActiveDoc::Slides(SlidesDeck::new("Untitled Presentation")),
+            ActiveModule::Presentation => ActiveDoc::Slides(create_default_slides_doc()),
             ActiveModule::Pdf => {
                 let mut pdf = PdfDocument::new("Untitled.pdf");
                 pdf.add_page(PdfPage {
@@ -600,7 +720,7 @@ impl WpsWasmEngine {
             }
             ActiveDoc::Slides(deck) => {
                 if let Some(slide) = deck.slides.first() {
-                    slide.render_to_display_list(&deck.master, &mut dl);
+                    slide.render_to_display_list(deck, &mut dl);
                 }
             }
             ActiveDoc::Pdf(pdf) => {
@@ -1224,6 +1344,271 @@ impl WpsWasmEngine {
         }
 
         serde_json::to_string(&resp).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// Dispatches a structured Slides command to the Rust presentation engine
+    #[wasm_bindgen]
+    pub fn slides_dispatch_command(&mut self, cmd_json: &str) -> Result<String, JsValue> {
+        let cmd: SlidesCommandDto = serde_json::from_str(cmd_json)
+            .map_err(|e| JsValue::from_str(&format!("Invalid command JSON: {}", e)))?;
+
+        match &mut self.doc {
+            ActiveDoc::Slides(deck) => {
+                match cmd {
+                    SlidesCommandDto::AddSlide { title, layout_id } => {
+                        let id = format!("slide-{}", deck.slides.len() + 1);
+                        let lid = layout_id.unwrap_or_else(|| "layout-content".to_string());
+                        let slide = Slide::new(&id, &title, &lid);
+                        deck.add_slide(slide);
+                    }
+                    SlidesCommandDto::DuplicateSlide { index } => {
+                        if index < deck.slides.len() {
+                            let mut dup = deck.slides[index].clone();
+                            dup.id = format!("slide-{}", deck.slides.len() + 1);
+                            deck.slides.insert(index + 1, dup);
+                        }
+                    }
+                    SlidesCommandDto::DeleteSlide { index } => {
+                        if deck.slides.len() > 1 && index < deck.slides.len() {
+                            deck.slides.remove(index);
+                        }
+                    }
+                    SlidesCommandDto::MoveSlide { from, to } => {
+                        if from < deck.slides.len() && to < deck.slides.len() && from != to {
+                            let slide = deck.slides.remove(from);
+                            deck.slides.insert(to, slide);
+                        }
+                    }
+                    SlidesCommandDto::InsertShape { slide_idx, geometry, x, y, width, height, fill_hex, text } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        let geom_type = match geometry.to_lowercase().as_str() {
+                            "roundedrectangle" | "roundrect" => ShapeGeometryType::RoundedRectangle,
+                            "ellipse" | "circle" => ShapeGeometryType::Ellipse,
+                            "triangle" => ShapeGeometryType::Triangle,
+                            "diamond" => ShapeGeometryType::Diamond,
+                            "star" | "star5" => ShapeGeometryType::Star5,
+                            "rightarrow" | "arrow" => ShapeGeometryType::RightArrow,
+                            "callout" | "rectcallout" => ShapeGeometryType::RectCallout,
+                            "process" | "flowchartprocess" => ShapeGeometryType::FlowchartProcess,
+                            "decision" | "flowchartdecision" => ShapeGeometryType::FlowchartDecision,
+                            "donut" => ShapeGeometryType::Donut,
+                            "heart" => ShapeGeometryType::Heart,
+                            _ => ShapeGeometryType::Rectangle,
+                        };
+                        let id = format!("shape-{}-{}", slide_idx + 1, slide.nodes.len() + 1);
+                        let mut shape = ParametricShape::new(&id, geom_type, Rect::new(x, y, width, height));
+                        if let Some(hex) = fill_hex {
+                            shape.fill = ShapeFill::Solid(Color::from_hex(&hex).unwrap_or(Color::MERCURY_PRIMARY));
+                        }
+                        if let Some(t) = text {
+                            shape = shape.with_text(&t);
+                        }
+                        slide.add_shape(shape);
+                    }
+                    SlidesCommandDto::UpdateShapeAdjustment { slide_idx, shape_id, handle_index, x, y } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        for node in &mut slide.nodes {
+                            if let SlideNode::AutoShape(s) = node {
+                                if s.id == shape_id {
+                                    s.set_adjustment_handle(handle_index, Point::new(x, y));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    SlidesCommandDto::InsertConnector { slide_idx, start_id, end_id, routing } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        let route_type = match routing.as_deref() {
+                            Some("straight") => ConnectorRouting::Straight,
+                            Some("curved") => ConnectorRouting::Curved,
+                            _ => ConnectorRouting::Orthogonal,
+                        };
+                        let id = format!("conn-{}-{}", slide_idx + 1, slide.nodes.len() + 1);
+                        let mut conn = SmartConnector::new(&id, &start_id, &end_id);
+                        conn.routing = route_type;
+                        slide.add_connector(conn);
+                    }
+                    SlidesCommandDto::ApplyTheme { theme_name } => {
+                        deck.master.theme = match theme_name.to_lowercase().as_str() {
+                            "slate" | "executive_slate" => SlideTheme::executive_slate(),
+                            "emerald" | "emerald_growth" => SlideTheme::emerald_growth(),
+                            "coral" | "coral_sunset" => SlideTheme::coral_sunset(),
+                            "crimson" | "crimson_bold" => SlideTheme::crimson_bold(),
+                            "iris" | "iris_creative" => SlideTheme::iris_creative(),
+                            "cyber" | "midnight_cyber" => SlideTheme::midnight_cyber(),
+                            "sand" | "solar_sand" => SlideTheme::solar_sand(),
+                            _ => SlideTheme::mercury_modern(),
+                        };
+                    }
+                    SlidesCommandDto::SetSlideTransition { slide_idx, transition_name, duration_ms, morph_type } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        let m_type = match morph_type.as_deref() {
+                            Some("by_word") => MorphType::ByWord,
+                            Some("by_character") => MorphType::ByCharacter,
+                            _ => MorphType::ByObject,
+                        };
+                        slide.transition = Some(SlideTransition {
+                            name: transition_name,
+                            duration_ms: duration_ms.unwrap_or(1500),
+                            morph_type: m_type,
+                        });
+                    }
+                    SlidesCommandDto::AddAnimation { slide_idx, shape_id, category, effect } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        let cat = match category.to_lowercase().as_str() {
+                            "emphasis" => AnimationCategory::Emphasis,
+                            "exit" => AnimationCategory::Exit,
+                            _ => AnimationCategory::Entrance,
+                        };
+                        let eff = match effect.to_lowercase().as_str() {
+                            "flyin" => AnimationEffect::FlyIn,
+                            "zoom" => AnimationEffect::Zoom,
+                            "spin" => AnimationEffect::Spin,
+                            "wipe" => AnimationEffect::Wipe,
+                            "bounce" => AnimationEffect::Bounce,
+                            _ => AnimationEffect::Fade,
+                        };
+                        slide.timeline.add_animation(KeyframeAnimation::new(&shape_id, cat, eff));
+                    }
+                    SlidesCommandDto::ExecuteBooleanOp { slide_idx, shape_a_id, shape_b_id, op } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        let shape_a = slide.nodes.iter().find_map(|n| if let SlideNode::AutoShape(s) = n { if s.id == shape_a_id { Some(s.clone()) } else { None } } else { None });
+                        let shape_b = slide.nodes.iter().find_map(|n| if let SlideNode::AutoShape(s) = n { if s.id == shape_b_id { Some(s.clone()) } else { None } } else { None });
+                        if let (Some(sa), Some(sb)) = (shape_a, shape_b) {
+                            let b_op = match op.to_lowercase().as_str() {
+                                "subtract" => BooleanOp::Subtract,
+                                "intersect" => BooleanOp::Intersect,
+                                "combine" => BooleanOp::Combine,
+                                "fragment" => BooleanOp::Fragment,
+                                _ => BooleanOp::Union,
+                            };
+                            let results = BooleanShapeEngine::execute(&sa, &sb, b_op);
+                            slide.nodes.retain(|n| n.id() != shape_a_id && n.id() != shape_b_id);
+                            for res in results {
+                                slide.add_shape(res);
+                            }
+                        }
+                    }
+                    SlidesCommandDto::UpdateSpeakerNotes { slide_idx, notes } => {
+                        let slide = deck.slides.get_mut(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                        slide.speaker_notes = notes;
+                    }
+                }
+                self.slides_get_deck_summary()
+            }
+            _ => Err(JsValue::from_str("Active module is not Presentation")),
+        }
+    }
+
+    /// Returns JSON summary of all slides in the deck
+    #[wasm_bindgen]
+    pub fn slides_get_deck_summary(&self) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Slides(deck) => {
+                #[derive(Serialize)]
+                struct SlideSummary {
+                    index: usize,
+                    id: String,
+                    title: String,
+                    layout_id: String,
+                    shape_count: usize,
+                    transition_name: Option<String>,
+                    speaker_notes: String,
+                }
+                #[derive(Serialize)]
+                struct DeckSummary {
+                    title: String,
+                    theme_name: String,
+                    slide_count: usize,
+                    slides: Vec<SlideSummary>,
+                }
+
+                let summaries: Vec<SlideSummary> = deck.slides.iter().enumerate().map(|(i, s)| {
+                    SlideSummary {
+                        index: i,
+                        id: s.id.clone(),
+                        title: s.title.clone(),
+                        layout_id: s.layout_id.clone(),
+                        shape_count: s.nodes.len(),
+                        transition_name: s.transition.as_ref().map(|t| t.name.clone()),
+                        speaker_notes: s.speaker_notes.clone(),
+                    }
+                }).collect();
+
+                let deck_summary = DeckSummary {
+                    title: deck.title.clone(),
+                    theme_name: deck.master.theme.name.clone(),
+                    slide_count: deck.slides.len(),
+                    slides: summaries,
+                };
+
+                serde_json::to_string(&deck_summary).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not Presentation")),
+        }
+    }
+
+    /// Renders a specific slide to DisplayList JSON
+    #[wasm_bindgen]
+    pub fn slides_render_slide_display_list(&self, slide_idx: usize) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Slides(deck) => {
+                let slide = deck.slides.get(slide_idx).ok_or_else(|| JsValue::from_str("Invalid slide index"))?;
+                let mut dl = DisplayList::new();
+                slide.render_to_display_list(deck, &mut dl);
+                serde_json::to_string(&dl).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not Presentation")),
+        }
+    }
+
+    /// Evaluates Morph transition between slide A and slide B at progress t (0.0 to 1.0)
+    #[wasm_bindgen]
+    pub fn slides_evaluate_morph(&self, slide_a_idx: usize, slide_b_idx: usize, progress: f64) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Slides(deck) => {
+                let slide_a = deck.slides.get(slide_a_idx).ok_or_else(|| JsValue::from_str("Invalid slide A index"))?;
+                let slide_b = deck.slides.get(slide_b_idx).ok_or_else(|| JsValue::from_str("Invalid slide B index"))?;
+
+                let shapes_a: Vec<ParametricShape> = slide_a.nodes.iter().filter_map(|n| if let SlideNode::AutoShape(s) = n { Some(s.clone()) } else { None }).collect();
+                let shapes_b: Vec<ParametricShape> = slide_b.nodes.iter().filter_map(|n| if let SlideNode::AutoShape(s) = n { Some(s.clone()) } else { None }).collect();
+
+                let morphed_shapes = MorphInterpolator::interpolate_shapes(&shapes_a, &shapes_b, progress);
+
+                let mut dl = DisplayList::new();
+                // Render slide background
+                dl.push(DrawCommand::FillRect {
+                    rect: deck.slide_size.to_pt_rect(),
+                    color: deck.master.background_color,
+                });
+                for shape in &morphed_shapes {
+                    shape.render_to_display_list(&mut dl);
+                }
+
+                serde_json::to_string(&dl).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not Presentation")),
+        }
+    }
+
+    /// Exports current presentation to ECMA-376 PPTX bytes
+    #[wasm_bindgen]
+    pub fn slides_export_pptx(&self) -> Result<Vec<u8>, JsValue> {
+        match &self.doc {
+            ActiveDoc::Slides(deck) => {
+                PptxCodec::export_pptx(deck).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not Presentation")),
+        }
+    }
+
+    /// Imports PPTX bytes into the active presentation
+    #[wasm_bindgen]
+    pub fn slides_open_pptx(&mut self, bytes: &[u8]) -> Result<String, JsValue> {
+        let imported_deck = PptxCodec::import_pptx(bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        self.doc = ActiveDoc::Slides(imported_deck);
+        self.active_module = ActiveModule::Presentation;
+        self.slides_get_deck_summary()
     }
 
     #[wasm_bindgen]

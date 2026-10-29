@@ -7,7 +7,7 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-wasm32--unknown--unknown-654ff0.svg)](https://webassembly.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript_+_Tailwind-61dafb.svg)](https://react.dev/)
 [![Design System](https://img.shields.io/badge/Design_System-Mercury-5266eb.svg)](https://getdesign.dev)
-[![Tests](https://img.shields.io/badge/Unit_Tests-62%2F62_Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Unit_Tests-67%2F67_Passing-brightgreen.svg)]()
 
 ---
 
@@ -119,10 +119,14 @@ OpenWPS/
 - **Spreadsheets UI Workspaces:** Interactive Formula Bar with Name Box and autocomplete, Sheet Tab Bar with inline rename, and Reading View Spotlight crosshairs.
 
 ### 📽️ Pillar 4: WPS Presentation (Slides Engine)
-- **3-Tier Cascade Inheritance:** `SlideMaster` $\rightarrow$ `SlideLayout` $\rightarrow$ `Slide`. Changes to theme color schemes or master vectors automatically cascade down the slide hierarchy.
-- **DrawingML Parametric Shapes:** 50+ geometric shapes (Rectangles, RoundedRects, Ellipses, Stars, Callouts, Flowchart elements) with interactive adjustment handles.
-- **A\* Smart Connectors:** Orthogonal vector routing engine calculating waypoints around shape obstacles to guarantee neat schematics and diagrams.
-- **Morph Transition Interpolator:** Computes structural bounding box, corner radius, fill color, and rotation angle deltas across slides to generate buttery 60–120 FPS animations.
+- **3-Tier Cascade Inheritance & EMU Coordinates:** Integer-precision ECMA-376 English Metric Units (`1 pt = 12,700 EMUs`, `1 in = 914,400 EMUs`) prevent float drift. Cascading property resolver queries `Slide` $\rightarrow$ `SlideLayout` $\rightarrow$ `SlideMaster` $\rightarrow$ `Theme` for fill, stroke, and typography defaults.
+- **50+ DrawingML Parametric Shapes:** Complete library of procedural geometries (Rectangles, RoundedRects, Ellipses, Stars, Callouts, Flowcharts, Arrows) with draggable yellow diamond adjustment handles (`adj: Vec<f64>`) and auto-fitting text frames.
+- **Boolean 2D Shape Operations:** Full vector constructive solid geometry (CSG): Union (Monotone Chain Convex Hull), Subtract, Intersect (Sutherland-Hodgman polygon clipping), Combine (symmetric difference XOR), and Fragment.
+- **A\* Smart Connectors with Obstacle Avoidance:** Orthogonal vector routing engine calculating waypoints through a 2D navigation grid around obstacle bounding boxes, with 8 cardinal port attachments and cubic Bézier smoothing.
+- **Keyframe Animation Sequencer:** Timeline state machine supporting Entrance, Emphasis, and Exit animations with easing curves (Linear, EaseInQuad, EaseOutQuad, EaseInOutCubic, Bounce, Elastic).
+- **60–120 FPS Morph Transition Interpolator:** Pinpoint geometry matching across slides using the `!!name` correspondence protocol; dissimilar shapes undergo perimeter path resampling (64 points), rotation, stroke, and RGBA cross-fade.
+- **Dual-Screen Presenter View Cockpit:** Integrated full-screen presenter display featuring elapsed timer, speaker notes pane, next slide preview, glowing laser pointer overlay, live ink annotations (pen and translucent highlighter), and blackout/whiteout ('B'/'W') shortcuts.
+- **Bidirectional PresentationML (`.pptx`) Codec:** Lossless streaming OPC ZIP codec exporting and importing presentation decks with slide masters, layouts, DrawingML shapes, connectors, and transitions.
 
 ### 📑 Pillar 5: WPS PDF Toolkit & Spatial Layout Reconstruction
 - **ISO 32000 Stream Parser:** Robust parser extracting indirect objects, cross-reference tables, stream dictionaries, Flate compression, and page trees.

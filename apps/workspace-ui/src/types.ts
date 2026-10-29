@@ -94,3 +94,52 @@ export type SmartToolboxAction =
   | 'formula_to_value'
   | 'pivot_wizard'
   | 'data_validation';
+
+export interface SlideShape {
+  id: string;
+  name: string;
+  geometry: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  fillColor?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  adjustmentValues?: number[];
+  text?: string;
+}
+
+export interface SlideConnector {
+  id: string;
+  startId: string;
+  endId: string;
+  startPort?: 'top' | 'right' | 'bottom' | 'left';
+  endPort?: 'top' | 'right' | 'bottom' | 'left';
+  routing: 'straight' | 'orthogonal' | 'curved';
+  color: string;
+  strokeWidth: number;
+}
+
+export interface SlideInfo {
+  id: string;
+  title: string;
+  layoutId: string;
+  shapes: SlideShape[];
+  connectors: SlideConnector[];
+  transitionName?: string;
+  transitionDuration?: number;
+  speakerNotes: string;
+}
+
+export interface PresenterCockpitState {
+  isOpen: boolean;
+  slideIndex: number;
+  isTimerRunning: boolean;
+  elapsedSeconds: number;
+  activeTool: 'pointer' | 'pen' | 'highlighter';
+  penColor: string;
+  isBlackout: boolean;
+  isWhiteout: boolean;
+}

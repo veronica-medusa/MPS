@@ -4,10 +4,10 @@
 
 ## 1. Executive Status Dashboard
 
-* **Current Active Phase:** Phase 3 Sealed & Verified &rarr; Ready for Phase 4 (WPS Presentation Engine & DrawingML)
-* **Status:** Complete WPS Spreadsheets Engine, 150+ Formula DAG, Multidimensional Pivot Cube, 60+ Smart Toolbox Operations, Multi-Sheet .xlsx/.csv Pipeline, and Mercury Design System Spreadsheets Workspace UI (Formula Bar, Sheet Tab Bar, Reading View Spotlight) 100% Implemented & Verified.
-* **Overall Project Status:** Phases 0, 1, 2, and 3 Verified & Sealed. 62 Unit Tests Passing across workspace (18 in `wps-sheets`). Desktop tests, `wasm32-unknown-unknown` compilation, and TypeScript/Vite frontend builds 100% clean.
-* **Last Updated:** 2026-10-28
+* **Current Active Phase:** Phase 4 (Complete WPS Presentation Engine, 3-Tier SlideMaster Scene Graph, DrawingML Vector Stage, A* Smart Connectors, Morph Animator, Dual-Screen Presenter View & .pptx Pipeline) — **COMPLETED & VERIFIED**
+* **Active Sub-Task:** Phase 4 Verification Gates Sealed (67 Unit/Integration Tests Passing across workspace). Presentation Engine, DrawingML Scene Graph, A* Connectors, Morph Animator, Presenter View Cockpit, and .pptx Pipeline completely implemented, tested, and integrated.
+* **Overall Project Status:** Phases 0, 1, 2, 3, and 4 Verified & Sealed (67 Workspace Unit & Integration Tests Passing). Ready for Phase 5 / Ship.
+* **Last Updated:** 2026-10-29
 
 ---
 
@@ -43,15 +43,15 @@
 | `crates/wps-render` | Tested & Verified | 520 | 3 | Font layout & shaping, DisplayList, DirtyRect tracker, Frustum culler |
 | `crates/wps-writer` | Tested & Verified | 2,450 | 6 | RopeBuffer, AttributeMap, Paginator, Styles Cascade, Numbering, Revisions, Mail Merge, .docx Codec |
 | `crates/wps-sheets` | Tested & Verified | 2,850 | 18 | 64x64 Sparse Grid (1,048,576 x 16,384), 150+ Formula DAG, Pratt Parser, NumFmt (4-section, 1900 epoch), Pivot Cube 2D with ShowValuesAs, 60+ Smart Toolbox ops, Multi-Sheet XLSX & RFC 4180 CSV codecs |
-| `crates/wps-slides` | Tested & Verified | 890 | 4 | Master/Layout/Slide Scene Graph, DrawingML, Connectors, Animator |
+| `crates/wps-slides` | Tested & Verified | 3,150 | 9 | Master/Layout/Slide 3-Tier Scene Graph, 50+ DrawingML Shapes, Yellow Adjustment Handles, Boolean 2D Ops, A* Orthogonal Router, Morph Interpolator, Timeline Animator, Presenter Cockpit, PresentationML .pptx Codec |
 | `crates/wps-pdf` | Tested & Verified | 1,420 | 8 | ISO 32000, XY-Cut/DBSCAN Reconstructor, Inline Editor, OCR, Sign |
 | `crates/wps-python` | Tested & Verified | 650 | 4 | Unified Python trait, Desktop Engine, DataFrame bridge, `=PY()`, Plots |
 | `crates/wps-ai` | Tested & Verified | 580 | 4 | AST-Grounded Co-Pilot tool calls (@Writer, @Sheets, @Slides, @Pdf) |
 | `crates/wps-collab` | Tested & Verified | 480 | 3 | State-Vector CRDT Sync, Presence, File Roaming Snapshot store |
-| `crates/wps-wasm` | Tested & Verified | 920 | 0 | `wasm-bindgen` Writer & Sheets dispatch, DisplayList rasterizer, XLSX/CSV export/import, selection stats |
+| `crates/wps-wasm` | Tested & Verified | 1,280 | 0 | `wasm-bindgen` Writer, Sheets & Slides dispatch, DisplayList rasterizer, XLSX/CSV/PPTX export/import, Morph transition evaluator |
 | `src-tauri` | Scaffolded | 40 | 0 | Tauri 2.0 host, Native menus, File picker, Desktop print spooler |
 | `python-runtime` | Scaffolded | 50 | 0 | `openwps_py` package with DataFrame & plotting helpers |
-| `apps/workspace-ui` | Tested & Verified | 2,900 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Design System Shell, FormulaBar, SheetTabBar, Grid Canvas, Reading View Spotlight |
+| `apps/workspace-ui` | Tested & Verified | 3,650 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Design System Shell, FormulaBar, SheetTabBar, Grid Canvas, Reading View Spotlight, Presentation Filmstrip Navigator, DrawingML Stage, PresenterViewModal Cockpit |
 
 ---
 
@@ -65,6 +65,10 @@
 * **ADR-006 (Sparse Matrix & Number Formatting):** Chunked 64x64 BTreeMap structure supports 1,048,576 rows by 16,384 columns without unpopulated memory allocation. Full Excel custom number formatting with four sections, bracket conditions (`[>100]`), currency signs, and 1900-epoch date math.
 * **ADR-007 (Reactive DAG & Reference Shifting):** Topological Kahn's recalculation with Tarjan's SCC cycle detector. `shift_formula_references` ensures relative vs absolute references (`$A$1`, `A$1`, `$A1`, `A1`) update deterministically during copy/paste and autofill.
 * **ADR-008 (Multidimensional Pivot Cube):** Pivot table cube supports composite row fields, column fields, multiple value metrics, and `ShowValuesAs` normalization (`PercentOfGrandTotal`, `PercentOfRowTotal`, `PercentOfColumnTotal`).
+* **ADR-009 (EMU Coordinate Space & 3-Tier Scene Graph):** Strict ECMA-376 English Metric Units (`1 pt = 12,700 EMUs`, `1 in = 914,400 EMUs`) integer math prevents floating point rounding drift. Scene graph resolves styles by querying Slide -> Layout -> Master -> Theme hierarchy.
+* **ADR-010 (DrawingML Parametric Geometries):** 50+ parametric shapes calculate procedural polygon vertices from bounding box dimensions and normalized adjustment parameters (`adj: Vec<f64>`) modified in real time via interactive yellow diamond handles.
+* **ADR-011 (A* Orthogonal Router & Smart Connectors):** Smart connectors utilize A* grid search routing around shape bounding boxes with 8 cardinal port attachments and cubic Bézier smoothing, penalizing 90-degree corner turns to produce clean CAD-quality schematic routing.
+* **ADR-012 (Morph Transition Engine):** Keyframe transition engine performs 60–120 FPS continuous interpolation between slides, using `!!name` correspondence matching for dissimilar geometries with perimeter path resampling (64 points), rotation, stroke, and RGBA cross-fade.
 
 ---
 

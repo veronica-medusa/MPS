@@ -20,6 +20,9 @@ pub const CT_XLSX_SHARED_STRINGS: &str = "application/vnd.openxmlformats-officed
 pub const CT_XLSX_STYLES: &str = "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml";
 pub const CT_PPTX_PRESENTATION: &str = "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml";
 pub const CT_PPTX_SLIDE: &str = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml";
+pub const CT_PPTX_SLIDE_MASTER: &str = "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml";
+pub const CT_PPTX_SLIDE_LAYOUT: &str = "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml";
+pub const CT_PPTX_THEME: &str = "application/vnd.openxmlformats-officedocument.theme+xml";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Relationship {

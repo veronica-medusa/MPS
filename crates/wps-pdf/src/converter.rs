@@ -168,12 +168,14 @@ impl PdfConverter {
                 let mut shape = ParametricShape::new(&shape_id, ShapeGeometryType::Rectangle, bounds);
                 shape.fill = ShapeFill::None;
                 shape.stroke = None;
-                shape.text = Some(block.plain_text());
+                shape = shape.with_text(&block.plain_text());
                 shapes.push(shape);
             }
 
             let mut slide = Slide::new(&slide_id, &slide_title, "layout-title");
-            slide.shapes = shapes;
+            for s in shapes {
+                slide.add_shape(s);
+            }
             deck.add_slide(slide);
         }
 

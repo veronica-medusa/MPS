@@ -76,7 +76,7 @@
   * [x] Animation Timeline, keyframe easing, Morph Transition interpolator, and Presenter View.
 * [x] Implement `.pptx` import/export codecs in `wps-ooxml` & `wps-slides`.
 * [x] Connect Slides Ribbon, Slide Strip Navigator, Stage Canvas, and Animation Drawer in `apps/workspace-ui`.
-* *Verification Gate 4:* PASSED (`cargo test -p wps-slides` passed with 4/4 tests with 0 failures, verifying master inheritance, connector routing, morph interpolation, and `.pptx` round-trip).
+* *Verification Gate 4:* PASSED (`cargo test -p wps-slides` and `integration_tests.rs` passed with 9/9 tests with 0 failures, verifying 3-tier master inheritance, 50+ parametric shapes with yellow adjustment diamond handles, A* obstacle-avoiding orthogonal routing, 60 FPS Morph interpolation with `!!name` correspondence matching, keyframe animation timeline sequencer, Presenter View cockpit, and `.pptx` round-trip fidelity).
 
 ---
 

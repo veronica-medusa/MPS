@@ -6,7 +6,8 @@ import { RightInspector } from './components/RightInspector';
 import { StatusBar } from './components/StatusBar';
 import { CommandPalette } from './components/CommandPalette';
 import { SmartToolboxModal } from './components/SmartToolboxModal';
-import { ActiveRibbonTab, CommandItem, DocumentTab, DocumentType, RibbonMode, SmartToolboxAction } from './types';
+import { PresenterViewModal } from './components/PresenterViewModal';
+import { ActiveRibbonTab, CommandItem, DocumentTab, DocumentType, RibbonMode, SmartToolboxAction, SlideInfo } from './types';
 
 export const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -14,6 +15,10 @@ export const App: React.FC = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [smartToolboxAction, setSmartToolboxAction] = useState<SmartToolboxAction | null>(null);
+  const [isPresenterOpen, setIsPresenterOpen] = useState(false);
+  const [presenterSlideIdx, setPresenterSlideIdx] = useState(0);
+  const [activeSlideIdx, setActiveSlideIdx] = useState(0);
+  const [slidesList, setSlidesList] = useState<SlideInfo[]>([]);
 
   const [tabs, setTabs] = useState<DocumentTab[]>([
     {
@@ -142,6 +147,14 @@ export const App: React.FC = () => {
     if (cmdId === 'open_ai') {
       setIsInspectorOpen(true);
     }
+    if (cmdId === 'open_presenter_view' || cmdId === 'start_slideshow_beginning') {
+      setPresenterSlideIdx(0);
+      setIsPresenterOpen(true);
+    }
+    if (cmdId === 'start_slideshow_current') {
+      setPresenterSlideIdx(activeSlideIdx);
+      setIsPresenterOpen(true);
+    }
   };
 
   const handleUpdateActiveCell = (coord: string, stats?: any) => {
@@ -154,6 +167,8 @@ export const App: React.FC = () => {
     { id: 'xlookup', title: 'Insert XLOOKUP Formula', category: 'Formulas', action: () => handleExecuteCommand('insert_formula', '=XLOOKUP(') },
     { id: 'merge_no_loss', title: 'Smart Toolbox: Merge Without Data Loss', category: 'Smart Toolbox', action: () => setSmartToolboxAction('merge_no_loss') },
     { id: 'split_sheet', title: 'Smart Toolbox: Split Sheet Wizard', category: 'Smart Toolbox', action: () => setSmartToolboxAction('split_sheet') },
+    { id: 'presenter_view', title: 'Launch Presenter View Cockpit', category: 'Presentation', shortcut: 'F5', action: () => handleExecuteCommand('open_presenter_view') },
+    { id: 'morph_trans', title: 'Apply 60 FPS Morph Transition', category: 'Presentation', action: () => handleExecuteCommand('set_slide_transition', 'Morph') },
     { id: 'pdf_edit', title: 'Direct PDF Inline Text Editing', category: 'PDF Tools', action: () => handleExecuteCommand('pdf_direct_edit') },
     { id: 'py_eval', title: 'Run Python (=PY) Cell', category: 'Python', action: () => setIsInspectorOpen(true) },
     { id: 'ai_polish', title: 'WPS AI: Rewrite & Polish', category: 'WPS AI', action: () => setIsInspectorOpen(true) },
@@ -194,6 +209,12 @@ export const App: React.FC = () => {
             tab={activeTab}
             onUpdateActiveCell={handleUpdateActiveCell}
             onOpenAiAssist={() => setIsInspectorOpen(true)}
+            onOpenPresenterView={() => {
+              setPresenterSlideIdx(activeSlideIdx);
+              setIsPresenterOpen(true);
+            }}
+            onSlidesChange={(slides) => setSlidesList(slides)}
+            onActiveSlideChange={(idx) => setActiveSlideIdx(idx)}
           />
 
           {isSplitScreen && (
@@ -202,6 +223,12 @@ export const App: React.FC = () => {
                 tab={splitTab}
                 onUpdateActiveCell={handleUpdateActiveCell}
                 onOpenAiAssist={() => setIsInspectorOpen(true)}
+                onOpenPresenterView={() => {
+                  setPresenterSlideIdx(activeSlideIdx);
+                  setIsPresenterOpen(true);
+                }}
+                onSlidesChange={(slides) => setSlidesList(slides)}
+                onActiveSlideChange={(idx) => setActiveSlideIdx(idx)}
               />
             </div>
           )}
@@ -233,6 +260,16 @@ export const App: React.FC = () => {
           console.log(`Executed Smart Toolbox Action: ${act}`, config);
           setTabs(tabs.map(t => t.id === activeTabId ? { ...t, isDirty: true } : t));
         }}
+      />
+
+      {/* WPS Dual-Screen Presenter View Cockpit Modal */}
+      <PresenterViewModal
+        isOpen={isPresenterOpen}
+        onClose={() => setIsPresenterOpen(false)}
+        slides={slidesList}
+        currentSlideIndex={presenterSlideIdx}
+        onSlideChange={(newIdx) => setPresenterSlideIdx(newIdx)}
+        themeName="Modern Indigo"
       />
     </div>
   );

@@ -65,6 +65,8 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
 }) => {
   const [showTablePicker, setShowTablePicker] = useState(false);
   const [hoverGrid, setHoverGrid] = useState({ rows: 3, cols: 3 });
+  const [showShapesPicker, setShowShapesPicker] = useState(false);
+  const [showConnectorPicker, setShowConnectorPicker] = useState(false);
 
   // Contextual Tabs per Document Type
   const getTabsForDocType = (): { id: ActiveRibbonTab; label: string }[] => {
@@ -358,6 +360,137 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
                       })
                     )}
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* 50+ Parametric Shapes Popover */}
+            <div className="relative">
+              <button
+                onClick={() => setShowShapesPicker(!showShapesPicker)}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-mercury-slides" />
+                <span>Shapes (50+)</span>
+                <ChevronDown className="w-3 h-3 ml-0.5 text-mercury-fog" />
+              </button>
+
+              {showShapesPicker && (
+                <div className="absolute top-9 left-0 z-50 bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-mercury-md shadow-2xl p-4 w-72 animate-in fade-in zoom-in-95 max-h-80 overflow-y-auto">
+                  <div className="text-[11px] font-bold text-mercury-ink-secondary mb-1 uppercase tracking-wider">Basic Shapes</div>
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
+                    {['Rectangle', 'RoundedRect', 'Ellipse', 'Triangle', 'Diamond', 'Parallelogram', 'Trapezoid', 'Hexagon', 'Octagon', 'Donut', 'Heart', 'Lightning'].map((shape) => (
+                      <button
+                        key={shape}
+                        onClick={() => {
+                          onExecuteCommand('insert_shape', shape);
+                          setShowShapesPicker(false);
+                        }}
+                        className="p-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-[11px] truncate text-center border border-mercury-fog/20"
+                        title={shape}
+                      >
+                        {shape}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="text-[11px] font-bold text-mercury-ink-secondary mb-1 uppercase tracking-wider">Block Arrows</div>
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
+                    {['RightArrow', 'LeftArrow', 'UpArrow', 'DownArrow', 'LeftRight', 'Chevron', 'QuadArrow'].map((shape) => (
+                      <button
+                        key={shape}
+                        onClick={() => {
+                          onExecuteCommand('insert_shape', shape);
+                          setShowShapesPicker(false);
+                        }}
+                        className="p-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-[11px] truncate text-center border border-mercury-fog/20"
+                        title={shape}
+                      >
+                        {shape}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="text-[11px] font-bold text-mercury-ink-secondary mb-1 uppercase tracking-wider">Stars & Banners</div>
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
+                    {['Star4', 'Star5', 'Star6', 'Star8', 'Star12', 'Star24'].map((shape) => (
+                      <button
+                        key={shape}
+                        onClick={() => {
+                          onExecuteCommand('insert_shape', shape);
+                          setShowShapesPicker(false);
+                        }}
+                        className="p-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-[11px] truncate text-center border border-mercury-fog/20"
+                        title={shape}
+                      >
+                        {shape}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="text-[11px] font-bold text-mercury-ink-secondary mb-1 uppercase tracking-wider">Flowchart</div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {['Process', 'Decision', 'Document', 'Data', 'Terminator'].map((shape) => (
+                      <button
+                        key={shape}
+                        onClick={() => {
+                          onExecuteCommand('insert_shape', shape);
+                          setShowShapesPicker(false);
+                        }}
+                        className="p-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-[11px] truncate text-center border border-mercury-fog/20"
+                        title={shape}
+                      >
+                        {shape}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Smart Connectors Popover */}
+            <div className="relative">
+              <button
+                onClick={() => setShowConnectorPicker(!showConnectorPicker)}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+              >
+                <PenTool className="w-3.5 h-3.5 text-mercury-slides" />
+                <span>Smart Connectors</span>
+                <ChevronDown className="w-3 h-3 ml-0.5 text-mercury-fog" />
+              </button>
+
+              {showConnectorPicker && (
+                <div className="absolute top-9 left-0 z-50 bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-mercury-md shadow-2xl p-2 w-48 animate-in fade-in zoom-in-95">
+                  <button
+                    onClick={() => {
+                      onExecuteCommand('insert_connector', 'orthogonal');
+                      setShowConnectorPicker(false);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-xs flex items-center justify-between"
+                  >
+                    <span>A* Orthogonal Connector</span>
+                    <span className="text-[10px] text-mercury-slides font-bold">90°</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onExecuteCommand('insert_connector', 'curved');
+                      setShowConnectorPicker(false);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-xs flex items-center justify-between"
+                  >
+                    <span>Cubic Bézier Curved</span>
+                    <span className="text-[10px] text-mercury-primary font-bold">~</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onExecuteCommand('insert_connector', 'straight');
+                      setShowConnectorPicker(false);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded hover:bg-mercury-lavender dark:hover:bg-mercury-night text-xs flex items-center justify-between"
+                  >
+                    <span>Straight Line</span>
+                    <span className="text-[10px] text-mercury-ink-secondary font-bold">/</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -703,35 +836,61 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
         {/* ===================== VIEW TAB ===================== */}
         {activeTab === 'view' && (
           <div className="flex items-center space-x-2 text-xs">
-            <button
-              onClick={() => onExecuteCommand('toggle_reading_view')}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-mercury-sm bg-mercury-sheets/10 text-mercury-sheets border border-mercury-sheets/30 hover:bg-mercury-sheets/20 font-medium"
-              title="Highlight active row and column headers with crosshair spotlight"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Reading View Spotlight</span>
-            </button>
+            {docType === 'slides' ? (
+              <>
+                <button
+                  onClick={() => onExecuteCommand('open_presenter_view')}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm bg-mercury-slides text-white font-semibold shadow-sm hover:opacity-95 transition"
+                >
+                  <PlaySquare className="w-3.5 h-3.5" />
+                  <span>Launch Presenter View (F5)</span>
+                </button>
+                <button
+                  onClick={() => onExecuteCommand('start_slideshow_current')}
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                >
+                  <span>From Current Slide</span>
+                </button>
+                <button
+                  onClick={() => onExecuteCommand('toggle_speaker_notes')}
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                >
+                  <span>Speaker Notes Pane</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => onExecuteCommand('toggle_reading_view')}
+                  className="flex items-center space-x-1 px-3 py-1.5 rounded-mercury-sm bg-mercury-sheets/10 text-mercury-sheets border border-mercury-sheets/30 hover:bg-mercury-sheets/20 font-medium"
+                  title="Highlight active row and column headers with crosshair spotlight"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Reading View Spotlight</span>
+                </button>
 
-            <button
-              onClick={() => onExecuteCommand('freeze_panes')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <span>Freeze Panes</span>
-            </button>
+                <button
+                  onClick={() => onExecuteCommand('freeze_panes')}
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                >
+                  <span>Freeze Panes</span>
+                </button>
 
-            <button
-              onClick={() => onExecuteCommand('freeze_top_row')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <span>Freeze Top Row</span>
-            </button>
+                <button
+                  onClick={() => onExecuteCommand('freeze_top_row')}
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                >
+                  <span>Freeze Top Row</span>
+                </button>
 
-            <button
-              onClick={() => onExecuteCommand('freeze_first_col')}
-              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              <span>Freeze First Column</span>
-            </button>
+                <button
+                  onClick={() => onExecuteCommand('freeze_first_col')}
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                >
+                  <span>Freeze First Column</span>
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -828,28 +987,145 @@ export const RibbonBar: React.FC<RibbonBarProps> = ({
           </div>
         )}
 
-        {/* ===================== SLIDES ANIMATIONS & MORPH ===================== */}
-        {(activeTab === 'transitions' || activeTab === 'animations') && (
-          <div className="flex items-center space-x-2 text-xs">
+        {/* ===================== SLIDES DESIGN & MASTER TAB ===================== */}
+        {activeTab === 'slides' && (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* 8 Mercury Themes Gallery */}
+            <div className="flex items-center space-x-1.5 pr-3 border-r border-mercury-fog/30">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Mercury Themes:</span>
+              {[
+                { name: 'Modern', color: '#5266eb' },
+                { name: 'Slate', color: '#495057' },
+                { name: 'Emerald', color: '#0ca678' },
+                { name: 'Coral', color: '#e8590c' },
+                { name: 'Crimson', color: '#e03131' },
+                { name: 'Iris', color: '#7048e8' },
+                { name: 'Cyber', color: '#00f2fe' },
+                { name: 'Sand', color: '#f59f00' },
+              ].map((theme) => (
+                <button
+                  key={theme.name}
+                  onClick={() => onExecuteCommand('apply_theme', theme.name)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides hover:bg-mercury-lavender dark:hover:bg-mercury-night transition"
+                  title={`Apply ${theme.name} Theme`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme.color }}></span>
+                  <span className="font-medium text-[11px]">{theme.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Slide Size Switcher */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Size:</span>
+              <button
+                onClick={() => onExecuteCommand('set_slide_size', '16:9')}
+                className="px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides font-medium"
+              >
+                16:9 Wide
+              </button>
+              <button
+                onClick={() => onExecuteCommand('set_slide_size', '4:3')}
+                className="px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides font-medium"
+              >
+                4:3 Standard
+              </button>
+            </div>
+
+            {/* Master Mode */}
             <button
-              onClick={() => onExecuteCommand('apply_morph_transition')}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-mercury-sm bg-mercury-slides text-white font-medium shadow-sm"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Morph Transition</span>
-            </button>
-            <button
-              onClick={() => onExecuteCommand('add_animation', 'fade_in')}
-              className="px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
-            >
-              Entrance: Fade In
-            </button>
-            <button
-              onClick={() => onExecuteCommand('open_presenter_view')}
+              onClick={() => onExecuteCommand('toggle_master_mode')}
               className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
             >
-              <PlaySquare className="w-3.5 h-3.5 text-mercury-slides" />
-              <span>Dual-Screen Presenter View</span>
+              <Layers className="w-3.5 h-3.5 text-mercury-slides" />
+              <span>Slide Master View</span>
+            </button>
+          </div>
+        )}
+
+        {/* ===================== SLIDES TRANSITIONS TAB ===================== */}
+        {activeTab === 'transitions' && (
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Transition Gallery */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <button
+                onClick={() => onExecuteCommand('apply_morph_transition')}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm bg-mercury-slides text-white font-semibold shadow-sm hover:opacity-95 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Morph (Flagship)</span>
+              </button>
+              {['Fade', 'Push', 'Wipe', 'Split', 'Zoom', 'None'].map((trans) => (
+                <button
+                  key={trans}
+                  onClick={() => onExecuteCommand('set_slide_transition', trans)}
+                  className="px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides hover:bg-mercury-lavender dark:hover:bg-mercury-night font-medium"
+                >
+                  {trans}
+                </button>
+              ))}
+            </div>
+
+            {/* Duration Selector */}
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <span className="text-[11px] text-mercury-ink-secondary mr-1">Duration:</span>
+              {['0.5s', '1.0s', '1.5s', '2.0s'].map((dur) => (
+                <button
+                  key={dur}
+                  onClick={() => onExecuteCommand('set_transition_duration', parseFloat(dur) * 1000)}
+                  className="px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides"
+                >
+                  {dur}
+                </button>
+              ))}
+            </div>
+
+            {/* Live Preview Button */}
+            <button
+              onClick={() => onExecuteCommand('preview_morph_transition')}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-mercury-sm border border-mercury-slides text-mercury-slides hover:bg-mercury-slides/10 font-semibold transition"
+            >
+              <PlaySquare className="w-3.5 h-3.5" />
+              <span>Preview Transition</span>
+            </button>
+          </div>
+        )}
+
+        {/* ===================== SLIDES ANIMATIONS TAB ===================== */}
+        {activeTab === 'animations' && (
+          <div className="flex items-center space-x-3 text-xs">
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Entrance:</span>
+              {['Fade In', 'Fly In', 'Zoom In', 'Bounce', 'Spin'].map((anim) => (
+                <button
+                  key={anim}
+                  onClick={() => onExecuteCommand('add_animation', { category: 'entrance', effect: anim })}
+                  className="px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+                >
+                  {anim}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center space-x-1 pr-3 border-r border-mercury-fog/30">
+              <span className="text-[11px] font-medium text-mercury-ink-secondary mr-1">Emphasis:</span>
+              {['Pulse', 'Spin 360', 'Teeter'].map((anim) => (
+                <button
+                  key={anim}
+                  onClick={() => onExecuteCommand('add_animation', { category: 'emphasis', effect: anim })}
+                  className="px-2 py-1 rounded-mercury-sm border border-mercury-fog/30 hover:border-mercury-slides"
+                >
+                  {anim}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => onExecuteCommand('toggle_animation_pane')}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-mercury-sm border border-mercury-fog/30 hover:bg-mercury-lavender dark:hover:bg-mercury-night"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-mercury-slides" />
+              <span>Animation Pane</span>
             </button>
           </div>
         )}
