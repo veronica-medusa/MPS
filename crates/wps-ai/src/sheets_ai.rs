@@ -1,277 +1,459 @@
-//! AST-Grounded `@SheetsAI` Co-Pilot & Data Analyst (`wps-ai`)
+//! `@SheetsAI` — Schema-Aware NL-to-Formula, NL-to-Python & Statistical Anomaly Engine (`wps-ai`)
 //!
-//! Implements:
-//! 1. Schema Context Extraction: headers, inferred types (`Numeric`, `Currency`, `Date`, `Category`, `Text`), sample values.
-//! 2. Natural Language to Formula (e.g. `=SUMIFS(...)`, `=XLOOKUP(...)`).
-//! 3. Natural Language to Embedded Python `=PY("...")`.
-//! 4. Statistical Anomaly & Insights Engine: mean, variance, Z-scores ($|Z| > 2.5$), Pearson correlation.
-//! 5. Automated Pivot Table & Chart Recommender.
+//! Capabilities:
+//! 1. Extracts compact `SheetTableSchema` from raw cell matrices without leaking 1M rows.
+//! 2. Natural-Language-to-Formula generator (`SUMIFS`, `AVERAGEIFS`, `COUNTIFS`, `XLOOKUP`, `MAXIFS`, `MINIFS`).
+//! 3. Natural-Language-to-Python (`=PY(...)`) generator for `DataFrameBridge`.
+//! 4. Automated Statistical Anomaly Detector (Z-score |Z| >= 2.2 & IQR outliers) + Pearson
+//!    correlation & linear regression trend discovery.
+//! 5. One-click Pivot Table & Chart builder recommendations.
 
-use crate::provider::{BuiltInLocalEngine, LlmClient, LlmPromptRequest};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use wps_sheets::cell::{CellCoordinate, CellRange};
-use wps_sheets::sparse_matrix::SparseMatrix;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ColumnType {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ColumnSemanticType {
     Numeric,
     Currency,
     Date,
     Category,
-    Text,
+    FreeText,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ColumnSchema {
-    pub col_index: u16,
-    pub header: String,
-    pub inferred_type: ColumnType,
+pub struct SheetColumnDescriptor {
+    pub col_index: usize,
+    pub col_letter: String,
+    pub header_name: String,
+    pub semantic_type: ColumnSemanticType,
+    pub unique_cardinality: usize,
     pub sample_values: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetSchema {
-    pub table_range: CellRange,
-    pub columns: Vec<ColumnSchema>,
-    pub total_rows: u32,
+pub struct SheetTableSchema {
+    pub sheet_name: String,
+    pub start_row_1based: usize,
+    pub end_row_1based: usize,
+    pub columns: Vec<SheetColumnDescriptor>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetAnomaly {
-    pub coord: CellCoordinate,
-    pub value: f64,
-    pub mean: f64,
-    pub std_dev: f64,
+pub struct FormulaGenerationResult {
+    pub natural_language_prompt: String,
+    pub generated_formula: String,
+    pub explanation: String,
+    pub referenced_columns: Vec<String>,
+    pub python_alternative: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CellAnomalyCard {
+    pub cell_coord: String,
+    pub row_1based: usize,
+    pub col_header: String,
+    pub numeric_value: f64,
+    pub column_mean: f64,
+    pub column_std_dev: f64,
     pub z_score: f64,
-    pub description: String,
+    pub iqr_fences: (f64, f64),
+    pub severity: String,
+    pub explanation: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CorrelationPair {
-    pub col_a: String,
-    pub col_b: String,
+pub struct ColumnCorrelationInsight {
+    pub col_a_header: String,
+    pub col_b_header: String,
     pub pearson_r: f64,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetInsightsReport {
+    pub regression_slope: f64,
+    pub regression_intercept: f64,
     pub summary: String,
-    pub anomalies: Vec<SheetAnomaly>,
-    pub correlations: Vec<CorrelationPair>,
-    pub metrics: Vec<(String, f64)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ChartRecommendation {
-    pub chart_type: String, // "Column", "Line", "Scatter", "Bar"
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PivotAndChartRecommendation {
     pub title: String,
-    pub category_col: u16,
-    pub value_cols: Vec<u16>,
+    pub row_field: String,
+    pub value_field: String,
+    pub aggregation_func: String,
+    pub recommended_chart_type: String,
+    pub rationale: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PivotRecommendation {
-    pub row_fields: Vec<String>,
-    pub column_fields: Vec<String>,
-    pub value_field: String,
-    pub aggregation: String, // "SUM", "AVERAGE", "COUNT"
-    pub chart: Option<ChartRecommendation>,
+pub struct SheetDataInsightsReport {
+    pub schema: SheetTableSchema,
+    pub anomalies: Vec<CellAnomalyCard>,
+    pub correlations: Vec<ColumnCorrelationInsight>,
+    pub pivot_recommendations: Vec<PivotAndChartRecommendation>,
 }
 
-pub struct SheetsAi;
+pub struct SheetsAiAgent;
 
-impl SheetsAi {
-    /// Extracts table schema and column types from a worksheet region.
-    pub fn extract_schema(matrix: &SparseMatrix, range: CellRange) -> SheetSchema {
-        let mut columns = Vec::new();
-        let header_row = range.start.row;
+impl SheetsAiAgent {
+    /// Converts a 0-based column index into an Excel/WPS column letter (`0 -> A`, `25 -> Z`, `26 -> AA`).
+    pub fn col_index_to_letter(mut col_idx: usize) -> String {
+        let mut letters = Vec::new();
+        loop {
+            let rem = col_idx % 26;
+            letters.push((b'A' + (rem as u8)) as char);
+            if col_idx < 26 {
+                break;
+            }
+            col_idx = (col_idx / 26) - 1;
+        }
+        letters.into_iter().rev().collect()
+    }
 
-        for col in range.start.col..=range.end.col {
-            let header_coord = CellCoordinate::new(header_row, col);
-            let header = matrix
-                .get_cell(header_coord)
-                .map(|c| c.value.as_string())
-                .unwrap_or_else(|| format!("Col_{}", col + 1));
+    /// Inspects a 2D table (Row 0 = headers, Rows 1..N = data) and builds a `SheetTableSchema`.
+    pub fn extract_table_schema(
+        sheet_name: &str,
+        headers: &[String],
+        data_rows: &[Vec<String>],
+    ) -> SheetTableSchema {
+        let total_rows = data_rows.len();
+        let mut columns = Vec::with_capacity(headers.len());
 
-            let mut samples = Vec::new();
-            let mut num_numeric = 0;
-            let mut num_currency = 0;
-            let mut num_date = 0;
-            let mut total_data_rows = 0;
+        for (c_idx, header) in headers.iter().enumerate() {
+            let mut non_empty = Vec::new();
+            let mut unique_set = std::collections::BTreeSet::new();
+            let mut numeric_count = 0usize;
+            let mut currency_count = 0usize;
+            let mut date_count = 0usize;
 
-            for row in (header_row + 1)..=range.end.row {
-                let cell_coord = CellCoordinate::new(row, col);
-                if let Some(cell) = matrix.get_cell(cell_coord) {
-                    if !cell.value.is_empty() {
-                        total_data_rows += 1;
-                        let s = cell.value.as_string();
-                        if samples.len() < 3 {
-                            samples.push(s.clone());
+            for row in data_rows {
+                if let Some(cell) = row.get(c_idx) {
+                    let trimmed = cell.trim();
+                    if !trimmed.is_empty() {
+                        non_empty.push(trimmed.to_string());
+                        unique_set.insert(trimmed.to_string());
+                        if trimmed.starts_with('$')
+                            || trimmed.starts_with('€')
+                            || trimmed.starts_with('₹')
+                        {
+                            currency_count += 1;
                         }
-
-                        if s.starts_with('$') || s.starts_with('€') || s.starts_with('£') {
-                            num_currency += 1;
-                        } else if s.contains('-') && s.len() == 10 {
-                            num_date += 1;
-                        } else if cell.value.as_number().is_some() {
-                            num_numeric += 1;
+                        if Self::parse_numeric_cell(trimmed).is_some() {
+                            numeric_count += 1;
+                        } else if Self::looks_like_date(trimmed) {
+                            date_count += 1;
                         }
                     }
                 }
             }
 
-            let inferred_type = if num_currency > total_data_rows / 2 && total_data_rows > 0 {
-                ColumnType::Currency
-            } else if num_date > total_data_rows / 2 && total_data_rows > 0 {
-                ColumnType::Date
-            } else if num_numeric > total_data_rows / 2 && total_data_rows > 0 {
-                ColumnType::Numeric
-            } else if total_data_rows > 0 && samples.iter().all(|x| x.len() < 20) {
-                ColumnType::Category
+            let count = non_empty.len().max(1);
+            let semantic_type = if currency_count * 2 >= count {
+                ColumnSemanticType::Currency
+            } else if numeric_count * 2 >= count {
+                ColumnSemanticType::Numeric
+            } else if date_count * 2 >= count {
+                ColumnSemanticType::Date
+            } else if unique_set.len() <= (total_rows / 2).max(6) {
+                ColumnSemanticType::Category
             } else {
-                ColumnType::Text
+                ColumnSemanticType::FreeText
             };
 
-            columns.push(ColumnSchema {
-                col_index: col,
-                header,
-                inferred_type,
-                sample_values: samples,
+            columns.push(SheetColumnDescriptor {
+                col_index: c_idx,
+                col_letter: Self::col_index_to_letter(c_idx),
+                header_name: header.clone(),
+                semantic_type,
+                unique_cardinality: unique_set.len(),
+                sample_values: non_empty.into_iter().take(3).collect(),
             });
         }
 
-        let total_rows = if range.end.row >= range.start.row {
-            range.end.row - range.start.row
-        } else {
-            0
-        };
-
-        SheetSchema {
-            table_range: range,
+        SheetTableSchema {
+            sheet_name: sheet_name.to_string(),
+            start_row_1based: 2,
+            end_row_1based: (total_rows + 1).max(2),
             columns,
-            total_rows,
         }
     }
 
-    /// Converts a natural language query into a high-performance formula.
-    pub fn natural_language_to_formula(schema: &SheetSchema, prompt: &str) -> String {
-        let p = prompt.to_lowercase();
-        let engine = BuiltInLocalEngine::new();
+    /// Translates a natural language query into both an exact Excel/WPS formula (`SUMIFS`, `XLOOKUP`,
+    /// `AVERAGEIFS`, `COUNTIFS`, etc.) and an equivalent `=PY(...)` DataFrame formula.
+    pub fn natural_language_to_formula(
+        prompt: &str,
+        schema: &SheetTableSchema,
+    ) -> FormulaGenerationResult {
+        let lower_prompt = prompt.to_ascii_lowercase();
+        let r_start = schema.start_row_1based;
+        let r_end = schema.end_row_1based;
 
-        let req = LlmPromptRequest {
-            system_prompt: "You are an Excel / Spreadsheets formula expert.".to_string(),
-            user_prompt: format!(
-                "Generate a formula for schema columns {:?} and query: {}",
-                schema.columns.iter().map(|c| &c.header).collect::<Vec<_>>(),
-                prompt
-            ),
-            temperature: 0.1,
-            max_tokens: 128,
+        // Identify target numeric/value column mentioned in prompt (or default to last numeric column)
+        let target_col = schema
+            .columns
+            .iter()
+            .find(|c| {
+                lower_prompt.contains(&c.header_name.to_ascii_lowercase())
+                    && matches!(
+                        c.semantic_type,
+                        ColumnSemanticType::Numeric | ColumnSemanticType::Currency
+                    )
+            })
+            .or_else(|| {
+                schema.columns.iter().rev().find(|c| {
+                    matches!(
+                        c.semantic_type,
+                        ColumnSemanticType::Numeric | ColumnSemanticType::Currency
+                    )
+                })
+            })
+            .unwrap_or(&schema.columns[0]);
+
+        // Identify filter/category column mentioned in prompt
+        let filter_col = schema
+            .columns
+            .iter()
+            .find(|c| {
+                c.col_index != target_col.col_index
+                    && lower_prompt.contains(&c.header_name.to_ascii_lowercase())
+            })
+            .or_else(|| {
+                schema
+                    .columns
+                    .iter()
+                    .find(|c| c.semantic_type == ColumnSemanticType::Category)
+            });
+
+        // Extract quoted filter criterion (e.g. 'APAC' or "Enterprise") if present
+        let criterion = Self::extract_quoted_literal(prompt).or_else(|| {
+            filter_col.and_then(|fc| {
+                fc.sample_values
+                    .iter()
+                    .find(|v| lower_prompt.contains(&v.to_ascii_lowercase()))
+                    .cloned()
+            })
+        });
+
+        let target_range = format!("{}{}:{}{}", target_col.col_letter, r_start, target_col.col_letter, r_end);
+        let last_col_letter = schema
+            .columns
+            .last()
+            .map(|c| c.col_letter.as_str())
+            .unwrap_or("D");
+        let full_table_range = format!("A1:{}{}", last_col_letter, r_end);
+
+        // Lookup intent (`lookup`, `find`, `xlookup`)
+        if lower_prompt.contains("lookup") || lower_prompt.contains("find ") {
+            if let Some(fc) = filter_col {
+                let lookup_val = criterion.unwrap_or_else(|| "G2".to_string());
+                let formatted_key = if lookup_val.chars().all(|c| c.is_ascii_alphanumeric())
+                    && lookup_val.len() <= 3
+                {
+                    lookup_val.clone()
+                } else {
+                    format!("\"{}\"", lookup_val)
+                };
+                let lookup_range = format!("{}{}:{}{}", fc.col_letter, r_start, fc.col_letter, r_end);
+                let formula = format!(
+                    "=XLOOKUP({}, {}, {}, \"Not Found\", 0)",
+                    formatted_key, lookup_range, target_range
+                );
+                let py_code = format!(
+                    "=PY(\"df = wp.range('{}').to_df(); return df.loc[df['{}'] == '{}', '{}'].iloc[0]\")",
+                    full_table_range, fc.header_name, lookup_val, target_col.header_name
+                );
+                return FormulaGenerationResult {
+                    natural_language_prompt: prompt.to_string(),
+                    generated_formula: formula,
+                    explanation: format!(
+                        "Looks up {} in {} ({}) and returns matching {} ({}).",
+                        formatted_key,
+                        fc.header_name,
+                        lookup_range,
+                        target_col.header_name,
+                        target_range
+                    ),
+                    referenced_columns: vec![fc.header_name.clone(), target_col.header_name.clone()],
+                    python_alternative: py_code,
+                };
+            }
+        }
+
+        // Aggregation intent (`sum`, `total`, `average`, `mean`, `count`, `max`, `min`)
+        let is_avg = lower_prompt.contains("average") || lower_prompt.contains("mean");
+        let is_count = lower_prompt.contains("count") || lower_prompt.contains("how many");
+        let is_max = lower_prompt.contains("max") || lower_prompt.contains("highest");
+        let is_min = lower_prompt.contains("min") || lower_prompt.contains("lowest");
+
+        if let (Some(fc), Some(crit_val)) = (filter_col, criterion) {
+            let filter_range = format!("{}{}:{}{}", fc.col_letter, r_start, fc.col_letter, r_end);
+            let (func_name, py_agg) = if is_avg {
+                ("AVERAGEIFS", "mean")
+            } else if is_max {
+                ("MAXIFS", "max")
+            } else if is_min {
+                ("MINIFS", "min")
+            } else {
+                ("SUMIFS", "sum")
+            };
+
+            let formula = if is_count {
+                format!("=COUNTIFS({}, \"{}\")", filter_range, crit_val)
+            } else {
+                format!(
+                    "={}({}, {}, \"{}\")",
+                    func_name, target_range, filter_range, crit_val
+                )
+            };
+
+            let py_code = format!(
+                "=PY(\"df = wp.range('{}').to_df(); return df[df['{}'] == '{}']['{}'].{}()\")",
+                full_table_range, fc.header_name, crit_val, target_col.header_name, py_agg
+            );
+
+            return FormulaGenerationResult {
+                natural_language_prompt: prompt.to_string(),
+                generated_formula: formula,
+                explanation: format!(
+                    "Aggregates {} ({}) where {} ({}) equals \"{}\".",
+                    target_col.header_name, target_range, fc.header_name, filter_range, crit_val
+                ),
+                referenced_columns: vec![target_col.header_name.clone(), fc.header_name.clone()],
+                python_alternative: py_code,
+            };
+        }
+
+        // Unfiltered aggregation fallback
+        let (simple_func, py_agg) = if is_avg {
+            ("AVERAGE", "mean")
+        } else if is_count {
+            ("COUNTA", "count")
+        } else if is_max {
+            ("MAX", "max")
+        } else if is_min {
+            ("MIN", "min")
+        } else {
+            ("SUM", "sum")
         };
 
-        if let Ok(res) = engine.generate_completion(&req) {
-            if res.content.starts_with('=') {
-                return res.content.trim().to_string();
-            }
-        }
-
-        // Deterministic heuristics
-        if p.contains("sum") && p.contains("revenue") {
-            let start_a1 = schema.table_range.start.to_a1_string();
-            let end_a1 = schema.table_range.end.to_a1_string();
-            format!("=SUM({}:{})", start_a1, end_a1)
-        } else if p.contains("average") || p.contains("mean") {
-            let start_a1 = schema.table_range.start.to_a1_string();
-            let end_a1 = schema.table_range.end.to_a1_string();
-            format!("=AVERAGE({}:{})", start_a1, end_a1)
-        } else if p.contains("lookup") || p.contains("find") {
-            "=XLOOKUP(A2, Products!A:A, Products!C:C, \"Not Found\", 0)".to_string()
-        } else {
-            format!("=SUM({}:{})", schema.table_range.start.to_a1_string(), schema.table_range.end.to_a1_string())
+        FormulaGenerationResult {
+            natural_language_prompt: prompt.to_string(),
+            generated_formula: format!("={}({})", simple_func, target_range),
+            explanation: format!(
+                "Computes {} over {} ({}).",
+                simple_func, target_col.header_name, target_range
+            ),
+            referenced_columns: vec![target_col.header_name.clone()],
+            python_alternative: format!(
+                "=PY(\"df = wp.range('{}').to_df(); return df['{}'].{}()\")",
+                full_table_range, target_col.header_name, py_agg
+            ),
         }
     }
 
-    /// Converts a natural language query into an embedded Python `=PY("...")` expression.
-    pub fn natural_language_to_python(schema: &SheetSchema, prompt: &str) -> String {
-        let p = prompt.to_lowercase();
-        let range_str = format!("{}:{}", schema.table_range.start.to_a1_string(), schema.table_range.end.to_a1_string());
+    /// Scans a 2D dataset for statistical Z-score & IQR anomalies, pairwise Pearson correlations,
+    /// and Pivot Table / Chart recommendations.
+    pub fn analyze_sheet_insights_and_anomalies(
+        sheet_name: &str,
+        headers: &[String],
+        data_rows: &[Vec<String>],
+    ) -> SheetDataInsightsReport {
+        type NumericSeries = (usize, String, Vec<(usize, f64)>);
 
-        if p.contains("groupby") || (p.contains("group") && p.contains("sum")) {
-            let cat_col = schema.columns.iter().find(|c| c.inferred_type == ColumnType::Category || c.inferred_type == ColumnType::Text)
-                .map(|c| c.header.as_str())
-                .unwrap_or("Region");
-            let num_col = schema.columns.iter().find(|c| c.inferred_type == ColumnType::Numeric || c.inferred_type == ColumnType::Currency)
-                .map(|c| c.header.as_str())
-                .unwrap_or("Revenue");
-            format!("=PY(\"df = xl('{}', headers=True)\\ndf.groupby('{}')['{}'].sum()\")", range_str, cat_col, num_col)
-        } else if p.contains("describe") || p.contains("summary") {
-            format!("=PY(\"df = xl('{}', headers=True)\\ndf.describe()\")", range_str)
-        } else {
-            format!("=PY(\"df = xl('{}', headers=True)\\ndf.head(10)\")", range_str)
-        }
-    }
-
-    /// Computes statistical profile, Z-score outliers ($|Z| > 2.5$), and Pearson correlation.
-    pub fn detect_anomalies_and_insights(matrix: &SparseMatrix, range: CellRange) -> SheetInsightsReport {
+        let schema = Self::extract_table_schema(sheet_name, headers, data_rows);
         let mut anomalies = Vec::new();
-        let mut col_values: HashMap<u16, Vec<(u32, f64)>> = HashMap::new();
-        let mut col_names: HashMap<u16, String> = HashMap::new();
+        let mut numeric_columns_series: Vec<NumericSeries> = Vec::new();
 
-        // 1. Gather values
-        let header_row = range.start.row;
-        for col in range.start.col..=range.end.col {
-            let header_coord = CellCoordinate::new(header_row, col);
-            let name = matrix.get_cell(header_coord)
-                .map(|c| c.value.as_string())
-                .unwrap_or_else(|| format!("Col_{}", col + 1));
-            col_names.insert(col, name);
-
-            let mut vals = Vec::new();
-            for row in (header_row + 1)..=range.end.row {
-                let coord = CellCoordinate::new(row, col);
-                if let Some(cell) = matrix.get_cell(coord) {
-                    if let Some(n) = cell.value.as_number() {
-                        vals.push((row, n));
-                    }
-                }
-            }
-            if !vals.is_empty() {
-                col_values.insert(col, vals);
-            }
-        }
-
-        let mut metrics = Vec::new();
-
-        // 2. Anomaly Detection (Z-scores)
-        for (col, vals) in &col_values {
-            let n = vals.len() as f64;
-            if n < 3.0 {
+        for col in &schema.columns {
+            if !matches!(
+                col.semantic_type,
+                ColumnSemanticType::Numeric | ColumnSemanticType::Currency
+            ) {
                 continue;
             }
 
-            let sum: f64 = vals.iter().map(|(_, v)| *v).sum();
-            let mean = sum / n;
-            let variance: f64 = vals.iter().map(|(_, v)| (v - mean).powi(2)).sum::<f64>() / (n - 1.0);
-            let std_dev = variance.sqrt();
+            let mut row_vals: Vec<(usize, f64)> = Vec::new();
+            for (r_idx, row) in data_rows.iter().enumerate() {
+                if let Some(raw) = row.get(col.col_index) {
+                    if let Some(val) = Self::parse_numeric_cell(raw) {
+                        row_vals.push((r_idx + 2, val)); // 1-based sheet row (row 1 = header)
+                    }
+                }
+            }
 
-            let col_name = col_names.get(col).cloned().unwrap_or_default();
-            metrics.push((format!("{}_mean", col_name), mean));
-            metrics.push((format!("{}_std_dev", col_name), std_dev));
+            if row_vals.len() >= 4 {
+                let values_only: Vec<f64> = row_vals.iter().map(|&(_, v)| v).collect();
+                let n = values_only.len() as f64;
+                let mean = values_only.iter().sum::<f64>() / n;
+                let variance = values_only
+                    .iter()
+                    .map(|&v| (v - mean) * (v - mean))
+                    .sum::<f64>()
+                    / n;
+                let std_dev = variance.sqrt();
 
-            if std_dev > 1e-6 {
-                for (row, val) in vals {
-                    let z_score = (val - mean) / std_dev;
-                    if z_score.abs() > 2.5 {
-                        anomalies.push(SheetAnomaly {
-                            coord: CellCoordinate::new(*row, *col),
-                            value: *val,
-                            mean,
-                            std_dev,
+                let mut sorted_vals = values_only.clone();
+                sorted_vals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let q1 = Self::percentile_sorted(&sorted_vals, 0.25);
+                let q3 = Self::percentile_sorted(&sorted_vals, 0.75);
+                let iqr = (q3 - q1).max(1e-6);
+                let lower_fence = q1 - 1.5 * iqr;
+                let upper_fence = q3 + 1.5 * iqr;
+
+                for &(row_1based, val) in &row_vals {
+                    let z_score = if std_dev > 1e-9 {
+                        (val - mean) / std_dev
+                    } else {
+                        0.0
+                    };
+                    let is_iqr_outlier = val < lower_fence || val > upper_fence;
+
+                    // Flag statistically significant spikes/drops (|Z| >= 2.2 or strong IQR outlier)
+                    if z_score.abs() >= 2.2 || (is_iqr_outlier && z_score.abs() >= 1.8) {
+                        let coord = format!("{}{}", col.col_letter, row_1based);
+                        let severity = if z_score.abs() >= 2.8 {
+                            "Critical Outlier"
+                        } else {
+                            "Statistical Anomaly"
+                        };
+                        anomalies.push(CellAnomalyCard {
+                            cell_coord: coord.clone(),
+                            row_1based,
+                            col_header: col.header_name.clone(),
+                            numeric_value: val,
+                            column_mean: mean,
+                            column_std_dev: std_dev,
                             z_score,
-                            description: format!(
-                                "Value {:.2} in {} exceeds normal range by {:.1} standard deviations",
-                                val, col_name, z_score
+                            iqr_fences: (lower_fence, upper_fence),
+                            severity: severity.to_string(),
+                            explanation: format!(
+                                "Cell {} ({:.2}) in '{}' deviates by Z = {:+.2}σ from column mean ({:.2}).",
+                                coord, val, col.header_name, z_score, mean
+                            ),
+                        });
+                    }
+                }
+
+                numeric_columns_series.push((col.col_index, col.header_name.clone(), row_vals));
+            }
+        }
+
+        // Compute pairwise Pearson correlation & linear regression across numeric columns
+        let mut correlations = Vec::new();
+        for i in 0..numeric_columns_series.len() {
+            for j in (i + 1)..numeric_columns_series.len() {
+                let (_, ref name_a, ref series_a) = numeric_columns_series[i];
+                let (_, ref name_b, ref series_b) = numeric_columns_series[j];
+
+                if let Some((r, slope, intercept)) =
+                    Self::compute_pearson_and_regression(series_a, series_b)
+                {
+                    if r.abs() >= 0.50 {
+                        let direction = if r > 0.0 { "positive" } else { "negative" };
+                        correlations.push(ColumnCorrelationInsight {
+                            col_a_header: name_a.clone(),
+                            col_b_header: name_b.clone(),
+                            pearson_r: r,
+                            regression_slope: slope,
+                            regression_intercept: intercept,
+                            summary: format!(
+                                "Strong {} correlation (r = {:.2}) between '{}' and '{}' (y = {:.2}x {:+.2}).",
+                                direction, r, name_a, name_b, slope, intercept
                             ),
                         });
                     }
@@ -279,86 +461,127 @@ impl SheetsAi {
             }
         }
 
-        // 3. Pearson Correlation between numeric columns
-        let mut correlations = Vec::new();
-        let cols_vec: Vec<u16> = col_values.keys().cloned().collect();
-        for i in 0..cols_vec.len() {
-            for j in (i + 1)..cols_vec.len() {
-                let c1 = cols_vec[i];
-                let c2 = cols_vec[j];
-                let v1 = &col_values[&c1];
-                let v2 = &col_values[&c2];
+        // Build Pivot Table & Chart recommendations
+        let mut pivot_recommendations = Vec::new();
+        let cat_cols: Vec<&SheetColumnDescriptor> = schema
+            .columns
+            .iter()
+            .filter(|c| c.semantic_type == ColumnSemanticType::Category)
+            .collect();
+        let num_cols: Vec<&SheetColumnDescriptor> = schema
+            .columns
+            .iter()
+            .filter(|c| {
+                matches!(
+                    c.semantic_type,
+                    ColumnSemanticType::Numeric | ColumnSemanticType::Currency
+                )
+            })
+            .collect();
 
-                // Align by row
-                let map2: HashMap<u32, f64> = v2.iter().cloned().collect();
-                let mut pairs = Vec::new();
-                for (r, val1) in v1 {
-                    if let Some(val2) = map2.get(r) {
-                        pairs.push((*val1, *val2));
-                    }
-                }
+        if let (Some(cat), Some(num)) = (cat_cols.first(), num_cols.first()) {
+            pivot_recommendations.push(PivotAndChartRecommendation {
+                title: format!("{} by {}", num.header_name, cat.header_name),
+                row_field: cat.header_name.clone(),
+                value_field: num.header_name.clone(),
+                aggregation_func: "SUM".to_string(),
+                recommended_chart_type: if cat.unique_cardinality <= 6 {
+                    "Doughnut / Clustered Column".to_string()
+                } else {
+                    "Horizontal Bar Chart".to_string()
+                },
+                rationale: format!(
+                    "'{}' has {} distinct groups—ideal for summarizing total '{}'.",
+                    cat.header_name, cat.unique_cardinality, num.header_name
+                ),
+            });
+        }
 
-                if pairs.len() >= 3 {
-                    let n = pairs.len() as f64;
-                    let m1: f64 = pairs.iter().map(|(x, _)| *x).sum::<f64>() / n;
-                    let m2: f64 = pairs.iter().map(|(_, y)| *y).sum::<f64>() / n;
+        SheetDataInsightsReport {
+            schema,
+            anomalies,
+            correlations,
+            pivot_recommendations,
+        }
+    }
 
-                    let num: f64 = pairs.iter().map(|(x, y)| (x - m1) * (y - m2)).sum();
-                    let den1: f64 = pairs.iter().map(|(x, _)| (x - m1).powi(2)).sum();
-                    let den2: f64 = pairs.iter().map(|(_, y)| (y - m2).powi(2)).sum();
-                    let den = (den1 * den2).sqrt();
+    fn parse_numeric_cell(raw: &str) -> Option<f64> {
+        let cleaned: String = raw
+            .trim()
+            .chars()
+            .filter(|&c| c != '$' && c != '€' && c != '₹' && c != ',' && c != '%' && c != ' ')
+            .collect();
+        if cleaned.is_empty() {
+            return None;
+        }
+        cleaned.parse::<f64>().ok()
+    }
 
-                    if den > 1e-9 {
-                        let r = num / den;
-                        correlations.push(CorrelationPair {
-                            col_a: col_names[&c1].clone(),
-                            col_b: col_names[&c2].clone(),
-                            pearson_r: (r * 1000.0).round() / 1000.0,
-                        });
+    fn looks_like_date(raw: &str) -> bool {
+        let s = raw.trim();
+        (s.len() == 10 && s.chars().nth(4) == Some('-') && s.chars().nth(7) == Some('-'))
+            || (s.len() >= 8 && s.matches('/').count() == 2)
+    }
+
+    fn extract_quoted_literal(prompt: &str) -> Option<String> {
+        for quote in ['\'', '"'] {
+            if let Some(start) = prompt.find(quote) {
+                if let Some(end_rel) = prompt[start + 1..].find(quote) {
+                    let extracted = &prompt[start + 1..start + 1 + end_rel];
+                    if !extracted.trim().is_empty() {
+                        return Some(extracted.trim().to_string());
                     }
                 }
             }
         }
-
-        let summary = format!(
-            "Analyzed {} rows: detected {} statistical anomalies and {} pairwise column correlations.",
-            range.row_count(),
-            anomalies.len(),
-            correlations.len()
-        );
-
-        SheetInsightsReport {
-            summary,
-            anomalies,
-            correlations,
-            metrics,
-        }
+        None
     }
 
-    /// Recommends optimal Pivot Table and Chart configuration for a given dataset.
-    pub fn recommend_pivot_and_chart(matrix: &SparseMatrix, range: CellRange) -> PivotRecommendation {
-        let schema = Self::extract_schema(matrix, range);
-
-        let category_col = schema.columns.iter().find(|c| c.inferred_type == ColumnType::Category || c.inferred_type == ColumnType::Text);
-        let numeric_col = schema.columns.iter().find(|c| c.inferred_type == ColumnType::Numeric || c.inferred_type == ColumnType::Currency);
-
-        let row_field = category_col.map(|c| c.header.clone()).unwrap_or_else(|| "Category".to_string());
-        let val_field = numeric_col.map(|c| c.header.clone()).unwrap_or_else(|| "Total".to_string());
-
-        let cat_idx = category_col.map(|c| c.col_index).unwrap_or(range.start.col);
-        let val_idx = numeric_col.map(|c| c.col_index).unwrap_or(range.end.col);
-
-        PivotRecommendation {
-            row_fields: vec![row_field.clone()],
-            column_fields: vec![],
-            value_field: val_field.clone(),
-            aggregation: "SUM".to_string(),
-            chart: Some(ChartRecommendation {
-                chart_type: "Column".to_string(),
-                title: format!("{} by {}", val_field, row_field),
-                category_col: cat_idx,
-                value_cols: vec![val_idx],
-            }),
+    fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
+        if sorted.is_empty() {
+            return 0.0;
         }
+        let idx = (p * ((sorted.len() - 1) as f64)).clamp(0.0, (sorted.len() - 1) as f64);
+        let lo = idx.floor() as usize;
+        let hi = idx.ceil() as usize;
+        let frac = idx - (lo as f64);
+        sorted[lo] * (1.0 - frac) + sorted[hi] * frac
+    }
+
+    fn compute_pearson_and_regression(
+        series_a: &[(usize, f64)],
+        series_b: &[(usize, f64)],
+    ) -> Option<(f64, f64, f64)> {
+        let map_b: std::collections::BTreeMap<usize, f64> = series_b.iter().copied().collect();
+        let pairs: Vec<(f64, f64)> = series_a
+            .iter()
+            .filter_map(|&(r, va)| map_b.get(&r).map(|&vb| (va, vb)))
+            .collect();
+
+        if pairs.len() < 3 {
+            return None;
+        }
+        let n = pairs.len() as f64;
+        let mean_x = pairs.iter().map(|&(x, _)| x).sum::<f64>() / n;
+        let mean_y = pairs.iter().map(|&(_, y)| y).sum::<f64>() / n;
+
+        let mut cov = 0.0;
+        let mut var_x = 0.0;
+        let mut var_y = 0.0;
+        for &(x, y) in &pairs {
+            let dx = x - mean_x;
+            let dy = y - mean_y;
+            cov += dx * dy;
+            var_x += dx * dx;
+            var_y += dy * dy;
+        }
+
+        if var_x <= 1e-12 || var_y <= 1e-12 {
+            return None;
+        }
+        let r = (cov / (var_x.sqrt() * var_y.sqrt())).clamp(-1.0, 1.0);
+        let slope = cov / var_x;
+        let intercept = mean_y - slope * mean_x;
+        Some((r, slope, intercept))
     }
 }

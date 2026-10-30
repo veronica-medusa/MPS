@@ -1,15 +1,9 @@
 [package]
 name = "wps-ai"
-version.workspace = true
-edition.workspace = true
+version = "0.1.0"
+edition = "2021"
+description = "AST-Native WPS AI Co-Pilot (@WriterAI, @SheetsAI, @SlidesAI, and @PdfAI with spatial BBox RAG)"
 
 [dependencies]
-wps-core = { workspace = true }
-wps-writer = { workspace = true }
-wps-sheets = { workspace = true }
-wps-slides = { workspace = true }
-wps-pdf = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-log = { workspace = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

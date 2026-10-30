@@ -356,15 +356,8 @@ dependencies = [
 name = "wps-ai"
 version = "0.1.0"
 dependencies = [
- "log",
  "serde",
  "serde_json",
- "thiserror",
- "wps-core",
- "wps-pdf",
- "wps-sheets",
- "wps-slides",
- "wps-writer",
 ]
 
 [[package]]

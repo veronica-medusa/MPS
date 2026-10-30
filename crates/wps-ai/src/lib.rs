@@ -1,166 +1,169 @@
-pub mod mutations;
+//! `wps-ai` — AST-Native WPS AI Co-Pilot Crate Root (`@WriterAI`, `@SheetsAI`, `@SlidesAI`, `@PdfAI`)
+
 pub mod pdf_ai;
 pub mod provider;
-pub mod router;
 pub mod sheets_ai;
 pub mod slides_ai;
 pub mod writer_ai;
 
-pub use mutations::{AiMutation, MutationApplicator};
-pub use pdf_ai::{PdfAi, PdfCitationChip, PdfIndexedBlock, PdfSpatialIndex};
-pub use provider::{BuiltInLocalEngine, LlmClient, LlmPromptRequest, LlmPromptResponse, LlmProviderConfig};
-pub use router::{AgentRouter, AiDomain, AiResponse, CitationBadge};
+pub use pdf_ai::{PdfBBox, PdfChunkKind, PdfCitationChip, PdfGroundedAnswer, PdfSpatialRagIndex};
+pub use provider::{AiProviderKind, LlmProviderConfig, OutboundLlmHttpRequest};
 pub use sheets_ai::{
-    ChartRecommendation, ColumnSchema, ColumnType, CorrelationPair, PivotRecommendation,
-    SheetAnomaly, SheetInsightsReport, SheetSchema, SheetsAi,
+    CellAnomalyCard, ColumnCorrelationInsight, ColumnSemanticType, FormulaGenerationResult,
+    PivotAndChartRecommendation, SheetColumnDescriptor, SheetDataInsightsReport, SheetTableSchema,
+    SheetsAiAgent,
 };
 pub use slides_ai::{
-    DeckOutline, PresentationThemeConfig, SlideOutlineItem, SlidesAi,
+    CompiledPresentationDeck, CompiledShapeNode, CompiledSlideScene, CompiledSmartConnector,
+    DeckOutline, SlideLayoutKind, SlideOutlineCard, SlidesAiAgent,
 };
-pub use writer_ai::{RewriteTone, WriterAi, WriterAiResult};
+pub use writer_ai::{
+    ExecutiveSummaryCard, GrammarIssueSuggestion, RewriteTone, StyleAssignmentMutation,
+    WriterAiAgent, WriterParagraphInput, WriterRedlineSpan, WriterRewriteResult,
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wps_core::geometry::Rect;
-    use wps_sheets::cell::CellCoordinate;
-    use wps_sheets::sparse_matrix::SparseMatrix;
-    use wps_writer::ast::{Document as WriterDocument, Paragraph, TextRun};
-    use wps_slides::scene_graph::PresentationDeck as SlidesDeck;
-    use wps_pdf::{PdfDocument, PdfPage, PdfTextElement};
-    use wps_core::color::Color;
 
     #[test]
-    fn test_writer_ai_outline_and_rewrite() {
-        let mut doc = WriterDocument::new("Strategic Report", "Author");
-        let mut p = Paragraph::new("p-1");
-        p.add_run(TextRun::new("We made some good progress this quarter."));
-        doc.add_paragraph(p);
-
-        // 1. Rewrite formal
-        let resp = AgentRouter::dispatch(
-            AiDomain::Writer,
-            "rewrite in formal tone",
-            Some("We made some good progress this quarter."),
-            None,
-        );
-
-        assert_eq!(resp.mutations.len(), 1);
-        let applied = MutationApplicator::apply_to_writer(&mut doc, &resp.mutations[0]);
-        assert!(applied);
-        match &doc.sections[0].elements[0] {
-            wps_writer::ast::BlockElement::Paragraph(p) => {
-                assert!(p.plain_text().contains("substantial operational progress"));
-            }
-            _ => panic!("Expected paragraph"),
-        }
-
-        // 2. Outline generation
-        let outline_resp = AgentRouter::dispatch(
-            AiDomain::Writer,
-            "generate outline for expansion plan",
-            Some("Expansion Plan"),
-            None,
-        );
-        assert_eq!(outline_resp.mutations.len(), 4);
-        for m in &outline_resp.mutations {
-            MutationApplicator::apply_to_writer(&mut doc, m);
-        }
-        assert!(doc.sections[0].elements.len() >= 5);
-    }
-
-    #[test]
-    fn test_sheets_ai_formula_and_table_generation() {
-        let mut matrix = SparseMatrix::new();
-
-        // 1. Formula synthesis
-        let resp = AgentRouter::dispatch(
-            AiDomain::Sheets,
-            "generate an xlookup for product code",
-            None,
-            None,
-        );
-        assert_eq!(resp.mutations.len(), 1);
-        MutationApplicator::apply_to_sheets(&mut matrix, &resp.mutations[0]);
-
-        let b2 = matrix.get_cell(CellCoordinate::new(1, 1)).unwrap();
-        assert!(b2.formula.as_ref().unwrap().contains("XLOOKUP"));
-
-        // 2. Table synthesis
-        let table_resp = AgentRouter::dispatch(
-            AiDomain::Sheets,
-            "create financial overview table",
-            None,
-            None,
-        );
-        assert_eq!(table_resp.mutations.len(), 1);
-        MutationApplicator::apply_to_sheets(&mut matrix, &table_resp.mutations[0]);
-
-        let metric_cell = matrix.get_cell(CellCoordinate::new(0, 0)).unwrap();
-        assert_eq!(metric_cell.value, wps_sheets::cell::CellValue::Text("Metric".to_string()));
-    }
-
-    #[test]
-    fn test_slides_ai_presentation_generation() {
-        let mut deck = SlidesDeck::new("Initial Deck");
-
-        let resp = AgentRouter::dispatch(
-            AiDomain::Slides,
-            "Engineering Architecture",
-            None,
-            None,
-        );
-
-        assert_eq!(resp.mutations.len(), 2);
-        for m in &resp.mutations {
-            MutationApplicator::apply_to_slides(&mut deck, m);
-        }
-
-        assert_eq!(deck.slides.len(), 3); // 1 initial + 2 generated
-        assert!(deck.slides[1].title.contains("Architecture: Overview"));
-    }
-
-    #[test]
-    fn test_pdf_ai_rag_citations() {
-        let mut pdf = PdfDocument::new("Annual Review");
-        let page = PdfPage {
-            page_index: 0,
-            width: 595.0,
-            height: 842.0,
-            rotation: 0,
-            crop_box: Rect::new(0.0, 0.0, 595.0, 842.0),
-            text_elements: vec![
-                PdfTextElement {
-                    text: "Net profit margin expanded to 31.4% in 2026.".to_string(),
-                    bounds: Rect::new(50.0, 100.0, 240.0, 14.0),
-                    font_name: "Helvetica".to_string(),
-                    font_size: 14.0,
-                    color: Color::rgb(0, 0, 0),
-                    baseline: 112.0,
-                },
-            ],
-            vector_paths: Vec::new(),
-            raw_stream: Vec::new(),
+    fn test_writer_ai_rewrite_emits_track_changes_and_auto_formats() {
+        let para = WriterParagraphInput {
+            paragraph_id: 42,
+            text: "We utilize this module in order to process a large number of documents.".to_string(),
+            current_style_id: "Normal".to_string(),
         };
-        pdf.add_page(page);
 
-        let resp = AgentRouter::dispatch(
-            AiDomain::Pdf,
-            "profit margin",
-            None,
-            Some(&pdf),
+        let rewrite =
+            WriterAiAgent::rewrite_with_track_changes(&para, RewriteTone::Concise, "2026-10-30T12:00:00Z");
+
+        assert_eq!(
+            rewrite.rewritten_text,
+            "We use this module to process many documents."
         );
 
-        assert_eq!(resp.citations.len(), 1);
-        assert_eq!(resp.citations[0].page_index, 0);
-        assert_eq!(resp.citations[0].bbox, Rect::new(50.0, 100.0, 240.0, 14.0));
+        // Must contain both Delete and Insert redline spans attributed to "WPS AI"
+        let has_delete = rewrite.redline_spans.iter().any(|s| {
+            matches!(s, WriterRedlineSpan::Delete { author, .. } if author == "WPS AI")
+        });
+        let has_insert = rewrite.redline_spans.iter().any(|s| {
+            matches!(s, WriterRedlineSpan::Insert { author, .. } if author == "WPS AI")
+        });
+        assert!(has_delete, "Expected Track Changes deletion span");
+        assert!(has_insert, "Expected Track Changes insertion span");
 
-        // Apply citation highlights
-        for m in &resp.mutations {
-            MutationApplicator::apply_to_pdf(&mut pdf, m);
-        }
+        // Test Auto-Format Document
+        let raw_doc = vec![
+            WriterParagraphInput {
+                paragraph_id: 1,
+                text: "OpenWPS Next-Gen Architecture".to_string(),
+                current_style_id: "Normal".to_string(),
+            },
+            WriterParagraphInput {
+                paragraph_id: 2,
+                text: "1.2 Core Layout Engine".to_string(),
+                current_style_id: "Normal".to_string(),
+            },
+            WriterParagraphInput {
+                paragraph_id: 3,
+                text: "• Sub-pixel glyph shaping via cosmic-text".to_string(),
+                current_style_id: "Normal".to_string(),
+            },
+        ];
+        let style_mutations = WriterAiAgent::auto_format_document(&raw_doc);
+        assert_eq!(style_mutations[0].new_style_id, "Title");
+        assert_eq!(style_mutations[1].new_style_id, "Heading 2");
+        assert_eq!(style_mutations[2].new_style_id, "List Paragraph");
+    }
 
-        assert!(pdf.annotations.contains_key(&0));
-        assert_eq!(pdf.annotations.get(&0).unwrap().len(), 1);
+    #[test]
+    fn test_sheets_ai_nl_to_formula_and_zscore_anomaly_detection() {
+        let headers = vec![
+            "Region".to_string(),
+            "Quarter".to_string(),
+            "Revenue".to_string(),
+        ];
+        let rows = vec![
+            vec!["APAC".to_string(), "Q1".to_string(), "$120,000".to_string()],
+            vec!["EMEA".to_string(), "Q1".to_string(), "$115,000".to_string()],
+            vec!["APAC".to_string(), "Q2".to_string(), "$125,000".to_string()],
+            vec!["AMER".to_string(), "Q2".to_string(), "$118,000".to_string()],
+            vec!["APAC".to_string(), "Q3".to_string(), "$122,000".to_string()],
+            vec!["EMEA".to_string(), "Q3".to_string(), "$119,000".to_string()],
+            vec!["AMER".to_string(), "Q4".to_string(), "$121,000".to_string()],
+            // Inject 50x anomalous spike at Row 9 (1-based) -> C9
+            vec!["APAC".to_string(), "Q4".to_string(), "$6,500,000".to_string()],
+        ];
+
+        let report =
+            SheetsAiAgent::analyze_sheet_insights_and_anomalies("Sales2026", &headers, &rows);
+
+        // Verify anomaly detector catches C9 ($6,500,000)
+        assert_eq!(report.anomalies.len(), 1);
+        assert_eq!(report.anomalies[0].cell_coord, "C9");
+        assert!(report.anomalies[0].z_score > 2.2);
+
+        // Verify NL-to-Formula generation
+        let formula_res = SheetsAiAgent::natural_language_to_formula(
+            "Sum Revenue where Region is 'APAC'",
+            &report.schema,
+        );
+        assert_eq!(
+            formula_res.generated_formula,
+            "=SUMIFS(C2:C9, A2:A9, \"APAC\")"
+        );
+        assert!(formula_res.python_alternative.contains("=PY("));
+    }
+
+    #[test]
+    fn test_slides_ai_prompt_to_deck_scene_graph_compiler() {
+        let outline =
+            SlidesAiAgent::generate_outline_from_prompt("Quantum Rust Office Suite", 5);
+        assert_eq!(outline.slides.len(), 5);
+
+        let compiled = SlidesAiAgent::compile_outline_to_deck(&outline);
+        assert_eq!(compiled.width_emu, 12_192_000);
+        assert_eq!(compiled.height_emu, 6_858_000);
+        assert_eq!(compiled.slides.len(), 5);
+        assert_eq!(compiled.slides[0].transition_effect, "Morph");
+
+        // Verify the ProcessTimeline slide has A* smart connectors linking its chevron cards
+        let timeline_slide = compiled
+            .slides
+            .iter()
+            .find(|s| s.layout == SlideLayoutKind::ProcessTimeline)
+            .expect("Expected a ProcessTimeline slide");
+        assert!(!timeline_slide.connectors.is_empty());
+    }
+
+    #[test]
+    fn test_pdf_ai_spatial_bbox_rag_citations() {
+        let mut rag = PdfSpatialRagIndex::new();
+
+        rag.add_spatial_chunk(
+            101,
+            0,
+            PdfBBox::new(50.0, 100.0, 520.0, 160.0),
+            PdfChunkKind::BodyParagraph,
+            "Section 1. General Software Architecture and multi-tab workspace overview.".to_string(),
+        );
+
+        rag.add_spatial_chunk(
+            205,
+            2, // Page 3 (0-based index 2)
+            PdfBBox::new(72.0, 310.0, 540.0, 395.0),
+            PdfChunkKind::TableGrid,
+            "Section 8.4 Early Termination Penalty: Customer shall pay a termination fee of $45,000 within 30 days.".to_string(),
+        );
+
+        let answer = rag.query_with_bbox_citations("What is the early termination penalty fee?", 2);
+        assert!(!answer.citations.is_empty());
+
+        let top_citation = &answer.citations[0];
+        assert_eq!(top_citation.block_id, 205);
+        assert_eq!(top_citation.page_index, 2);
+        assert_eq!(top_citation.bbox, PdfBBox::new(72.0, 310.0, 540.0, 395.0));
+        assert!(answer.synthesized_markdown.contains("[1]"));
+        assert!(answer.synthesized_markdown.contains("Page 3"));
     }
 }

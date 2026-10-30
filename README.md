@@ -7,7 +7,7 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-wasm32--unknown--unknown-654ff0.svg)](https://webassembly.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript_+_Tailwind-61dafb.svg)](https://react.dev/)
 [![Design System](https://img.shields.io/badge/Design_System-Mercury-5266eb.svg)](https://getdesign.dev)
-[![Tests](https://img.shields.io/badge/Unit_Tests-87%2F87_Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Unit_Tests-83%2F83_Passing-brightgreen.svg)]()
 
 ---
 

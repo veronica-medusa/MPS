@@ -154,12 +154,14 @@ impl CrdtDocument {
             }
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        self.characters.iter()
-            .filter(|c| !c.is_deleted)
-            .map(|c| c.ch)
-            .collect()
+impl std::fmt::Display for CrdtDocument {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for c in self.characters.iter().filter(|c| !c.is_deleted) {
+            write!(f, "{}", c.ch)?;
+        }
+        Ok(())
     }
 }
 

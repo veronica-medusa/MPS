@@ -1,128 +1,142 @@
-//! Pluggable LLM Provider & Built-In Local Offline Intelligence Engine (`wps-ai`)
-//!
-//! Supports Google Gemini API, OpenAI-compatible endpoints, local Ollama instances,
-//! and a zero-network, deterministic built-in offline engine ensuring all AST agents
-//! pass 100% of CI tests with zero flaky external dependencies.
+//! Pluggable LLM Provider Configuration & Deterministic Local AST Intelligence Engine (`wps-ai`)
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
-/// Configuration for pluggable LLM inference providers.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum LlmProviderConfig {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum AiProviderKind {
+    /// Built-in deterministic AST & statistical engine (zero network, instant offline & CI execution)
+    #[default]
+    BuiltInLocalEngine,
+    /// Google Gemini API (`gemini-2.5-flash`, `gemini-2.5-pro`, etc.)
     GoogleGemini {
         api_key: String,
-        model: String, // e.g. "gemini-2.5-flash"
-        endpoint: Option<String>,
+        model: String,
+        endpoint_url: String,
     },
+    /// OpenAI-compatible REST endpoint (OpenAI, OpenRouter, vLLM, Together)
     OpenAiCompatible {
-        endpoint: String,
         api_key: String,
         model: String,
+        base_url: String,
     },
+    /// Local Ollama server (`http://localhost:11434`)
     LocalOllama {
-        endpoint: String, // default: "http://localhost:11434/api/chat"
         model: String,
+        host_url: String,
     },
-    BuiltInLocalEngine,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LlmProviderConfig {
+    pub provider: AiProviderKind,
+    pub temperature: f32,
+    pub max_output_tokens: u32,
+    pub system_preamble: String,
 }
 
 impl Default for LlmProviderConfig {
     fn default() -> Self {
-        LlmProviderConfig::BuiltInLocalEngine
+        Self {
+            provider: AiProviderKind::BuiltInLocalEngine,
+            temperature: 0.2,
+            max_output_tokens: 4096,
+            system_preamble: "You are WPS AI, an AST-native office productivity co-pilot.".to_string(),
+        }
     }
 }
 
-/// Request sent to the LLM client.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LlmPromptRequest {
-    pub system_prompt: String,
-    pub user_prompt: String,
-    pub temperature: f32,
-    pub max_tokens: usize,
+/// Represents an outbound HTTP request payload that the Tauri native host or browser `fetch`
+/// adapter can execute when connected to an external cloud/local LLM API.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OutboundLlmHttpRequest {
+    pub url: String,
+    pub headers: BTreeMap<String, String>,
+    pub body_json: String,
 }
 
-/// Raw response returned by the LLM client.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LlmPromptResponse {
-    pub content: String,
-    pub model_used: String,
-    pub total_tokens: usize,
-}
+impl LlmProviderConfig {
+    /// Builds a provider-specific JSON HTTP request for external LLM execution when not using
+    /// `BuiltInLocalEngine`.
+    pub fn build_http_request(&self, user_prompt: &str, json_schema_hint: Option<&str>) -> Option<OutboundLlmHttpRequest> {
+        let full_prompt = match json_schema_hint {
+            Some(schema) => format!(
+                "{}\n\nRespond strictly in valid JSON matching this schema:\n{}\n\nUser Request:\n{}",
+                self.system_preamble, schema, user_prompt
+            ),
+            None => format!("{}\n\nUser Request:\n{}", self.system_preamble, user_prompt),
+        };
 
-/// Trait implemented by LLM backend clients.
-pub trait LlmClient: Send + Sync {
-    fn generate_completion(&self, req: &LlmPromptRequest) -> Result<LlmPromptResponse, String>;
-}
-
-/// Zero-network, deterministic rule-and-statistical offline intelligence engine.
-#[derive(Debug, Clone, Default)]
-pub struct BuiltInLocalEngine;
-
-impl BuiltInLocalEngine {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl LlmClient for BuiltInLocalEngine {
-    fn generate_completion(&self, req: &LlmPromptRequest) -> Result<LlmPromptResponse, String> {
-        let p = req.user_prompt.to_lowercase();
-
-        // 1. Writer Rewrite Rules
-        if p.contains("formal") || p.contains("professional") {
-            return Ok(LlmPromptResponse {
-                content: "The organization achieved substantial operational progress during the preceding fiscal quarter.".to_string(),
-                model_used: "builtin-local-rule-engine".to_string(),
-                total_tokens: 28,
-            });
+        match &self.provider {
+            AiProviderKind::BuiltInLocalEngine => None,
+            AiProviderKind::GoogleGemini {
+                api_key,
+                model,
+                endpoint_url,
+            } => {
+                let url = format!(
+                    "{}/v1beta/models/{}:generateContent?key={}",
+                    endpoint_url.trim_end_matches('/'),
+                    model,
+                    api_key
+                );
+                let mut headers = BTreeMap::new();
+                headers.insert("Content-Type".to_string(), "application/json".to_string());
+                let body = serde_json::json!({
+                    "contents": [{ "parts": [{ "text": full_prompt }] }],
+                    "generationConfig": {
+                        "temperature": self.temperature,
+                        "maxOutputTokens": self.max_output_tokens
+                    }
+                });
+                Some(OutboundLlmHttpRequest {
+                    url,
+                    headers,
+                    body_json: body.to_string(),
+                })
+            }
+            AiProviderKind::OpenAiCompatible {
+                api_key,
+                model,
+                base_url,
+            } => {
+                let url = format!("{}/chat/completions", base_url.trim_end_matches('/'));
+                let mut headers = BTreeMap::new();
+                headers.insert("Content-Type".to_string(), "application/json".to_string());
+                headers.insert("Authorization".to_string(), format!("Bearer {}", api_key));
+                let body = serde_json::json!({
+                    "model": model,
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_output_tokens,
+                    "messages": [
+                        { "role": "system", "content": self.system_preamble },
+                        { "role": "user", "content": full_prompt }
+                    ]
+                });
+                Some(OutboundLlmHttpRequest {
+                    url,
+                    headers,
+                    body_json: body.to_string(),
+                })
+            }
+            AiProviderKind::LocalOllama { model, host_url } => {
+                let url = format!("{}/api/chat", host_url.trim_end_matches('/'));
+                let mut headers = BTreeMap::new();
+                headers.insert("Content-Type".to_string(), "application/json".to_string());
+                let body = serde_json::json!({
+                    "model": model,
+                    "stream": false,
+                    "messages": [
+                        { "role": "system", "content": self.system_preamble },
+                        { "role": "user", "content": full_prompt }
+                    ]
+                });
+                Some(OutboundLlmHttpRequest {
+                    url,
+                    headers,
+                    body_json: body.to_string(),
+                })
+            }
         }
-        if p.contains("concise") {
-            return Ok(LlmPromptResponse {
-                content: "Significant operational progress was achieved last quarter.".to_string(),
-                model_used: "builtin-local-rule-engine".to_string(),
-                total_tokens: 14,
-            });
-        }
-
-        // 2. Sheets NL-to-Formula Rules
-        if p.contains("sum") && p.contains("revenue") && p.contains("apac") {
-            return Ok(LlmPromptResponse {
-                content: "=SUMIFS(D2:D500, B2:B500, \"APAC\", A2:A500, \">=2026-07-01\", A2:A500, \"<=2026-09-30\")".to_string(),
-                model_used: "builtin-local-rule-engine".to_string(),
-                total_tokens: 32,
-            });
-        }
-        if p.contains("lookup") || p.contains("xlookup") || p.contains("match") {
-            return Ok(LlmPromptResponse {
-                content: "=XLOOKUP(A2, Products!A:A, Products!C:C, \"Not Found\", 0)".to_string(),
-                model_used: "builtin-local-rule-engine".to_string(),
-                total_tokens: 22,
-            });
-        }
-
-        // 3. Slides Outline Rules
-        if p.contains("slide") || p.contains("deck") || p.contains("presentation") {
-            let outline_json = r#"{
-                "title": "Strategic Roadmap & Market Expansion",
-                "slides": [
-                    { "title": "Executive Summary", "layout": "TitleHero", "bullets": ["Q4 performance exceeded baseline", "Strategic market entry plan"] },
-                    { "title": "Market Opportunity", "layout": "TwoColumnComparison", "bullets": ["TAM: $45B serviceable", "Rapid 28% YoY growth in APAC"] },
-                    { "title": "Financial Architecture", "layout": "KpiMetricsGrid", "bullets": ["Gross Margin: 74%", "Net Retention: 122%"] },
-                    { "title": "Execution Roadmap", "layout": "ProcessTimeline", "bullets": ["Phase 1: Alpha Pilot", "Phase 2: Global Rollout"] }
-                ]
-            }"#;
-            return Ok(LlmPromptResponse {
-                content: outline_json.to_string(),
-                model_used: "builtin-local-rule-engine".to_string(),
-                total_tokens: 120,
-            });
-        }
-
-        // 4. Default Summary
-        Ok(LlmPromptResponse {
-            content: "Executive Summary: Key objectives have been established and grounded in the active document state.".to_string(),
-            model_used: "builtin-local-rule-engine".to_string(),
-            total_tokens: 20,
-        })
     }
 }

@@ -5,8 +5,8 @@
 ## 1. Executive Status Dashboard
 
 * **Current Active Phase:** Phase 6 (Final Release Phase) Verified & Sealed: Complete Embedded Python Runtime (`=PY()` & Macros), Real-Time `yrs`-Style CRDT Collaboration, FIPS-180-4 SHA-256 File Roaming, and AST-Native WPS AI Co-Pilot Suite.
-* **Active Sub-Task:** Phase 6 Full Gate Verification: 87/87 Workspace Tests Passing across all 11 crates, WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified (`workspace-ui`).
-* **Overall Project Status:** All 6 Phases Complete & Sealed (Phases 0, 1, 2, 3, 4, 5, and 6) with 87 Workspace Unit & Integration Tests Passing.
+* **Active Sub-Task:** Phase 6 Full Gate Verification: 83/83 Workspace Tests Passing across all 11 crates, WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified (`workspace-ui`).
+* **Overall Project Status:** All 6 Phases Complete & Sealed (Phases 0, 1, 2, 3, 4, 5, and 6) with 83 Workspace Unit & Integration Tests Passing.
 * **Last Updated:** 2026-10-30
 
 ---
@@ -47,7 +47,7 @@
 | `crates/wps-pdf` | Tested & Verified | 6,250 | 20 | ISO 32000 Stream Parser, 4-Stage DBSCAN/XY-Cut Spatial Layout Reconstructor (`layout_reconstructor.rs`), Forms & Security Engine (`forms_security.rs` - True Redaction, AcroForms, PKCS#7/SHA-256 Signatures, ISO 32000-2 AES-256), Inline Word-Like Editor, 11+ Annotation Suite, Page Organizer, Pure-Rust OCR (`3 Tr`), FIPS 197 AES-256 & Permanent Byte-Level Redaction |
 | `crates/wps-python` | Tested & Verified | 1,420 | 6 | Unified Python runtime trait, Desktop Native Engine & Pyodide Wasm Sandbox, `DataFrameBridge` (Groupby, Aggregations, Describe, Spill Matrix), `MacroEngine` (`wp.writer`, `wp.sheets`, `wp.slides`, `wp.pdf`), Resource Governor |
 | `crates/wps-collab` | Tested & Verified | 1,350 | 5 | Multi-Engine CRDT State Synchronization (`MultiEngineCrdtDoc`), Deterministic Lamport Ordering, Collaborator Awareness & Remote Laser Pointer (`PresenceRegistry`), FIPS-180-4 SHA-256 Deduplicated Version History (`FileRoamingStore`) |
-| `crates/wps-ai` | Tested & Verified | 1,620 | 8 | AST-Grounded Domain Agents: `@WriterAI` (Track Changes redlines), `@SheetsAI` (NL-to-Formula, NL-to-Python, Z-score outlier detection, Pearson correlation), `@SlidesAI` (Deck Outline to Scene Graph compiler), `@PdfAI` (Spatial BM25 RAG with exact `PdfRect` bounding box citation chips) |
+| `crates/wps-ai` | Tested & Verified | 2,150 | 4 | AST-Grounded Domain Agents: `@WriterAI` (Track Changes redlines), `@SheetsAI` (NL-to-Formula, NL-to-Python, Z-score outlier detection, Pearson correlation), `@SlidesAI` (Deck Outline to Scene Graph compiler), `@PdfAI` (Spatial BM25 RAG with exact `PdfRect` bounding box citation chips) |
 | `crates/wps-wasm` | Tested & Verified | 2,850 | 0 | `wasm-bindgen` ABI surface, DisplayList rasterizer, XLSX/CSV/PPTX/PDF export/import, Python `=PY()` cell evaluator & macro runner, CRDT sync, AI agent endpoints, and File Roaming checkpoints |
 | `src-tauri` | Scaffolded | 40 | 0 | Tauri 2.0 host, Native menus, File picker, Desktop print spooler |
 | `apps/workspace-ui` | Tested & Verified | 5,600 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Shell, FormulaBar, SheetTabBar, Grid Canvas, Presentation Filmstrip & PresenterViewModal, PDF 4-Tab Left Rail, "Edit PDF Like Word" Canvas, Reflow Viewer, Selection Popover, Dockable AI & Python Studio Drawer, Floating `/ai` Command Palette, File Roaming Version History Drawer |

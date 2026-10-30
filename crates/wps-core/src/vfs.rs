@@ -19,10 +19,12 @@ pub trait VirtualFileSystem: Send + Sync {
     fn metadata(&self, path: &str) -> Result<FileMetadata, CoreError>;
 }
 
+type VfsStorage = Arc<RwLock<HashMap<String, (Vec<u8>, i64)>>>;
+
 /// In-Memory Virtual File System (Thread-safe, testable, wasm-friendly)
 #[derive(Clone, Default)]
 pub struct MemoryVfs {
-    files: Arc<RwLock<HashMap<String, (Vec<u8>, i64)>>>,
+    files: VfsStorage,
 }
 
 impl MemoryVfs {
