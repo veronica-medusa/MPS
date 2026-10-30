@@ -1,8 +1,23 @@
 pub mod mutations;
+pub mod pdf_ai;
+pub mod provider;
 pub mod router;
+pub mod sheets_ai;
+pub mod slides_ai;
+pub mod writer_ai;
 
 pub use mutations::{AiMutation, MutationApplicator};
+pub use pdf_ai::{PdfAi, PdfCitationChip, PdfIndexedBlock, PdfSpatialIndex};
+pub use provider::{BuiltInLocalEngine, LlmClient, LlmPromptRequest, LlmPromptResponse, LlmProviderConfig};
 pub use router::{AgentRouter, AiDomain, AiResponse, CitationBadge};
+pub use sheets_ai::{
+    ChartRecommendation, ColumnSchema, ColumnType, CorrelationPair, PivotRecommendation,
+    SheetAnomaly, SheetInsightsReport, SheetSchema, SheetsAi,
+};
+pub use slides_ai::{
+    DeckOutline, PresentationThemeConfig, SlideOutlineItem, SlidesAi,
+};
+pub use writer_ai::{RewriteTone, WriterAi, WriterAiResult};
 
 #[cfg(test)]
 mod tests {

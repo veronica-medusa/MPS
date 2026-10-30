@@ -7,7 +7,7 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-wasm32--unknown--unknown-654ff0.svg)](https://webassembly.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript_+_Tailwind-61dafb.svg)](https://react.dev/)
 [![Design System](https://img.shields.io/badge/Design_System-Mercury-5266eb.svg)](https://getdesign.dev)
-[![Tests](https://img.shields.io/badge/Unit_Tests-79%2F79_Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Unit_Tests-87%2F87_Passing-brightgreen.svg)]()
 
 ---
 
@@ -46,15 +46,18 @@ OpenWPS/
 │   └── workspace-ui/            # Mercury Design System Frontend (React 19, TypeScript, Tailwind)
 │       ├── src/
 │       │   ├── components/
-│       │   │   ├── TopTabBar.tsx         # Polymorphic multi-document tab bar (Writer, Sheets, Slides, PDF)
-│       │   │   ├── RibbonBar.tsx         # High-density contextual Ribbon (Classic & Compact)
-│       │   │   ├── FormulaBar.tsx        # Name Box, fx inserter, and 150+ function autocomplete
-│       │   │   ├── SheetTabBar.tsx       # Bottom sheet switcher, add sheet (+), and inline rename
-│       │   │   ├── CanvasViewport.tsx    # High-DPI canvas host with Reading View Spotlight crosshairs
-│       │   │   ├── SmartToolboxModal.tsx # WPS Smart Toolbox wizards (Pivots, Math, Regex, Case)
-│       │   │   ├── StatusBar.tsx         # Live selection statistics (Sum, Average, Count, Min, Max)
-│       │   │   ├── CommandPalette.tsx    # Universal Cmd/Ctrl + K command palette
-│       │   │   └── RightInspector.tsx    # Dockable inspector for WPS AI and Python REPL
+│       │   │   ├── TopTabBar.tsx             # Polymorphic multi-document tab bar (Writer, Sheets, Slides, PDF, Collab, History)
+│       │   │   ├── RibbonBar.tsx             # High-density contextual Ribbon (Classic & Compact)
+│       │   │   ├── FormulaBar.tsx            # Name Box, fx inserter, and 150+ function autocomplete
+│       │   │   ├── SheetTabBar.tsx           # Bottom sheet switcher, add sheet (+), and inline rename
+│       │   │   ├── CanvasViewport.tsx        # High-DPI canvas host with Reading View Spotlight crosshairs
+│       │   │   ├── SmartToolboxModal.tsx     # WPS Smart Toolbox wizards (Pivots, Math, Regex, Case)
+│       │   │   ├── StatusBar.tsx             # Live selection statistics (Sum, Average, Count, Min, Max)
+│       │   │   ├── CommandPalette.tsx        # Universal Cmd/Ctrl + K command palette
+│       │   │   ├── RightInspector.tsx        # Dockable inspector for document properties & styles
+│       │   │   ├── AiPythonStudioDrawer.tsx  # Mercury Iris Violet (#7048E8) AI Co-Pilot & Python Studio
+│       │   │   ├── FloatingAiBar.tsx         # Floating /ai quick command palette (Cmd/Ctrl + J)
+│       │   │   └── VersionHistoryDrawer.tsx  # FIPS-180-4 SHA-256 deduplicated File Roaming version store
 │       │   ├── App.tsx          # Master shell coordinating active tab state & module switches
 │       │   └── types.ts         # High-density UI state contracts
 ├── crates/                      # Core Rust Workspace

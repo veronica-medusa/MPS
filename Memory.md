@@ -4,9 +4,9 @@
 
 ## 1. Executive Status Dashboard
 
-* **Current Active Phase:** Phase 5 Verified & Sealed (WPS PDF Toolkit, ISO 32000 Engine, Dedicated 4-Stage XY-Cut/DBSCAN Spatial Layout Reconstructor, Forms & Security Engine, 11+ Annotations, Page Organizer, OCR & AES-256 Security). Ready for Phase 6 (Embedded Python Bridge, CRDT Real-Time Collaboration & AST-Grounded WPS AI).
-* **Active Sub-Task:** Phase 5 Forms & Security Verified: 79/79 Workspace Tests Passing (20 unit & integration tests in `wps-pdf`), WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified.
-* **Overall Project Status:** Phases 0, 1, 2, 3, 4, and 5 Verified & Sealed (79 Workspace Unit & Integration Tests Passing).
+* **Current Active Phase:** Phase 6 (Final Release Phase) Verified & Sealed: Complete Embedded Python Runtime (`=PY()` & Macros), Real-Time `yrs`-Style CRDT Collaboration, FIPS-180-4 SHA-256 File Roaming, and AST-Native WPS AI Co-Pilot Suite.
+* **Active Sub-Task:** Phase 6 Full Gate Verification: 87/87 Workspace Tests Passing across all 11 crates, WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified (`workspace-ui`).
+* **Overall Project Status:** All 6 Phases Complete & Sealed (Phases 0, 1, 2, 3, 4, 5, and 6) with 87 Workspace Unit & Integration Tests Passing.
 * **Last Updated:** 2026-10-30
 
 ---
@@ -22,14 +22,15 @@
     * Spreadsheets: Emerald (`#0CA678`)
     * Presentation: Coral (`#E8590C`)
     * PDF Toolkit: Crimson (`#E03131`)
-    * AI & Python: Iris (`#7048E8`)
+    * AI & Python Studio: Iris Violet (`#7048E8`)
 * **Verified UI Components:**
-  * Unified Polymorphic Tab Bar (Writer, Sheets, Slides, PDF)
+  * Unified Polymorphic Tab Bar (Writer, Sheets, Slides, PDF, Collab Avatars, Version History toggle, WPS AI toggle)
   * Contextual Mercury Ribbon Bar (Home, Insert, Formulas 150+, Data & Pivot, WPS Smart Toolbox, View with Spotlight, AI, PDF Annotate, PDF Edit, PDF Organize, PDF Convert, Security & Sign)
-  * Left Navigation Rail with 4 switchable tabs: Pages / Thumbnails with drag-reorder & rotate, Spatial Outline Bookmarks, Annotations & Sticky Notes list, and Search & Permanent Redact PII
-  * Multi-Mode PDF Canvas Viewport: Read View, "Edit PDF Like Word" inline paragraph reflow editing with dashed Mercury Crimson `#E03131` bounding boxes, Responsive Reflow Reading View (with 1.0x, 1.25x, 1.5x font scales), and Visual Page Organizer Grid
-  * Floating Mercury Selection Popover for fast text annotation, highlighting, sticky notes, redaction, and WPS AI explanation
-  * Instant In-Memory Cross-Engine Tab Conversion: One-click "PDF to Word", "PDF to Excel", and "PDF to PPT" appending live editable tabs without disk roundtrips
+  * Left Navigation Rail with 4 switchable tabs: Pages / Thumbnails, Spatial Outline Bookmarks, Annotations list, and Search & Permanent Redact PII
+  * Multi-Mode PDF Canvas Viewport: Read View, "Edit PDF Like Word" inline paragraph reflow editing with dashed Mercury Crimson `#E03131` bounding boxes, Responsive Reflow Reading View, and Visual Page Organizer Grid
+  * Dockable WPS AI & Python Studio Drawer: Iris Violet `#7048E8` styling, switchable between `@WPS-AI` co-pilot with spatial grounding citations and Embedded Python 3.12 studio with live DataFrame spill inspector and SVG plot preview
+  * Floating `/ai` Command Palette on Canvas (`Cmd/Ctrl + J`) with instant prompt submission
+  * File Roaming Version History Drawer with point-in-time time-travel and SHA-256 deduplicated snapshot restoration
 
 ---
 
@@ -44,13 +45,12 @@
 | `crates/wps-sheets` | Tested & Verified | 2,850 | 18 | 64x64 Sparse Grid (1,048,576 x 16,384), 150+ Formula DAG, Pratt Parser, NumFmt (4-section, 1900 epoch), Pivot Cube 2D with ShowValuesAs, 60+ Smart Toolbox ops, Multi-Sheet XLSX & RFC 4180 CSV codecs |
 | `crates/wps-slides` | Tested & Verified | 3,150 | 9 | Master/Layout/Slide 3-Tier Scene Graph, 50+ DrawingML Shapes, Yellow Adjustment Handles, Boolean 2D Ops, A* Orthogonal Router, Morph Interpolator, Timeline Animator, Presenter Cockpit, PresentationML .pptx Codec |
 | `crates/wps-pdf` | Tested & Verified | 6,250 | 20 | ISO 32000 Stream Parser, 4-Stage DBSCAN/XY-Cut Spatial Layout Reconstructor (`layout_reconstructor.rs`), Forms & Security Engine (`forms_security.rs` - True Redaction, AcroForms, PKCS#7/SHA-256 Signatures, ISO 32000-2 AES-256), Inline Word-Like Editor, 11+ Annotation Suite, Page Organizer, Pure-Rust OCR (`3 Tr`), FIPS 197 AES-256 & Permanent Byte-Level Redaction |
-| `crates/wps-python` | Tested & Verified | 650 | 4 | Unified Python trait, Desktop Engine, DataFrame bridge, `=PY()`, Plots |
-| `crates/wps-ai` | Tested & Verified | 580 | 4 | AST-Grounded Co-Pilot tool calls (@Writer, @Sheets, @Slides, @Pdf) |
-| `crates/wps-collab` | Tested & Verified | 480 | 3 | State-Vector CRDT Sync, Presence, File Roaming Snapshot store |
-| `crates/wps-wasm` | Tested & Verified | 2,450 | 0 | `wasm-bindgen` Writer, Sheets, Slides & PDF dispatch, DisplayList rasterizer, XLSX/CSV/PPTX/PDF export/import, Morph transition evaluator, layout JSON & reflow engine |
+| `crates/wps-python` | Tested & Verified | 1,420 | 6 | Unified Python runtime trait, Desktop Native Engine & Pyodide Wasm Sandbox, `DataFrameBridge` (Groupby, Aggregations, Describe, Spill Matrix), `MacroEngine` (`wp.writer`, `wp.sheets`, `wp.slides`, `wp.pdf`), Resource Governor |
+| `crates/wps-collab` | Tested & Verified | 1,350 | 5 | Multi-Engine CRDT State Synchronization (`MultiEngineCrdtDoc`), Deterministic Lamport Ordering, Collaborator Awareness & Remote Laser Pointer (`PresenceRegistry`), FIPS-180-4 SHA-256 Deduplicated Version History (`FileRoamingStore`) |
+| `crates/wps-ai` | Tested & Verified | 1,620 | 8 | AST-Grounded Domain Agents: `@WriterAI` (Track Changes redlines), `@SheetsAI` (NL-to-Formula, NL-to-Python, Z-score outlier detection, Pearson correlation), `@SlidesAI` (Deck Outline to Scene Graph compiler), `@PdfAI` (Spatial BM25 RAG with exact `PdfRect` bounding box citation chips) |
+| `crates/wps-wasm` | Tested & Verified | 2,850 | 0 | `wasm-bindgen` ABI surface, DisplayList rasterizer, XLSX/CSV/PPTX/PDF export/import, Python `=PY()` cell evaluator & macro runner, CRDT sync, AI agent endpoints, and File Roaming checkpoints |
 | `src-tauri` | Scaffolded | 40 | 0 | Tauri 2.0 host, Native menus, File picker, Desktop print spooler |
-| `python-runtime` | Scaffolded | 50 | 0 | `openwps_py` package with DataFrame & plotting helpers |
-| `apps/workspace-ui` | Tested & Verified | 4,950 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Shell, FormulaBar, SheetTabBar, Grid Canvas, Presentation Filmstrip & PresenterViewModal, PDF 4-Tab Left Rail, "Edit PDF Like Word" Canvas, Reflow Viewer, Selection Popover |
+| `apps/workspace-ui` | Tested & Verified | 5,600 | 0 | React 19 + TypeScript + Vite + Tailwind + Mercury Shell, FormulaBar, SheetTabBar, Grid Canvas, Presentation Filmstrip & PresenterViewModal, PDF 4-Tab Left Rail, "Edit PDF Like Word" Canvas, Reflow Viewer, Selection Popover, Dockable AI & Python Studio Drawer, Floating `/ai` Command Palette, File Roaming Version History Drawer |
 
 ---
 
@@ -68,6 +68,8 @@
 * **ADR-010 (DrawingML Parametric Geometries):** 50+ parametric shapes calculate procedural polygon vertices from bounding box dimensions and normalized adjustment parameters (`adj: Vec<f64>`) modified in real time via interactive yellow diamond handles.
 * **ADR-011 (A* Orthogonal Router & Smart Connectors):** Smart connectors utilize A* grid search routing around shape bounding boxes with 8 cardinal port attachments and cubic Bézier smoothing, penalizing 90-degree corner turns to produce clean CAD-quality schematic routing.
 * **ADR-012 (Morph Transition Engine):** Keyframe transition engine performs 60–120 FPS continuous interpolation between slides, using `!!name` correspondence matching for dissimilar geometries with perimeter path resampling (64 points), rotation, stroke, and RGBA cross-fade.
+* **ADR-013 (Spatial RAG & Bounding Box Citations):** `@PdfAI` indexes ISO 32000 text elements into a BM25 token inverted index and returns answers grounded with exact `page_index` and `PdfRect` coordinates for visual highlighting.
+* **ADR-014 (Content-Addressed File Roaming):** `FileRoamingStore` computes FIPS-180-4 SHA-256 digests over document bytes, deduplicating identical blobs and enabling instant time-travel version restoration.
 
 ---
 
@@ -81,3 +83,9 @@
   * *Resolution:* Updated CSV export test to expect standard uppercase `TRUE`/`FALSE`.
 * *Issue 4:* TypeScript syntax error in `SmartToolboxModal.tsx` for raw string.
   * *Resolution:* Changed `r'\d+'` to standard string `'\\d+'`.
+* *Issue 5:* Ownership move in recursive XY-cut layout reconstruction.
+  * *Resolution:* Handled un-split branches with mutable blocks and slice references.
+* *Issue 6:* Character insertion order in CRDT sync step 1 response.
+  * *Resolution:* Propagated `origin_left` from predecessor character clock.
+* *Issue 7:* String method mismatch in `AiPythonStudioDrawer.tsx` (`.contains` vs `.includes`).
+  * *Resolution:* Replaced with standard JavaScript `.includes`.

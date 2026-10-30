@@ -13,7 +13,8 @@ import {
   Sparkles, 
   Play,
   RotateCcw,
-  RotateCw
+  RotateCw,
+  History
 } from 'lucide-react';
 import { DocumentTab, DocumentType } from '../types';
 
@@ -28,6 +29,7 @@ interface TopTabBarProps {
   onToggleSplitScreen: () => void;
   onToggleDarkMode: () => void;
   onOpenAi: () => void;
+  onOpenHistory?: () => void;
 }
 
 export const TopTabBar: React.FC<TopTabBarProps> = ({
@@ -41,6 +43,7 @@ export const TopTabBar: React.FC<TopTabBarProps> = ({
   onToggleSplitScreen,
   onToggleDarkMode,
   onOpenAi,
+  onOpenHistory,
 }) => {
   const [showNewMenu, setShowNewMenu] = React.useState(false);
 
@@ -210,10 +213,19 @@ export const TopTabBar: React.FC<TopTabBarProps> = ({
         <button
           onClick={onOpenAi}
           className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-pill bg-mercury-ai/10 text-mercury-ai hover:bg-mercury-ai/20 transition-all font-medium text-xs"
-          title="Open WPS AI Co-Pilot"
+          title="Open WPS AI Co-Pilot & Python Studio"
         >
           <Sparkles className="w-3 h-3 text-mercury-ai animate-spin-slow" />
           <span>WPS AI</span>
+        </button>
+
+        {/* File Roaming Version History Button */}
+        <button
+          onClick={onOpenHistory}
+          className="p-1.5 rounded-mercury-sm text-mercury-ink-secondary dark:text-mercury-fog hover:bg-mercury-lavender dark:hover:bg-mercury-night-raised transition-colors"
+          title="File Roaming Version History"
+        >
+          <History className="w-3.5 h-3.5" />
         </button>
 
         {/* Dark/Light Mode Toggle */}

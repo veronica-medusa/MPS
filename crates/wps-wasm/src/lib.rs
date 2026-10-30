@@ -28,7 +28,7 @@ use wps_pdf::{
 };
 use wps_python::{NativePythonEngine, PythonEngine};
 use wps_ai::{AgentRouter, AiDomain, MutationApplicator};
-use wps_collab::{CrdtSession, PresenceRegistry};
+use wps_collab::{CrdtSession, ModernFileRoamingStore as FileRoamingStore, PresenceRegistry};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActiveModule {
@@ -833,6 +833,7 @@ pub struct WpsWasmEngine {
     python_engine: NativePythonEngine,
     crdt_session: CrdtSession,
     presence: PresenceRegistry,
+    roaming_store: FileRoamingStore,
 }
 
 #[wasm_bindgen]
@@ -859,6 +860,7 @@ impl WpsWasmEngine {
             python_engine: NativePythonEngine::new(),
             crdt_session: CrdtSession::new("wasm-client-1"),
             presence: PresenceRegistry::new(),
+            roaming_store: FileRoamingStore::new(),
         }
     }
 
@@ -2668,5 +2670,149 @@ impl WpsWasmEngine {
     #[wasm_bindgen]
     pub fn get_crdt_state_vector_json(&self) -> String {
         serde_json::to_string(&self.crdt_session.state_vector).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    /// AST-Grounded Writer AI rewrite with tone and track changes
+    #[wasm_bindgen]
+    pub fn ai_rewrite_selection(&mut self, selected_text: &str, tone_str: &str, as_track_changes: bool) -> Result<String, JsValue> {
+        match &mut self.doc {
+            ActiveDoc::Writer(w) => {
+                let tone = match tone_str.to_lowercase().as_str() {
+                    "concise" => wps_ai::RewriteTone::Concise,
+                    "expand" => wps_ai::RewriteTone::Expand,
+                    "academic" => wps_ai::RewriteTone::Academic,
+                    "executive" | "executivebullets" => wps_ai::RewriteTone::ExecutiveBullets,
+                    _ => wps_ai::RewriteTone::Formal,
+                };
+                let mut rev_mgr = wps_writer::revisions::RevisionManager::new();
+                let res = wps_ai::WriterAi::rewrite_selection(w, &mut rev_mgr, selected_text, tone, as_track_changes);
+                serde_json::to_string(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not Writer")),
+        }
+    }
+
+    /// AST-Grounded Sheets AI statistical insights, Z-scores, and correlation
+    #[wasm_bindgen]
+    pub fn ai_sheets_insights(&self, range_a1: Option<String>) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Sheets(wb) => {
+                let matrix = &wb.active_worksheet().matrix;
+                let range = range_a1
+                    .and_then(|r| CellRange::parse(&r))
+                    .unwrap_or_else(|| CellRange::new(CellCoordinate::new(0, 0), CellCoordinate::new(100, 15)));
+                let report = wps_ai::SheetsAi::detect_anomalies_and_insights(matrix, range);
+                serde_json::to_string(&report).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not Spreadsheets")),
+        }
+    }
+
+    /// AST-Grounded Slides AI outline and deck compiler
+    #[wasm_bindgen]
+    pub fn ai_slides_generate(&mut self, topic: &str, slide_count: usize) -> Result<String, JsValue> {
+        let outline = wps_ai::SlidesAi::generate_presentation_outline(topic, slide_count, "Executive");
+        let deck = wps_ai::SlidesAi::compile_outline_to_presentation(&outline, wps_ai::PresentationThemeConfig::default());
+        self.doc = ActiveDoc::Slides(deck);
+        self.active_module = ActiveModule::Presentation;
+        self.slides_get_deck_summary()
+    }
+
+    /// AST-Grounded PDF AI spatial RAG with bounding-box citations
+    #[wasm_bindgen]
+    pub fn ai_pdf_spatial_rag(&self, question: &str) -> Result<String, JsValue> {
+        match &self.doc {
+            ActiveDoc::Pdf(pdf) => {
+                let mut index = wps_ai::PdfSpatialIndex::new();
+                for (p_idx, page) in pdf.pages.iter().enumerate() {
+                    for elem in &page.text_elements {
+                        let word = wps_pdf::layout_reconstructor::ReconstructedWord {
+                            text: elem.text.clone(),
+                            bbox: wps_pdf::layout_reconstructor::PdfRect::new(
+                                elem.bounds.x as f32,
+                                elem.bounds.y as f32,
+                                (elem.bounds.x + elem.bounds.width) as f32,
+                                (elem.bounds.y + elem.bounds.height) as f32,
+                            ),
+                            baseline_y: elem.baseline as f32,
+                            font_name: elem.font_name.clone(),
+                            font_size_pt: elem.font_size as f32,
+                            is_bold: false,
+                            is_italic: false,
+                            color: wps_pdf::layout_reconstructor::RgbaColor::default(),
+                            source_run_ids: vec![p_idx as u64],
+                        };
+                        let line = wps_pdf::layout_reconstructor::ReconstructedTextLine {
+                            id: p_idx as u64,
+                            text: elem.text.clone(),
+                            words: vec![word],
+                            bbox: wps_pdf::layout_reconstructor::PdfRect::new(
+                                elem.bounds.x as f32,
+                                elem.bounds.y as f32,
+                                (elem.bounds.x + elem.bounds.width) as f32,
+                                (elem.bounds.y + elem.bounds.height) as f32,
+                            ),
+                            baseline_y: elem.baseline as f32,
+                            dominant_font_name: elem.font_name.clone(),
+                            dominant_font_size_pt: elem.font_size as f32,
+                            is_bold: false,
+                            is_italic: false,
+                            dominant_color: wps_pdf::layout_reconstructor::RgbaColor::default(),
+                        };
+                        let block = wps_pdf::layout_reconstructor::EditableParagraphBlock {
+                            id: p_idx as u64 * 1000 + 1,
+                            bbox: line.bbox,
+                            lines: vec![line],
+                            alignment: wps_pdf::layout_reconstructor::TextAlignment::Left,
+                            first_line_indent_pt: 0.0,
+                            left_indent_pt: 0.0,
+                            right_indent_pt: 0.0,
+                            line_spacing_ratio: 1.2,
+                            role: wps_pdf::layout_reconstructor::SemanticRole::BodyParagraph,
+                            font_name: elem.font_name.clone(),
+                            font_size_pt: elem.font_size as f32,
+                            is_bold: false,
+                            is_italic: false,
+                            color: wps_pdf::layout_reconstructor::RgbaColor::default(),
+                        };
+                        index.index_paragraph(p_idx, &block);
+                    }
+                }
+                let (answer, citations) = wps_ai::PdfAi::query_pdf_rag(&index, question);
+                #[derive(Serialize)]
+                struct RagResult {
+                    answer: String,
+                    citations: Vec<wps_ai::PdfCitationChip>,
+                }
+                serde_json::to_string(&RagResult { answer, citations }).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            _ => Err(JsValue::from_str("Active module is not PDF")),
+        }
+    }
+
+    /// File Roaming: creates SHA-256 deduplicated checkpoint of active document
+    #[wasm_bindgen]
+    pub fn roaming_create_checkpoint(&mut self, author: &str, message: &str) -> Result<String, JsValue> {
+        let data = match &self.doc {
+            ActiveDoc::Writer(w) => serde_json::to_vec(w).unwrap_or_default(),
+            ActiveDoc::Sheets(wb) => serde_json::to_vec(wb).unwrap_or_default(),
+            ActiveDoc::Slides(sl) => serde_json::to_vec(sl).unwrap_or_default(),
+            ActiveDoc::Pdf(p) => p.title.as_bytes().to_vec(),
+        };
+        let record = self.roaming_store.save_version(
+            "active_doc",
+            author,
+            message,
+            &data,
+            "2026-10-30T12:00:00Z",
+        );
+        serde_json::to_string(&record).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// File Roaming: lists all recorded checkpoints
+    #[wasm_bindgen]
+    pub fn roaming_list_checkpoints(&self) -> Result<String, JsValue> {
+        let list = self.roaming_store.list_versions("active_doc");
+        serde_json::to_string(&list).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 }

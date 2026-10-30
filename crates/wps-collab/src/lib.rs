@@ -1,10 +1,20 @@
+pub mod crdt_engine;
 pub mod crdt_sync;
+pub mod file_roaming;
 pub mod presence;
 pub mod roaming;
+pub mod sync_protocol;
 
+pub use crdt_engine::{
+    ClientId, CrdtOperation, LamportClock, MultiEngineCrdtDoc, PdfAnnotationCrdtRecord,
+    PdfCrdtBinding, SheetsCrdtBinding, SlideMutation, SlidesCrdtBinding, SpreadsheetCellMutation,
+    WriterCrdtBinding, WriterTextOp,
+};
 pub use crdt_sync::{CollabOperation, CrdtSession, CrdtUpdate, SyncMessage};
-pub use presence::{CursorLocation, OfficeModule, PresenceRegistry, UserPresence};
+pub use file_roaming::{BlobHash, FileRoamingStore as ModernFileRoamingStore, RoamingVersionRecord, VersionDiffSummary};
+pub use presence::{CollaboratorPresence, CursorLocation, OfficeModule, PresenceRegistry, UserPresence};
 pub use roaming::{DocumentSnapshot, FileRoamingStore, SnapshotMetadata};
+pub use sync_protocol::{CollabWireMessage, OfflineMutationQueue, SyncCoordinator};
 
 #[cfg(test)]
 mod tests {

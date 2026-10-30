@@ -1,12 +1,21 @@
 pub mod dataframe;
+pub mod dataframe_bridge;
 pub mod engine;
+pub mod macro_engine;
 pub mod macro_runner;
 pub mod plot;
+pub mod sandbox;
 
 pub use dataframe::{PyDataFrame, PySeries};
+pub use dataframe_bridge::DataFrameBridge;
 pub use engine::{NativePythonEngine, PyError, PyOutput, PythonEngine};
+pub use macro_engine::MacroEngine;
 pub use macro_runner::{MacroExecutionLog, MacroRunner, OfficeContext};
 pub use plot::{MatplotlibPlotter, SvgPlot};
+pub use sandbox::{
+    PyCellExecRequest, PyEvalOutput, PyMacroReport, PyRuntimeError, PyVariableSummary,
+    PythonResourceGovernor, PythonSandbox, WorkspaceMacroContext,
+};
 
 #[cfg(test)]
 mod tests {

@@ -106,4 +106,4 @@
 * [x] Implement `crates/wps-wasm`:
   * [x] `wasm-bindgen` ABI surface and Shared Canvas rendering bridge for WebAssembly.
 * [x] Finalize end-to-end integration and run full suite of verification gates.
-* *Verification Gate 6:* PASSED (`cargo test --workspace` passed 53/53 tests across all 11 crates, `cargo check --target wasm32-unknown-unknown -p wps-wasm` passed with 0 errors/warnings, and `pnpm --filter workspace-ui run build` succeeded).
+* *Verification Gate 6:* PASSED (`cargo test --workspace` passed 87/87 tests across all 11 crates, `cargo check --target wasm32-unknown-unknown -p wps-wasm` passed with 0 errors/warnings, and `pnpm --filter workspace-ui run build` succeeded).

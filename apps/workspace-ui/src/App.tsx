@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TopTabBar } from './components/TopTabBar';
 import { RibbonBar } from './components/RibbonBar';
 import { CanvasViewport } from './components/CanvasViewport';
@@ -7,6 +7,9 @@ import { StatusBar } from './components/StatusBar';
 import { CommandPalette } from './components/CommandPalette';
 import { SmartToolboxModal } from './components/SmartToolboxModal';
 import { PresenterViewModal } from './components/PresenterViewModal';
+import { AiPythonStudioDrawer } from './components/AiPythonStudioDrawer';
+import { FloatingAiBar } from './components/FloatingAiBar';
+import { VersionHistoryDrawer } from './components/VersionHistoryDrawer';
 import { ActiveRibbonTab, CommandItem, DocumentTab, DocumentType, RibbonMode, SmartToolboxAction, SlideInfo } from './types';
 
 export const App: React.FC = () => {
@@ -19,6 +22,20 @@ export const App: React.FC = () => {
   const [presenterSlideIdx, setPresenterSlideIdx] = useState(0);
   const [activeSlideIdx, setActiveSlideIdx] = useState(0);
   const [slidesList, setSlidesList] = useState<SlideInfo[]>([]);
+  const [isStudioDrawerOpen, setIsStudioDrawerOpen] = useState(false);
+  const [isFloatingAiOpen, setIsFloatingAiOpen] = useState(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setIsFloatingAiOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const [tabs, setTabs] = useState<DocumentTab[]>([
     {
@@ -254,7 +271,8 @@ export const App: React.FC = () => {
         onNewDocument={handleNewDocument}
         onToggleSplitScreen={() => setIsSplitScreen(!isSplitScreen)}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        onOpenAi={() => setIsInspectorOpen(true)}
+        onOpenAi={() => setIsStudioDrawerOpen(!isStudioDrawerOpen)}
+        onOpenHistory={() => setIsVersionHistoryOpen(!isVersionHistoryOpen)}
       />
 
       {/* Contextual Mercury Ribbon Bar */}
@@ -307,10 +325,31 @@ export const App: React.FC = () => {
           onClose={() => setIsInspectorOpen(false)}
           tab={activeTab}
         />
+
+        {/* Dockable WPS AI & Python Studio Drawer */}
+        <AiPythonStudioDrawer
+          isOpen={isStudioDrawerOpen}
+          activeDocType={activeTab.type}
+          onClose={() => setIsStudioDrawerOpen(false)}
+        />
       </main>
 
       {/* Status Bar */}
       <StatusBar tab={activeTab} onZoomChange={handleZoomChange} />
+
+      {/* Floating /ai Command Palette (Cmd/Ctrl + J) */}
+      <FloatingAiBar
+        isOpen={isFloatingAiOpen}
+        docType={activeTab.type}
+        onClose={() => setIsFloatingAiOpen(false)}
+        onSubmit={(_p) => setIsStudioDrawerOpen(true)}
+      />
+
+      {/* File Roaming Version History Drawer */}
+      <VersionHistoryDrawer
+        isOpen={isVersionHistoryOpen}
+        onClose={() => setIsVersionHistoryOpen(false)}
+      />
 
       {/* Universal Command Palette (Cmd/Ctrl + K) */}
       <CommandPalette
