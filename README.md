@@ -7,7 +7,7 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-wasm32--unknown--unknown-654ff0.svg)](https://webassembly.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript_+_Tailwind-61dafb.svg)](https://react.dev/)
 [![Design System](https://img.shields.io/badge/Design_System-Mercury-5266eb.svg)](https://getdesign.dev)
-[![Tests](https://img.shields.io/badge/Unit_Tests-76%2F76_Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Unit_Tests-79%2F79_Passing-brightgreen.svg)]()
 
 ---
 
@@ -218,7 +218,7 @@ $$\text{Visible} \iff \text{Command.Bounds} \cap \text{Viewport.Bounds} \neq \em
    pnpm install
    ```
 
-3. **Run the full test suite (76 tests across all 11 crates):**
+3. **Run the full test suite (79 tests across all 11 crates):**
    ```bash
    cargo test --workspace
    ```

@@ -1,6 +1,7 @@
 pub mod annotations;
 pub mod converter;
 pub mod editor;
+pub mod forms_security;
 pub mod layout_reconstructor;
 pub mod ocr;
 pub mod organizer;
@@ -16,6 +17,13 @@ use wps_render::{DisplayList, DrawCommand};
 pub use annotations::{Annotation, AnnotationKind, ShapeType, StampType};
 pub use converter::{PdfConverter, PdfToExcelMode};
 pub use editor::{PdfEditSession, reflow_page_to_stream};
+pub use forms_security::{
+    AcroFieldType, AcroFormAndSignatureManager, AcroFormField, DigitalSignatureRecord,
+    EncryptedPdfPackage, EncryptionHeader, PdfAes256Security, PdfAnnotationRecord,
+    PdfRasterImage, PdfSecurityDocument, RedactionAuditReport, RedactionEngine,
+    RedactionPattern, RedactionProposal, SignatureVerificationStatus, SignatureVisualAppearance,
+    UnlockedRole,
+};
 pub use layout_reconstructor::{
     EditableParagraphBlock, LayoutColumnRegion, LayoutElement, LayoutReconstructorConfig,
     PageScene, PdfRect, PositionedGlyphRun, ReconstructedPageLayout, ReconstructedTableCell,
