@@ -1,6 +1,7 @@
 pub mod annotations;
 pub mod converter;
 pub mod editor;
+pub mod layout_reconstructor;
 pub mod ocr;
 pub mod organizer;
 pub mod parser;
@@ -15,6 +16,12 @@ use wps_render::{DisplayList, DrawCommand};
 pub use annotations::{Annotation, AnnotationKind, ShapeType, StampType};
 pub use converter::{PdfConverter, PdfToExcelMode};
 pub use editor::{PdfEditSession, reflow_page_to_stream};
+pub use layout_reconstructor::{
+    EditableParagraphBlock, LayoutColumnRegion, LayoutElement, LayoutReconstructorConfig,
+    PageScene, PdfRect, PositionedGlyphRun, ReconstructedPageLayout, ReconstructedTableCell,
+    ReconstructedTableGrid, ReconstructedTextLine, ReconstructedWord, RgbaColor, SemanticRole,
+    SpatialLayoutReconstructor, TextAlignment, VectorFilledRect, VectorStrokeSegment,
+};
 pub use ocr::{OcrEngine, OcrMode, OcrOptions, OcrPageResult, OcrWord};
 pub use organizer::{BatesPosition, CompressionLevel, PageOrganizer, SplitMode};
 pub use parser::{PdfError, PdfMetadata, PdfObject, PdfPage, PdfParser, PdfTextElement, PdfVectorPath, PathOp};

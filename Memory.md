@@ -4,10 +4,10 @@
 
 ## 1. Executive Status Dashboard
 
-* **Current Active Phase:** Phase 5 Verified & Sealed (WPS PDF Toolkit, ISO 32000 Engine, XY-Cut/DBSCAN Spatial Layout Reconstructor, 11+ Annotations, Page Organizer, OCR & AES-256 Security). Ready for Phase 6 (Embedded Python Bridge, CRDT Real-Time Collaboration & AST-Grounded WPS AI).
-* **Active Sub-Task:** Phase 5 Gate Audit Complete: 73/73 Workspace Tests Passing (14 unit & integration tests in `wps-pdf`), WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified.
-* **Overall Project Status:** Phases 0, 1, 2, 3, 4, and 5 Verified & Sealed (73 Workspace Unit & Integration Tests Passing).
-* **Last Updated:** 2026-10-29
+* **Current Active Phase:** Phase 5 Verified & Sealed (WPS PDF Toolkit, ISO 32000 Engine, Dedicated 4-Stage XY-Cut/DBSCAN Spatial Layout Reconstructor, 11+ Annotations, Page Organizer, OCR & AES-256 Security). Ready for Phase 6 (Embedded Python Bridge, CRDT Real-Time Collaboration & AST-Grounded WPS AI).
+* **Active Sub-Task:** Phase 5 Spatial Reconstructor Verified: 76/76 Workspace Tests Passing (17 unit & integration tests in `wps-pdf`), WebAssembly compilation verified (`wasm32-unknown-unknown`), and React 19 + TypeScript + Vite production build verified.
+* **Overall Project Status:** Phases 0, 1, 2, 3, 4, and 5 Verified & Sealed (76 Workspace Unit & Integration Tests Passing).
+* **Last Updated:** 2026-10-30
 
 ---
 
@@ -43,7 +43,7 @@
 | `crates/wps-writer` | Tested & Verified | 2,450 | 6 | RopeBuffer, AttributeMap, Paginator, Styles Cascade, Numbering, Revisions, Mail Merge, .docx Codec |
 | `crates/wps-sheets` | Tested & Verified | 2,850 | 18 | 64x64 Sparse Grid (1,048,576 x 16,384), 150+ Formula DAG, Pratt Parser, NumFmt (4-section, 1900 epoch), Pivot Cube 2D with ShowValuesAs, 60+ Smart Toolbox ops, Multi-Sheet XLSX & RFC 4180 CSV codecs |
 | `crates/wps-slides` | Tested & Verified | 3,150 | 9 | Master/Layout/Slide 3-Tier Scene Graph, 50+ DrawingML Shapes, Yellow Adjustment Handles, Boolean 2D Ops, A* Orthogonal Router, Morph Interpolator, Timeline Animator, Presenter Cockpit, PresentationML .pptx Codec |
-| `crates/wps-pdf` | Tested & Verified | 3,350 | 14 | ISO 32000 Stream Parser, Recursive XY-Cut & Borderless Table Layout Reconstructor, Inline Word-Like Editor, 11+ Annotation Suite (CloudPolygon & Calibrated Tools), Page Organizer (Split, Merge, Bates, Watermark, Deflate), Pure-Rust OCR (`3 Tr`), AcroForms, FIPS 197 AES-256 Encryption & Permanent Byte-Level Redaction |
+| `crates/wps-pdf` | Tested & Verified | 5,100 | 17 | ISO 32000 Stream Parser, 4-Stage DBSCAN/XY-Cut Spatial Layout Reconstructor (`layout_reconstructor.rs`), Inline Word-Like Editor, 11+ Annotation Suite (CloudPolygon & Calibrated Tools), Page Organizer (Split, Merge, Bates, Watermark, Deflate), Pure-Rust OCR (`3 Tr`), AcroForms, FIPS 197 AES-256 Encryption & Permanent Byte-Level Redaction |
 | `crates/wps-python` | Tested & Verified | 650 | 4 | Unified Python trait, Desktop Engine, DataFrame bridge, `=PY()`, Plots |
 | `crates/wps-ai` | Tested & Verified | 580 | 4 | AST-Grounded Co-Pilot tool calls (@Writer, @Sheets, @Slides, @Pdf) |
 | `crates/wps-collab` | Tested & Verified | 480 | 3 | State-Vector CRDT Sync, Presence, File Roaming Snapshot store |
