@@ -107,3 +107,20 @@
   * [x] `wasm-bindgen` ABI surface and Shared Canvas rendering bridge for WebAssembly.
 * [x] Finalize end-to-end integration and run full suite of verification gates.
 * *Verification Gate 6:* PASSED (`cargo test --workspace` passed 83/83 tests across all 11 crates, `cargo check --target wasm32-unknown-unknown -p wps-wasm` passed with 0 errors/warnings, and `pnpm --filter workspace-ui run build` succeeded).
+
+---
+
+## Phase 7: Full Repository Diagnostic Audit, Broken System Repair & 100% DESIGN-mercury.md UI/UX Overhaul
+* [x] Fix 1: Unified Multi-Tab Wasm/Tauri `WorkspaceSession` managing active polymorphic document tabs (`WriterDocument`, `Workbook`, `SlidesDeck`, `PdfDocument`) by `TabId`.
+* [x] Fix 2: Interactive Canvas + hidden `<textarea>` IME input proxy with pointer hit-testing, caret blinking loop, and multi-cell dragging selection.
+* [x] Fix 3: Spreadsheets `=PY()` formula engine wiring: regex AST extraction of `wp.cell`/`wp.range` dependencies into `petgraph` DAG and Python dataframe/plot array spilling.
+* [x] Fix 4: Instant cross-engine PDF conversions (`pdf_convert_to_writer_tab`, `pdf_convert_to_sheets_tab`, `pdf_convert_to_slides_tab`) generating live tabs with zero disk round-trip.
+* [x] Fix 5: AST-native AI action application (`writer_track_changes`, `sheets_formula`, `slides_deck`, spatial BBox RAG highlights).
+* [x] Fix 6: Real-time CRDT synchronization and content-addressed SHA-256 snapshot persistence (`create_snapshot`, `restore_snapshot`, `get_snapshot_history_json`).
+* [x] Fix 7: Universal browser & desktop byte export/import pipeline (`export_tab_bytes`, `import_tab_from_bytes`) for `.docx`, `.xlsx`, `.pptx`, `.pdf`, `.csv`.
+* [x] Execute 100% Pixel-and-Token-Exact UI/UX Overhaul obeying `./DESIGN-mercury.md`:
+  * [x] Enforce Light Variable Typography law: font weights NEVER exceed `500` (Arcadia Display `480`, Arcadia Sans `360`, `400`, `420`, `500`).
+  * [x] Single Primary Action rule: maximum of 1 solid `#5266eb` primary button per toolbar or card group.
+  * [x] Reusable Mercury component primitives: `MercuryButton`, `MercuryNavBar`, `MercuryInputCapsule`, `MercuryHomeLaunchpad`.
+  * [x] Two native surface worlds: `#171721` Night launchpad with 60px stat numerals and `#fbfcfd` light canvas document workspaces.
+* *Verification Gate 7:* PASSED (85/85 tests passed across all 11 Rust crates, `wps-tauri` and `wasm32-unknown-unknown` check clean, `npm --prefix apps/workspace-ui run build` 100% clean).

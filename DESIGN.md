@@ -1,33 +1,29 @@
-# Mercury Design System Specification for OpenWPS (Design.md)
+# Mercury Design System Specification (`Design.md`)
 
-*Synthesized from `npx getdesign@latest add mercury` and adapted for High-Density Office, Multi-Tab Canvas & Viewport Workspaces.*
-
----
-
-## 1. Executive Philosophy: Financial-Grade Office Productivity
-
-Mercury for OpenWPS merges the tranquility, precision, and architectural discipline of private fintech software with the high-density requirements of a professional office suite (Word Processing, Spreadsheets, Presentations, PDF Studio, Python Data Science, and AI Co-Pilot).
-
-### Key Architectural Pillars:
-1. **Fluid Precision & High-Craft Minimalist Density:**
-   * Traditional office suites suffer from cluttered, bloated ribbon interfaces with dozens of low-contrast, visually noisy icons.
-   * OpenWPS uses Mercury's **progressive disclosure**: high-signal contextual toolbars, micro-toolbars that materialize at the cursor on text or cell selection, and an instant universal `Cmd/Ctrl + K` Command Palette.
-2. **Dual-World Surface Atmosphere:**
-   * **Light Mode (The Daytime Canvas):** A near-white canvas (`#fbfcfd`), deep plum-ink text (`#28253b`), crisp 1px borders (`#c3c3cc` / `#ededf3`), and pale lavender feature/inspector surfaces (`#edecfb`).
-   * **Night Mode (The Precision Darkroom):** Deep ink-violet night workspace (`#171721`), elevated card surfaces (`#1e1e2a`), pale lavender-white typography (`#ededf3`), and subtle indigo glow accents (`#5266eb`).
-3. **Restrained Accent Hierarchy:**
-   * Primary action calls (Save, Share, Run Python, AI Generate) use the singular, confident **Mercury Indigo** (`#5266eb`).
-   * Secondary actions exist as translucent pills (`rgba(82, 102, 235, 0.1)` on light, `rgba(156, 180, 232, 0.2)` on dark) with 40px capsule rounding, eliminating visual fatigue.
+*Synchronized with `./DESIGN-mercury.md` — Financial-Grade Office Productivity Suite for OpenWPS (`veronica-medusa/MPS`).*
 
 ---
 
-## 2. Complete Design Tokens Manifest
+## 1. Executive Philosophy & The Two Worlds
 
-### 2.1 CSS Variables Root Definition
+OpenWPS is structured into two native surface worlds:
+1. **The `night` World (`#171721`):** Home launchpad, file roaming version history time-machine, and universal top/bottom workspace framing chrome.
+2. **The `canvas` Light World (`#fbfcfd`):** Crisp, high-contrast, sub-pixel document pages (Writer), spreadsheet matrices (Spreadsheets), presentation vector stages (Presentation), and ISO 32000 PDF reading/reflow viewports.
+
+### Architectural Laws
+* **Light Variable Typography:** Typography weights NEVER exceed `500`. Arcadia Display uses weight `480`, Arcadia Sans uses weights `360`, `400`, `420`, and `500`.
+* **Single Primary Action Law:** Never render more than one solid `#5266eb` primary button inside any toolbar, modal footer, or card group. All secondary actions exist as translucent pills (`button-glass-dark`, `button-tint-dark`, `button-tint-light`, `button-outline-light`).
+* **Zero Chrome Color Bloat:** Eliminate distracting status reds, oranges, and greens from navigation and ribbon chrome. Use restrained Mercury semantic tints and slate/fog hairlines.
+
+---
+
+## 2. Complete Token Manifest
+
+### 2.1 CSS Custom Properties (`theme/mercury-tokens.css`)
 
 ```css
 :root {
-  /* Core Base Colors */
+  /* ─── Mercury Brand & Surface Palette ─── */
   --mercury-primary: #5266eb;
   --mercury-on-primary: #ffffff;
   --mercury-periwinkle: #9cb4e8;
@@ -43,110 +39,76 @@ Mercury for OpenWPS merges the tranquility, precision, and architectural discipl
   --mercury-fog: #c3c3cc;
   --mercury-slate: #70707d;
 
-  /* Office Chrome Layout Tokens (Light Mode) */
-  --mercury-bg-canvas: #f4f5f8;
-  --mercury-bg-surface-1: #ffffff;
-  --mercury-bg-surface-2: #fbfbff;
-  --mercury-bg-surface-3: #edecfb;
-  --mercury-border-hairline: 1px solid rgba(195, 195, 204, 0.45);
-  --mercury-border-active: 1px solid #5266eb;
+  /* ─── Translucent Capsule Fills & Hairlines ─── */
+  --mercury-glass-dark-bg: rgba(175, 178, 206, 0.20);
+  --mercury-glass-dark-border: rgba(175, 178, 206, 0.36);
+  --mercury-tint-dark-bg: rgba(156, 180, 232, 0.20);
+  --mercury-tint-light-bg: rgba(82, 102, 235, 0.10);
+  --mercury-outline-light-bg: rgba(112, 115, 147, 0.10);
+  --mercury-outline-light-border: rgba(112, 115, 147, 0.22);
+  --mercury-soft-stack-shadow: 0 2px 12px rgba(40, 37, 59, 0.05), 0 1px 2px rgba(40, 37, 59, 0.04);
 
-  /* Module Semantic Accents (Mercury-Tinted High-Craft) */
-  --mercury-accent-writer: #3b5bdb;
-  --mercury-accent-writer-tint: rgba(59, 91, 219, 0.08);
-  --mercury-accent-sheets: #0ca678;
-  --mercury-accent-sheets-tint: rgba(12, 166, 120, 0.08);
-  --mercury-accent-slides: #e8590c;
-  --mercury-accent-slides-tint: rgba(232, 89, 12, 0.08);
-  --mercury-accent-pdf: #e03131;
-  --mercury-accent-pdf-tint: rgba(224, 49, 49, 0.08);
-  --mercury-accent-ai-python: #7048e8;
-  --mercury-accent-ai-python-tint: rgba(112, 72, 232, 0.08);
-  --mercury-accent-ai-glow: 0 0 16px rgba(112, 72, 232, 0.25);
+  /* ─── Typography Families & Light Variable Weights (NEVER > 500) ─── */
+  --font-arcadia-display: 'arcadiaDisplay', 'Inter Variable', 'Inter', -apple-system, sans-serif;
+  --font-arcadia-sans: 'arcadia', 'Inter Variable', 'Inter', -apple-system, sans-serif;
+  --font-mercury-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
-  /* Spacing Scale */
-  --mercury-space-xs: 4px;
-  --mercury-space-sm: 8px;
-  --mercury-space-md: 12px;
-  --mercury-space-lg: 16px;
-  --mercury-space-xl: 20px;
-  --mercury-space-xxl: 32px;
+  /* ─── Border Radius Scale ─── */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 32px;
+  --radius-pill: 40px;
+  --radius-full: 9999px;
 
-  /* Border Radii */
-  --mercury-radius-none: 0px;
-  --mercury-radius-xs: 4px;
-  --mercury-radius-sm: 6px;
-  --mercury-radius-md: 10px;
-  --mercury-radius-lg: 14px;
-  --mercury-radius-xl: 20px;
-  --mercury-radius-pill: 40px;
-  --mercury-radius-full: 9999px;
-
-  /* Typography */
-  --mercury-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --mercury-font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
-}
-
-[data-theme='dark'] {
-  --mercury-bg-canvas: #12121a;
-  --mercury-bg-surface-1: #171721;
-  --mercury-bg-surface-2: #1e1e2a;
-  --mercury-bg-surface-3: #28253b;
-  --mercury-border-hairline: 1px solid rgba(112, 112, 125, 0.35);
-  --mercury-ink: #ededf3;
-  --mercury-ink-secondary: #c3c3cc;
+  /* ─── 8px Spacing System ─── */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-huge: 40px;
+  --space-section: 80px;
+  --space-section-lg: 128px;
 }
 ```
 
 ---
 
-## 3. Typography & Numeric Precision
+## 3. Strict Typography Scale Classes
 
-### 3.1 UI Chrome & Navigation
-* **Primary Family:** `Inter`, with `-0.011em` tracking for UI micro-labels, tabs, menu items, and tooltip badges.
-* **Weights:** Strict light weights matching Mercury specifications:
-  * Body & Menu Labels: `font-weight: 400`
-  * Action Buttons & Ribbon Tabs: `font-weight: 420` (or `450` on platforms without variable axes)
-  * Eyebrows & Section Headers: `font-weight: 500`, uppercase, `letter-spacing: 0.05em`
-
-### 3.2 Numeric & Code Discipline
-* **Tabular Alignment:** All spreadsheet row/column headers, status bar metrics (word count, page number, selection coordinates), and PDF dimension callouts MUST declare `font-variant-numeric: tabular-nums lining-nums`.
-* **Formula Bar & Python Console:**
-  * Strict monospace typography (`JetBrains Mono` / `--mercury-font-mono`).
-  * Syntax highlighted with Mercury semantic tokens: functions in Indigo (`#5266eb`), ranges in Jade (`#0ca678`), string literals in Coral (`#e8590c`), numbers in Iris (`#7048e8`).
+| Class | Font Family | Size | Weight | Line Height | Tracking | Usage |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `.mercury-stat` | `var(--font-arcadia-display)` | 60px | 480 | 1.1 | 0 | Stat block numerals in Home Launchpad |
+| `.mercury-display` | `var(--font-arcadia-display)` | 52px | 480 | 1.1 | 0 | Main hero titles & welcome headings |
+| `.mercury-h1` | `var(--font-arcadia-display)` | 42px | 480 | 1.15 | 0.42px | Document title & major headers |
+| `.mercury-h2` | `var(--font-arcadia-display)` | 28px | 480 | 1.2 | 0.42px | Section headers & modal titles |
+| `.mercury-lead` | `var(--font-arcadia-display)` | 24px | 480 | 1.2 | 0.48px | Sub-headers & feature lead-ins |
+| `.mercury-body-lg` | `var(--font-arcadia-sans)` | 18px | 360 | 1.35 | 0 | Document body lead text |
+| `.mercury-body` | `var(--font-arcadia-sans)` | 16px | 400 | 1.4 | 0 | Standard document & reading text |
+| `.mercury-ui` | `var(--font-arcadia-sans)` | 16px | 420 | 1.0 | 0 | Nav links & primary button labels |
+| `.mercury-ui-sm` | `var(--font-arcadia-sans)` | 14px | 420 | 1.0 | 0.07px | Ribbon pills, status pills & menu items |
+| `.mercury-eyebrow` | `var(--font-arcadia-sans)` | 14px | 500 | 1.0 | 0.28px | Ribbon section headers (UPPERCASE) |
+| `.mercury-legal` | `var(--font-arcadia-sans)` | 12px | 400 | 1.4 | 0.24px | Status bar counters & footnote captions |
 
 ---
 
-## 4. Signature OpenWPS + Mercury Layout Architecture
+## 4. Component Recipes
 
-### 4.1 Unified Polymorphic Multi-Document Top Tab Bar (Height: 40px)
-* **Visual Treatment:** Sits flush on `--mercury-bg-surface-1` with 1px bottom border `--mercury-border-hairline`.
-* **Tab Characteristics:**
-  * Active tab lifts to surface color with a 2px top accent indicator colored by document type (Cobalt for Writer, Emerald for Sheets, Coral for Slides, Crimson for PDF).
-  * Inactive tabs have translucent hover pills (`rgba(82, 102, 235, 0.06)`).
-  * Tab metadata contains: Document Type Icon Badge (16x16), Title, Dirty-State Dot (6px subtle dot), Real-Time Collaborator Avatars (18px circular stack), and Close affordance (`✕`).
-  * Split-Screen Toggle Button (`◫` / `⊟`) on the far right allows one-click side-by-side layout.
+### 4.1 Mercury Action Pills (`MercuryButton`)
+* **`button-primary`:** `#5266eb` background, `#ffffff` label, `32px` (`--radius-xl`) corners, `40px` height, `0 20px` padding. (Strict rule: maximum 1 per toolbar/card group).
+* **`button-glass-dark`:** `rgba(175, 178, 206, 0.20)` fill, `1px solid rgba(175, 178, 206, 0.36)`, `#ededf3` text, `40px` radius, `40px` height.
+* **`button-tint-dark`:** `rgba(156, 180, 232, 0.20)` fill, `#ededf3` text, `40px` radius, `40px` height.
+* **`button-tint-light`:** `rgba(82, 102, 235, 0.10)` fill, `#28253b` text, `40px` radius, `40px` height.
+* **`button-outline-light`:** `rgba(112, 115, 147, 0.10)` fill, `1px solid rgba(112, 115, 147, 0.22)`, `#28253b` text, `40px` radius, `40px` height.
+* **`button-small`:** `rgba(82, 102, 235, 0.10)` fill, `#28253b` text, `14px` (`ui-sm`), `40px` radius, `0 16px` padding, `32px` height.
+* **`button-icon-round`:** `border-radius: 9999px` circular controls.
 
-### 4.2 Contextual Mercury Ribbon Bar (Dual-Mode: Grouped & Compact)
-1. **Mode A: Classic High-Density Ribbon (Height: 88px):**
-   * Divided into clear semantic clusters separated by 1px vertical hairline dividers (`--mercury-border-hairline`).
-   * Primary actions styled with Mercury icon-over-label buttons; subtle translucent hover indicators.
-2. **Mode B: Mercury Single-Line Compact Ribbon (Height: 44px):**
-   * High-craft horizontal strip prioritizing primary actions, dropdown triggers, and dynamic micro-pills.
-3. **Floating Contextual Micro-Toolbar:**
-   * Triggers within 80ms of any text selection (Writer/PDF) or cell block selection (Sheets).
-   * Renders as an elevated Mercury capsule (`--mercury-radius-pill`, `box-shadow: 0 4px 20px rgba(23, 23, 33, 0.12)`).
-
-### 4.3 Dockable Right Inspector & AI/Python Drawer (Width: 320px–420px)
-* Slides out with a smooth 200ms `cubic-bezier(0.16, 1, 0.3, 1)` transition.
-* Houses contextual panes:
-  * **Writer:** Styles Gallery, Navigator, Track Changes Revisions Tree, Comments.
-  * **Spreadsheets:** Pivot Table Field Builder, Conditional Formatting Manager, Sparkline Inspector.
-  * **Presentation:** Slide Master Tree, Animation Timeline, Shape Properties.
-  * **PDF:** Page Thumbnail Grid, Reconstructed Table Inspector, Digital Signatures, OCR Inspector.
-  * **Python & AI:** Live Python DataFrame Console (`=PY()`) and WPS AI Co-Pilot Chat with interactive action cards.
-
-### 4.4 Canvas Workspaces & Viewport Frustum Host
-* The canvas viewport container sits on `--mercury-bg-canvas`.
-* Document pages, slide canvases, and PDF spreads render with a gentle 1px neutral border and subtle 2px layered blur shadow (`0 2px 8px rgba(40, 37, 59, 0.06)`).
-* Grid viewport in Spreadsheets displays 1px solid hairline grid lines (`#e2e4ea` in light, `#262636` in dark).
+### 4.2 Fused Input Capsule (`MercuryInputCapsule`)
+* **Shell:** `46px` tall, `#ffffff` surface fill, rounded-full (`9999px`), `1px solid rgba(112, 115, 147, 0.22)`.
+* **Input:** `#28253b` text, `20px` left padding, `32px` left radius, transparent border, outline-none.
+* **Trailing Action:** Fused `#5266eb` `button-primary` (`40px` tall, `0 20px` padding, `32px` right radius).
+* **Application:** Formula Bar, Command Palette (`Cmd+K`), Inline `/ai` Prompt Capsule, WPS AI Chat Input.

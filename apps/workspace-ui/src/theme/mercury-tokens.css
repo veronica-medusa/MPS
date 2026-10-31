@@ -1,0 +1,281 @@
+/* ─── Mercury Design System Tokens (DESIGN-mercury.md) ─── */
+:root {
+  /* ─── Mercury Brand & Surface Palette ─── */
+  --mercury-primary: #5266eb;
+  --mercury-on-primary: #ffffff;
+  --mercury-periwinkle: #9cb4e8;
+  --mercury-canvas: #fbfcfd;
+  --mercury-surface: #ffffff;
+  --mercury-surface-tint: #fbfbff;
+  --mercury-lavender: #edecfb;
+  --mercury-night: #171721;
+  --mercury-night-raised: #1e1e2a;
+  --mercury-ink: #28253b;
+  --mercury-ink-secondary: #554e7b;
+  --mercury-on-dark: #ededf3;
+  --mercury-fog: #c3c3cc;
+  --mercury-slate: #70707d;
+
+  /* ─── Translucent Capsule Fills & Hairlines ─── */
+  --mercury-glass-dark-bg: rgba(175, 178, 206, 0.20);
+  --mercury-glass-dark-border: rgba(175, 178, 206, 0.36);
+  --mercury-tint-dark-bg: rgba(156, 180, 232, 0.20);
+  --mercury-tint-light-bg: rgba(82, 102, 235, 0.10);
+  --mercury-outline-light-bg: rgba(112, 115, 147, 0.10);
+  --mercury-outline-light-border: rgba(112, 115, 147, 0.22);
+  --mercury-soft-stack-shadow: 0 2px 12px rgba(40, 37, 59, 0.05), 0 1px 2px rgba(40, 37, 59, 0.04);
+
+  /* ─── Typography Families & Light Variable Weights (NEVER > 500) ─── */
+  --font-arcadia-display: 'arcadiaDisplay', 'Inter Variable', 'Inter', -apple-system, sans-serif;
+  --font-arcadia-sans: 'arcadia', 'Inter Variable', 'Inter', -apple-system, sans-serif;
+  --font-mercury-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* ─── Border Radius Scale ─── */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 32px;
+  --radius-pill: 40px;
+  --radius-full: 9999px;
+
+  /* ─── 8px Spacing System ─── */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-huge: 40px;
+  --space-section: 80px;
+  --space-section-lg: 128px;
+}
+
+/* ─── Typography Classes (Strict Light Variable Weights — Max 500) ─── */
+.mercury-stat {
+  font-family: var(--font-arcadia-display);
+  font-size: 60px;
+  font-weight: 480;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.mercury-display {
+  font-family: var(--font-arcadia-display);
+  font-size: 52px;
+  font-weight: 480;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.mercury-h1 {
+  font-family: var(--font-arcadia-display);
+  font-size: 42px;
+  font-weight: 480;
+  line-height: 1.15;
+  letter-spacing: 0.42px;
+}
+
+.mercury-h2 {
+  font-family: var(--font-arcadia-display);
+  font-size: 28px;
+  font-weight: 480;
+  line-height: 1.2;
+  letter-spacing: 0.42px;
+}
+
+.mercury-lead {
+  font-family: var(--font-arcadia-display);
+  font-size: 24px;
+  font-weight: 480;
+  line-height: 1.2;
+  letter-spacing: 0.48px;
+}
+
+.mercury-body-lg {
+  font-family: var(--font-arcadia-sans);
+  font-size: 18px;
+  font-weight: 360;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.mercury-body {
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.mercury-ui {
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.mercury-ui-sm {
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  line-height: 1;
+  letter-spacing: 0.07px;
+}
+
+.mercury-eyebrow {
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  text-transform: uppercase;
+}
+
+.mercury-legal {
+  font-family: var(--font-arcadia-sans);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.24px;
+}
+
+/* ─── Button Component Classes ─── */
+.button-primary {
+  background: var(--mercury-primary);
+  color: var(--mercury-on-primary);
+  border-radius: var(--radius-xl);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.button-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-0.5px);
+}
+
+.button-glass-dark {
+  background: var(--mercury-glass-dark-bg);
+  border: 1px solid var(--mercury-glass-dark-border);
+  color: var(--mercury-on-dark);
+  border-radius: var(--radius-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.button-glass-dark:hover {
+  background: rgba(175, 178, 206, 0.28);
+}
+
+.button-tint-dark {
+  background: var(--mercury-tint-dark-bg);
+  color: var(--mercury-on-dark);
+  border-radius: var(--radius-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.button-tint-dark:hover {
+  background: rgba(156, 180, 232, 0.28);
+}
+
+.button-tint-light {
+  background: var(--mercury-tint-light-bg);
+  color: var(--mercury-ink);
+  border-radius: var(--radius-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.button-tint-light:hover {
+  background: rgba(82, 102, 235, 0.16);
+}
+
+.button-outline-light {
+  background: var(--mercury-outline-light-bg);
+  border: 1px solid var(--mercury-outline-light-border);
+  color: var(--mercury-ink);
+  border-radius: var(--radius-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.button-outline-light:hover {
+  background: rgba(112, 115, 147, 0.16);
+}
+
+.button-small {
+  background: var(--mercury-tint-light-bg);
+  color: var(--mercury-ink);
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  border-radius: var(--radius-pill);
+  padding: 0 16px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.button-small:hover {
+  background: rgba(82, 102, 235, 0.18);
+}
+
+.button-icon-round {
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+}

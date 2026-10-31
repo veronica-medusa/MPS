@@ -1,3 +1,4 @@
+@import './theme/mercury-tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,7 +19,7 @@
   --mercury-fog: #c3c3cc;
   --mercury-slate: #70707d;
 
-  --mercury-bg-canvas: #f4f5f8;
+  --mercury-bg-canvas: #fbfcfd;
   --mercury-bg-surface-1: #ffffff;
   --mercury-bg-surface-2: #fbfbff;
   --mercury-bg-surface-3: #edecfb;
@@ -32,21 +33,43 @@
 }
 
 [data-theme='dark'] {
-  --mercury-bg-canvas: #12121a;
-  --mercury-bg-surface-1: #171721;
-  --mercury-bg-surface-2: #1e1e2a;
-  --mercury-bg-surface-3: #28253b;
+  --mercury-bg-canvas: #171721;
+  --mercury-bg-surface-1: #1e1e2a;
+  --mercury-bg-surface-2: #28253b;
+  --mercury-bg-surface-3: #33304a;
   --mercury-border-hairline: 1px solid rgba(112, 112, 125, 0.35);
   --mercury-ink: #ededf3;
   --mercury-ink-secondary: #c3c3cc;
 }
 
+/* Strict Mercury Light Variable Typography Law: Weights NEVER exceed 500 */
+body, button, input, select, textarea, div, span, p, h1, h2, h3, h4, h5, h6 {
+  font-synthesis-weight: none;
+}
+
+.font-semibold, .font-bold, .font-extrabold, .font-black {
+  font-weight: 500 !important;
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--mercury-night);
+  color: var(--mercury-ink);
+  font-family: var(--font-arcadia-sans);
+  font-weight: 400;
   letter-spacing: -0.011em;
   user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mercury Soft Stack Drop Shadow */
+.mercury-shadow-soft {
+  box-shadow: 0 2px 12px rgba(40, 37, 59, 0.05), 0 1px 2px rgba(40, 37, 59, 0.04);
+}
+
+.mercury-shadow-lifted {
+  box-shadow: 0 12px 32px rgba(23, 23, 33, 0.12), 0 2px 6px rgba(23, 23, 33, 0.06);
 }
 
 /* Custom scrollbars matching Mercury hairline aesthetics */
@@ -58,9 +81,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(195, 195, 204, 0.5);
+  background: rgba(195, 195, 204, 0.45);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(112, 112, 125, 0.8);
+  background: rgba(112, 112, 125, 0.75);
 }

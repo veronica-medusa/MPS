@@ -145,4 +145,26 @@ mod tests {
 
         assert_eq!(result, CellValue::Number(200.0));
     }
+
+    #[test]
+    fn test_py_formula_and_dependencies() {
+        let matrix = SparseMatrix::new();
+        let mut lexer = Lexer::new("=PY(\"wp.range('A1:B2').describe()\", \"object\")");
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse().unwrap();
+
+        // 1. Dependency extraction should find A1, A2, B1, B2
+        let deps = ast.extract_dependencies();
+        assert_eq!(deps.len(), 4);
+        assert!(deps.contains(&CellCoordinate::new(0, 0))); // A1
+        assert!(deps.contains(&CellCoordinate::new(0, 1))); // B1
+        assert!(deps.contains(&CellCoordinate::new(1, 0))); // A2
+        assert!(deps.contains(&CellCoordinate::new(1, 1))); // B2
+
+        // 2. Evaluator should call PY
+        let evaluator = Evaluator::new(&matrix);
+        let result = evaluator.eval(&ast);
+        assert_eq!(result, CellValue::Text("[🐍 PythonObject]".to_string()));
+    }
 }

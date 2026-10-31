@@ -124,6 +124,33 @@ pub fn shift_formula_references(formula: &str, delta_rows: i32, delta_cols: i32)
     result
 }
 
+/// Extracts cell references from embedded Python scripts (e.g. wp.range('A1:B4') or wp.cell('C5'))
+pub fn extract_python_script_dependencies(script: &str, out: &mut Vec<CellCoordinate>) {
+    if let Ok(range_re) = regex::Regex::new(r#"wp\.range\s*\(\s*['"]([A-Za-z0-9:]+)['"]\s*\)"#) {
+        for cap in range_re.captures_iter(script) {
+            if let Some(m) = cap.get(1) {
+                if let Some(rng) = crate::cell::CellRange::parse(m.as_str()) {
+                    for r in rng.start.row..=rng.end.row {
+                        for c in rng.start.col..=rng.end.col {
+                            out.push(CellCoordinate::new(r, c));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Ok(cell_re) = regex::Regex::new(r#"wp\.cell\s*\(\s*['"]([A-Za-z0-9]+)['"]\s*\)"#) {
+        for cap in cell_re.captures_iter(script) {
+            if let Some(m) = cap.get(1) {
+                if let Some(coord) = CellCoordinate::parse(m.as_str()) {
+                    out.push(coord);
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

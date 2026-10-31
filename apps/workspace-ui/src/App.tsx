@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { MercuryNavBar } from './components/mercury/MercuryNavBar';
+import { MercuryHomeLaunchpad } from './components/mercury/MercuryHomeLaunchpad';
 import { TopTabBar } from './components/TopTabBar';
 import { RibbonBar } from './components/RibbonBar';
 import { CanvasViewport } from './components/CanvasViewport';
@@ -13,6 +15,7 @@ import { VersionHistoryDrawer } from './components/VersionHistoryDrawer';
 import { ActiveRibbonTab, CommandItem, DocumentTab, DocumentType, RibbonMode, SmartToolboxAction, SlideInfo } from './types';
 
 export const App: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'launchpad' | 'workspace'>('workspace');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSplitScreen, setIsSplitScreen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -260,52 +263,72 @@ export const App: React.FC = () => {
 
   return (
     <div className={`flex flex-col h-screen w-screen overflow-hidden ${isDarkMode ? 'dark' : ''}`}>
-      {/* Polymorphic Top Tab Bar */}
-      <TopTabBar
-        tabs={tabs}
-        activeTabId={activeTabId}
-        isSplitScreen={isSplitScreen}
-        isDarkMode={isDarkMode}
-        onSelectTab={handleSelectTab}
-        onCloseTab={handleCloseTab}
-        onNewDocument={handleNewDocument}
-        onToggleSplitScreen={() => setIsSplitScreen(!isSplitScreen)}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        onOpenAi={() => setIsStudioDrawerOpen(!isStudioDrawerOpen)}
+      {/* Mercury Global Office Navigation Bar (72px #171721 Bar) */}
+      <MercuryNavBar
+        viewMode={viewMode}
+        onToggleViewMode={() => setViewMode(viewMode === 'launchpad' ? 'workspace' : 'launchpad')}
+        activeTab={activeTab}
+        onNewDocument={(type) => {
+          handleNewDocument(type);
+          setViewMode('workspace');
+        }}
         onOpenHistory={() => setIsVersionHistoryOpen(!isVersionHistoryOpen)}
+        onOpenAi={() => setIsStudioDrawerOpen(!isStudioDrawerOpen)}
+        onSave={() => {
+          setTabs(tabs.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t)));
+        }}
       />
 
-      {/* Contextual Mercury Ribbon Bar */}
-      <RibbonBar
-        docType={activeTab.type}
-        mode={ribbonMode}
-        activeTab={activeRibbonTab}
-        onTabChange={setActiveRibbonTab}
-        onToggleMode={() => setRibbonMode(ribbonMode === 'classic' ? 'compact' : 'classic')}
-        onExecuteCommand={handleExecuteCommand}
-        onOpenSmartToolbox={(action) => setSmartToolboxAction(action)}
-      />
-
-      {/* Main Workspace Body with Canvas & Right Inspector */}
-      <main className="flex-1 flex overflow-hidden relative">
-        {/* Canvas Viewport (Single or Split-Screen) */}
-        <div className="flex-1 flex overflow-hidden">
-          <CanvasViewport
-            tab={activeTab}
-            onUpdateActiveCell={handleUpdateActiveCell}
-            onOpenAiAssist={() => setIsInspectorOpen(true)}
-            onOpenPresenterView={() => {
-              setPresenterSlideIdx(activeSlideIdx);
-              setIsPresenterOpen(true);
-            }}
-            onSlidesChange={(slides) => setSlidesList(slides)}
-            onActiveSlideChange={(idx) => setActiveSlideIdx(idx)}
+      {/* Surface Worlds: Home Launchpad (#171721) vs Document Workspace (#fbfcfd) */}
+      {viewMode === 'launchpad' ? (
+        <MercuryHomeLaunchpad
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSelectTab={(id) => {
+            handleSelectTab(id);
+            setViewMode('workspace');
+          }}
+          onNewDocument={(type) => {
+            handleNewDocument(type);
+            setViewMode('workspace');
+          }}
+          onOpenHistory={() => setIsVersionHistoryOpen(true)}
+          onOpenAi={() => setIsStudioDrawerOpen(true)}
+        />
+      ) : (
+        <>
+          {/* Polymorphic Top Tab Bar */}
+          <TopTabBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            isSplitScreen={isSplitScreen}
+            isDarkMode={isDarkMode}
+            onSelectTab={handleSelectTab}
+            onCloseTab={handleCloseTab}
+            onNewDocument={handleNewDocument}
+            onToggleSplitScreen={() => setIsSplitScreen(!isSplitScreen)}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+            onOpenAi={() => setIsStudioDrawerOpen(!isStudioDrawerOpen)}
+            onOpenHistory={() => setIsVersionHistoryOpen(!isVersionHistoryOpen)}
           />
 
-          {isSplitScreen && (
-            <div className="flex-1 flex border-l border-mercury-fog/40">
+          {/* Contextual Mercury Ribbon Bar */}
+          <RibbonBar
+            docType={activeTab.type}
+            mode={ribbonMode}
+            activeTab={activeRibbonTab}
+            onTabChange={setActiveRibbonTab}
+            onToggleMode={() => setRibbonMode(ribbonMode === 'classic' ? 'compact' : 'classic')}
+            onExecuteCommand={handleExecuteCommand}
+            onOpenSmartToolbox={(action) => setSmartToolboxAction(action)}
+          />
+
+          {/* Main Workspace Body with Canvas & Right Inspector */}
+          <main className="flex-1 flex overflow-hidden relative">
+            {/* Canvas Viewport (Single or Split-Screen) */}
+            <div className="flex-1 flex overflow-hidden">
               <CanvasViewport
-                tab={splitTab}
+                tab={activeTab}
                 onUpdateActiveCell={handleUpdateActiveCell}
                 onOpenAiAssist={() => setIsInspectorOpen(true)}
                 onOpenPresenterView={() => {
@@ -315,27 +338,43 @@ export const App: React.FC = () => {
                 onSlidesChange={(slides) => setSlidesList(slides)}
                 onActiveSlideChange={(idx) => setActiveSlideIdx(idx)}
               />
+
+              {isSplitScreen && (
+                <div className="flex-1 flex border-l border-mercury-fog/40">
+                  <CanvasViewport
+                    tab={splitTab}
+                    onUpdateActiveCell={handleUpdateActiveCell}
+                    onOpenAiAssist={() => setIsInspectorOpen(true)}
+                    onOpenPresenterView={() => {
+                      setPresenterSlideIdx(activeSlideIdx);
+                      setIsPresenterOpen(true);
+                    }}
+                    onSlidesChange={(slides) => setSlidesList(slides)}
+                    onActiveSlideChange={(idx) => setActiveSlideIdx(idx)}
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Dockable Right Inspector */}
-        <RightInspector
-          isOpen={isInspectorOpen}
-          onClose={() => setIsInspectorOpen(false)}
-          tab={activeTab}
-        />
+            {/* Dockable Right Inspector */}
+            <RightInspector
+              isOpen={isInspectorOpen}
+              onClose={() => setIsInspectorOpen(false)}
+              tab={activeTab}
+            />
 
-        {/* Dockable WPS AI & Python Studio Drawer */}
-        <AiPythonStudioDrawer
-          isOpen={isStudioDrawerOpen}
-          activeDocType={activeTab.type}
-          onClose={() => setIsStudioDrawerOpen(false)}
-        />
-      </main>
+            {/* Dockable WPS AI & Python Studio Drawer */}
+            <AiPythonStudioDrawer
+              isOpen={isStudioDrawerOpen}
+              activeDocType={activeTab.type}
+              onClose={() => setIsStudioDrawerOpen(false)}
+            />
+          </main>
 
-      {/* Status Bar */}
-      <StatusBar tab={activeTab} onZoomChange={handleZoomChange} />
+          {/* Status Bar */}
+          <StatusBar tab={activeTab} onZoomChange={handleZoomChange} />
+        </>
+      )}
 
       {/* Floating /ai Command Palette (Cmd/Ctrl + J) */}
       <FloatingAiBar

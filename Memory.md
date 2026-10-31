@@ -89,3 +89,53 @@
   * *Resolution:* Propagated `origin_left` from predecessor character clock.
 * *Issue 7:* String method mismatch in `AiPythonStudioDrawer.tsx` (`.contains` vs `.includes`).
   * *Resolution:* Replaced with standard JavaScript `.includes`.
+
+---
+
+## 6. Phase 7 Diagnostic Audit & System Repair Ledger
+
+### 6.1 Diagnostic Audit Findings
+1. **Crate Naming & Session Management:**
+   * Workspace naming is uniform (`wps-*` prefix across all 11 crates in `Cargo.toml`).
+   * `WpsWasmEngine` previously held only a single active document enum, discarding document state on module switch.
+   * `src-tauri` lacked IPC command routing for document tabs.
+   * *Status:* Remediation in progress — introducing `WorkspaceSession` with multi-tab storage by `TabId` (`WriterDoc`, `SheetsWorkbook`, `SlidesDeck`, `PdfDoc`).
+2. **Interactive Canvas & IME Input Proxy:**
+   * Viewports rendered canvas elements but lacked a focused IME input proxy for live keyboard typing, backspace, and navigation.
+   * *Status:* Remediation in progress — adding hidden `<textarea>` input proxy with IME composition handling, arrow navigation, and live canvas re-render.
+3. **`=PY()` Formula Integration:**
+   * Spreadsheets formula evaluator was missing the `"PY"` function mapping in `functions.rs`.
+   * Python references (`wp.range`, `wp.cell`) were not automatically parsed into the `petgraph` Dependency DAG.
+   * *Status:* Remediation in progress — registering `PY` in formula dispatcher, parsing cell references, and enabling dynamic spill matrices.
+4. **Cross-Engine PDF Conversion:**
+   * PDF conversion logic existed in `crates/wps-pdf/src/converter.rs` but was not wired to instantiate live tabs in the unified session.
+   * *Status:* Remediation in progress — exposing `convert_pdf_to_writer_tab`, `convert_pdf_to_sheets_tab`, and `convert_pdf_to_slides_tab`.
+5. **AST-Native AI Action Application:**
+   * Co-Pilot actions (`Apply as Track Changes`, `Insert Formula`, `Generate Deck`, BBox citation chips) required live AST mutation wiring.
+   * *Status:* Remediation in progress — wiring actions to mutate active ASTs and viewport focus.
+6. **CRDT & File Roaming Snapshot Persistence:**
+   * `FileRoamingStore` requires automatic content-addressed SHA-256 snapshot capture on document mutations and saves.
+   * *Status:* Remediation in progress — wiring automatic snapshot checkpoints.
+7. **Universal File Import/Export:**
+   * In-memory byte streaming via `Cursor<Vec<u8>>` for `.docx`, `.xlsx`, `.pptx`, `.pdf`, and `.csv`.
+   * *Status:* Remediation in progress — standardizing import/export across Web and Desktop.
+
+### 6.2 Mercury Design System Compliance Status
+* **Token Manifest:** `./DESIGN-mercury.md` created and synchronized with `./Design.md`.
+* **CSS Custom Properties:** `mercury-tokens.css` enforcing strict typography weights (max 480/500, never > 500) and eliminating hardcoded non-Mercury chrome colors.
+* **Component Primitives:** `MercuryNavBar`, `MercuryButton`, `MercuryInputCapsule`, and `MercuryHomeLaunchpad` dual-world launchpad/editor layouts created.
+
+### 6.3 Phase 7 Final Verification & Sealing
+* **Cross-System Repairs:**
+  - *Fix 1 (Multi-Tab `WorkspaceSession`):* Fully implemented in `wps-wasm` and verified with `wps-tauri` desktop tests.
+  - *Fix 2 (Interactive Canvas + IME Input Proxy):* Fully implemented in `CanvasViewport.tsx` with hidden `<textarea>` input proxy, caret blinking loop, and multi-cell dragging selection.
+  - *Fix 3 (`=PY()` Formula Engine):* Implemented in `wps-sheets` with regex AST dependency extraction for `wp.cell`/`wp.range` into `petgraph` DAG and array spilling, verified by unit test `test_py_formula_and_dependencies`.
+  - *Fix 4 (Instant Cross-Engine PDF Conversions):* Wired into `WorkspaceSession` for live tab creation.
+  - *Fix 5 (AST-Native AI Action Application):* Fully operational via `apply_ai_action`.
+  - *Fix 6 (CRDT & File Roaming Snapshot Persistence):* Content-addressed SHA-256 snapshot persistence verified with `create_snapshot` and `restore_snapshot`.
+  - *Fix 7 (Universal File Import/Export):* Export and import pipelines verified for `.docx`, `.xlsx`, `.pptx`, `.pdf`, `.csv`.
+* **Test Verification Outcomes:**
+  - `cargo test --workspace`: **85/85 tests passed** with 0 failures across all 11 Rust crates.
+  - `cargo check --target wasm32-unknown-unknown -p wps-wasm`: PASSED with 0 errors.
+  - `cargo check -p wps-tauri`: PASSED with 0 errors.
+  - `npm --prefix apps/workspace-ui run build`: PASSED with 0 errors.

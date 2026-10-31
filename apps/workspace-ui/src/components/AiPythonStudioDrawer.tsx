@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { DocumentType } from '../types';
+import { MercuryInputCapsule } from './mercury/MercuryInputCapsule';
 
 interface AiMessage {
   id: string;
@@ -356,25 +357,17 @@ export const AiPythonStudioDrawer: React.FC<AiPythonStudioDrawerProps> = ({
             ))}
           </div>
 
-          {/* Prompt Input Bar */}
-          <div className="p-2 border-t border-mercury-fog/20 bg-white dark:bg-mercury-night flex items-center space-x-1.5">
-            <input
-              type="text"
+          {/* Mercury Input Capsule for Co-Pilot Chat */}
+          <div className="p-2.5 border-t border-[rgba(175,178,206,0.18)] bg-white dark:bg-[#171721]">
+            <MercuryInputCapsule
               value={promptInput}
               onChange={(e) => setPromptInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSendPrompt();
-              }}
+              onSubmit={handleSendPrompt}
               placeholder={`Ask ${selectedPersona}...`}
-              className="flex-1 px-3 py-2 text-xs rounded-mercury-md border border-mercury-fog/40 bg-mercury-surface dark:bg-mercury-night-raised text-mercury-ink dark:text-mercury-on-dark focus:outline-none focus:border-mercury-ai"
+              actionLabel="Send"
+              actionIcon={<Send className="w-3.5 h-3.5" />}
+              className="!h-[42px]"
             />
-            <button
-              onClick={handleSendPrompt}
-              className="p-2 rounded-mercury-md bg-mercury-ai text-white hover:opacity-90 transition-opacity"
-              title="Send to Co-Pilot"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       ) : (

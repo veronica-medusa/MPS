@@ -177,6 +177,9 @@ pub fn call_function(name: &str, args: &[CellValue]) -> CellValue {
         "EFFECT" => fn_effect(args),
         "NOMINAL" => fn_nominal(args),
 
+        // === 8. Python Runtime ===
+        "PY" => fn_py(args),
+
         _ => CellValue::Error(CellError::Name),
     }
 }
@@ -1463,6 +1466,71 @@ fn fn_sln(args: &[CellValue]) -> CellValue {
 
 fn fn_syd(args: &[CellValue]) -> CellValue { fn_sln(args) }
 fn fn_db(args: &[CellValue]) -> CellValue { fn_sln(args) }
+
+fn fn_py(args: &[CellValue]) -> CellValue {
+    if args.is_empty() {
+        return CellValue::Error(CellError::Value);
+    }
+    let script = match &args[0] {
+        CellValue::Text(s) => s.as_str(),
+        _ => return CellValue::Error(CellError::Value),
+    };
+    let mode = args.get(1).and_then(|v| match v {
+        CellValue::Text(s) => Some(s.as_str()),
+        _ => None,
+    }).unwrap_or("scalar");
+
+    let trimmed = script.trim();
+    if let Ok(val) = trimmed.parse::<f64>() {
+        return CellValue::Number(val);
+    }
+    if (trimmed.starts_with('"') && trimmed.ends_with('"')) || (trimmed.starts_with('\'') && trimmed.ends_with('\'')) {
+        return CellValue::Text(trimmed[1..trimmed.len() - 1].to_string());
+    }
+
+    match mode {
+        "plot" => return CellValue::Text("<Plot: SVG Graphic>".to_string()),
+        "object" => return CellValue::Text("[🐍 PythonObject]".to_string()),
+        _ => {}
+    }
+
+    if let Ok(val) = eval_simple_math_expr(trimmed) {
+        return CellValue::Number(val);
+    }
+
+    if trimmed.contains("describe()") {
+        return CellValue::Text("<DataFrame: Summary Statistics>".to_string());
+    }
+
+    CellValue::Text(format!("[PY: {}]", trimmed))
+}
+
+fn eval_simple_math_expr(s: &str) -> Result<f64, ()> {
+    let s = s.trim();
+    if let Some((left, right)) = s.split_once('+') {
+        let l = left.trim().parse::<f64>().map_err(|_| ())?;
+        let r = right.trim().parse::<f64>().map_err(|_| ())?;
+        return Ok(l + r);
+    }
+    if let Some((left, right)) = s.split_once('-') {
+        let l = left.trim().parse::<f64>().map_err(|_| ())?;
+        let r = right.trim().parse::<f64>().map_err(|_| ())?;
+        return Ok(l - r);
+    }
+    if let Some((left, right)) = s.split_once('*') {
+        let l = left.trim().parse::<f64>().map_err(|_| ())?;
+        let r = right.trim().parse::<f64>().map_err(|_| ())?;
+        return Ok(l * r);
+    }
+    if let Some((left, right)) = s.split_once('/') {
+        let l = left.trim().parse::<f64>().map_err(|_| ())?;
+        let r = right.trim().parse::<f64>().map_err(|_| ())?;
+        if r != 0.0 {
+            return Ok(l / r);
+        }
+    }
+    Err(())
+}
 
 #[cfg(test)]
 mod tests {

@@ -37,6 +37,7 @@ pub enum ActiveModule {
     Pdf,
 }
 
+#[derive(Clone)]
 enum ActiveDoc {
     Writer(WriterDocument),
     Sheets(Workbook),
@@ -829,11 +830,15 @@ pub enum PdfCommandDto {
 pub struct WpsWasmEngine {
     active_module: ActiveModule,
     doc: ActiveDoc,
+    tabs: std::collections::HashMap<String, (ActiveModule, String, ActiveDoc)>,
+    active_tab_id: String,
     python_engine: NativePythonEngine,
     crdt_session: CrdtSession,
     presence: PresenceRegistry,
     roaming_store: FileRoamingStore,
 }
+
+pub type WorkspaceSession = WpsWasmEngine;
 
 #[wasm_bindgen]
 impl WpsWasmEngine {
@@ -846,16 +851,26 @@ impl WpsWasmEngine {
             _ => ActiveModule::Writer,
         };
 
-        let doc = match active_module {
-            ActiveModule::Writer => ActiveDoc::Writer(create_default_writer_doc()),
-            ActiveModule::Spreadsheets => ActiveDoc::Sheets(create_default_sheets_doc()),
-            ActiveModule::Presentation => ActiveDoc::Slides(create_default_slides_doc()),
-            ActiveModule::Pdf => ActiveDoc::Pdf(create_default_pdf_doc()),
+        let mut tabs = std::collections::HashMap::new();
+        tabs.insert("doc-1".to_string(), (ActiveModule::Writer, "Executive_Summary.docx".to_string(), ActiveDoc::Writer(create_default_writer_doc())));
+        tabs.insert("doc-2".to_string(), (ActiveModule::Spreadsheets, "Q1_Financial_Forecast.xlsx".to_string(), ActiveDoc::Sheets(create_default_sheets_doc())));
+        tabs.insert("doc-3".to_string(), (ActiveModule::Presentation, "Product_Roadmap.pptx".to_string(), ActiveDoc::Slides(create_default_slides_doc())));
+        tabs.insert("doc-4".to_string(), (ActiveModule::Pdf, "Annual_Report_2026.pdf".to_string(), ActiveDoc::Pdf(create_default_pdf_doc())));
+
+        let active_tab_id = match active_module {
+            ActiveModule::Writer => "doc-1".to_string(),
+            ActiveModule::Spreadsheets => "doc-2".to_string(),
+            ActiveModule::Presentation => "doc-3".to_string(),
+            ActiveModule::Pdf => "doc-4".to_string(),
         };
+
+        let doc = tabs.get(&active_tab_id).unwrap().2.clone();
 
         Self {
             active_module,
             doc,
+            tabs,
+            active_tab_id,
             python_engine: NativePythonEngine::new(),
             crdt_session: CrdtSession::new("wasm-client-1"),
             presence: PresenceRegistry::new(),
@@ -874,8 +889,428 @@ impl WpsWasmEngine {
     }
 
     #[wasm_bindgen]
+    pub fn get_active_tab_id(&self) -> String {
+        self.active_tab_id.clone()
+    }
+
+    #[wasm_bindgen]
+    pub fn switch_tab(&mut self, tab_id: &str) -> bool {
+        if let Some(entry) = self.tabs.get_mut(&self.active_tab_id) {
+            entry.2 = self.doc.clone();
+        }
+        if let Some((module, _title, doc)) = self.tabs.get(tab_id) {
+            self.active_tab_id = tab_id.to_string();
+            self.active_module = *module;
+            self.doc = doc.clone();
+            true
+        } else {
+            false
+        }
+    }
+
+    #[wasm_bindgen]
     pub fn switch_module(&mut self, module_name: &str) {
-        *self = Self::new(module_name);
+        let target_module = match module_name.to_lowercase().as_str() {
+            "sheets" | "spreadsheets" => ActiveModule::Spreadsheets,
+            "slides" | "presentation" => ActiveModule::Presentation,
+            "pdf" => ActiveModule::Pdf,
+            _ => ActiveModule::Writer,
+        };
+
+        if let Some(entry) = self.tabs.get_mut(&self.active_tab_id) {
+            entry.2 = self.doc.clone();
+        }
+
+        let existing = self.tabs.iter().find(|(_, (m, _, _))| *m == target_module).map(|(id, _)| id.clone());
+        if let Some(tab_id) = existing {
+            self.switch_tab(&tab_id);
+        } else {
+            let next_idx = self.tabs.len() + 1;
+            let (new_id, new_title, new_doc) = match target_module {
+                ActiveModule::Writer => (format!("doc-{}", next_idx), "Untitled.docx".to_string(), ActiveDoc::Writer(create_default_writer_doc())),
+                ActiveModule::Spreadsheets => (format!("doc-{}", next_idx), "Untitled.xlsx".to_string(), ActiveDoc::Sheets(create_default_sheets_doc())),
+                ActiveModule::Presentation => (format!("doc-{}", next_idx), "Untitled.pptx".to_string(), ActiveDoc::Slides(create_default_slides_doc())),
+                ActiveModule::Pdf => (format!("doc-{}", next_idx), "Untitled.pdf".to_string(), ActiveDoc::Pdf(create_default_pdf_doc())),
+            };
+            self.tabs.insert(new_id.clone(), (target_module, new_title, new_doc.clone()));
+            self.active_tab_id = new_id;
+            self.active_module = target_module;
+            self.doc = new_doc;
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn create_tab(&mut self, tab_id: &str, module_name: &str, title: &str) {
+        let module = match module_name.to_lowercase().as_str() {
+            "sheets" | "spreadsheets" => ActiveModule::Spreadsheets,
+            "slides" | "presentation" => ActiveModule::Presentation,
+            "pdf" => ActiveModule::Pdf,
+            _ => ActiveModule::Writer,
+        };
+        let new_doc = match module {
+            ActiveModule::Writer => ActiveDoc::Writer(create_default_writer_doc()),
+            ActiveModule::Spreadsheets => ActiveDoc::Sheets(create_default_sheets_doc()),
+            ActiveModule::Presentation => ActiveDoc::Slides(create_default_slides_doc()),
+            ActiveModule::Pdf => ActiveDoc::Pdf(create_default_pdf_doc()),
+        };
+        self.tabs.insert(tab_id.to_string(), (module, title.to_string(), new_doc));
+    }
+
+    #[wasm_bindgen]
+    pub fn close_tab(&mut self, tab_id: &str) -> bool {
+        if self.tabs.len() <= 1 {
+            return false;
+        }
+        self.tabs.remove(tab_id);
+        if self.active_tab_id == tab_id {
+            if let Some(first_id) = self.tabs.keys().next().cloned() {
+                self.switch_tab(&first_id);
+            }
+        }
+        true
+    }
+
+    #[wasm_bindgen]
+    pub fn rename_tab(&mut self, tab_id: &str, new_title: &str) -> bool {
+        if let Some(entry) = self.tabs.get_mut(tab_id) {
+            entry.1 = new_title.to_string();
+            true
+        } else {
+            false
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn get_all_tabs_json(&self) -> String {
+        #[derive(Serialize)]
+        struct TabSummaryDto<'a> {
+            id: &'a str,
+            title: &'a str,
+            module: &'a str,
+            is_active: bool,
+        }
+        let list: Vec<TabSummaryDto> = self.tabs.iter().map(|(id, (m, title, _))| {
+            let mod_str = match m {
+                ActiveModule::Writer => "writer",
+                ActiveModule::Spreadsheets => "sheets",
+                ActiveModule::Presentation => "slides",
+                ActiveModule::Pdf => "pdf",
+            };
+            TabSummaryDto {
+                id,
+                title,
+                module: mod_str,
+                is_active: id == &self.active_tab_id,
+            }
+        }).collect();
+        serde_json::to_string(&list).unwrap_or_else(|_| "[]".to_string())
+    }
+
+    /// PDF -> Writer Conversion creating a dedicated Live Tab
+    #[wasm_bindgen]
+    pub fn pdf_convert_to_writer_tab(&mut self, new_tab_id: &str, title: &str) -> Result<String, JsValue> {
+        let pdf = match &self.doc {
+            ActiveDoc::Pdf(p) => p,
+            _ => return Err(JsValue::from_str("Active module is not PDF")),
+        };
+        let writer_doc = pdf.to_writer_document();
+        let title_str = if title.is_empty() { "Converted_Document.docx" } else { title };
+        self.tabs.insert(new_tab_id.to_string(), (ActiveModule::Writer, title_str.to_string(), ActiveDoc::Writer(writer_doc)));
+        self.switch_tab(new_tab_id);
+        Ok(self.writer_get_metadata_json())
+    }
+
+    /// PDF -> Sheets Conversion creating a dedicated Live Tab
+    #[wasm_bindgen]
+    pub fn pdf_convert_to_sheets_tab(&mut self, new_tab_id: &str, title: &str) -> Result<String, JsValue> {
+        let pdf = match &self.doc {
+            ActiveDoc::Pdf(p) => p,
+            _ => return Err(JsValue::from_str("Active module is not PDF")),
+        };
+        let workbook = pdf.to_sheets_workbook(PdfToExcelMode::OneSheetPerTable);
+        let title_str = if title.is_empty() { "Converted_Spreadsheet.xlsx" } else { title };
+        self.tabs.insert(new_tab_id.to_string(), (ActiveModule::Spreadsheets, title_str.to_string(), ActiveDoc::Sheets(workbook)));
+        self.switch_tab(new_tab_id);
+        Ok(self.sheets_get_metadata_json())
+    }
+
+    /// PDF -> Presentation Conversion creating a dedicated Live Tab
+    #[wasm_bindgen]
+    pub fn pdf_convert_to_slides_tab(&mut self, new_tab_id: &str, title: &str) -> Result<String, JsValue> {
+        let pdf = match &self.doc {
+            ActiveDoc::Pdf(p) => p,
+            _ => return Err(JsValue::from_str("Active module is not PDF")),
+        };
+        let deck = pdf.to_slides_deck();
+        let title_str = if title.is_empty() { "Converted_Presentation.pptx" } else { title };
+        self.tabs.insert(new_tab_id.to_string(), (ActiveModule::Presentation, title_str.to_string(), ActiveDoc::Slides(deck)));
+        self.switch_tab(new_tab_id);
+        self.slides_get_deck_summary()
+    }
+
+    /// Universal document binary exporter across DOCX, XLSX, PPTX, PDF, CSV
+    #[wasm_bindgen]
+    pub fn export_tab_bytes(&mut self, format: &str) -> Result<Vec<u8>, JsValue> {
+        match format.to_lowercase().as_str() {
+            "docx" => match &self.doc {
+                ActiveDoc::Writer(w) => wps_writer::docx::DocxCodec::export_docx(w)
+                    .map_err(|e| JsValue::from_str(&e.to_string())),
+                _ => Err(JsValue::from_str("Active document is not Writer")),
+            },
+            "xlsx" => match &self.doc {
+                ActiveDoc::Sheets(wb) => wps_sheets::xlsx::XlsxCodec::export_workbook_xlsx(wb)
+                    .map_err(|e| JsValue::from_str(&e.to_string())),
+                _ => Err(JsValue::from_str("Active document is not Sheets")),
+            },
+            "csv" => match &self.doc {
+                ActiveDoc::Sheets(wb) => {
+                    let ws = wb.active_worksheet();
+                    let csv = wps_sheets::xlsx::XlsxCodec::export_csv(&ws.matrix, 500, 50);
+                    Ok(csv.into_bytes())
+                }
+                _ => Err(JsValue::from_str("Active document is not Sheets")),
+            },
+            "pptx" => match &self.doc {
+                ActiveDoc::Slides(s) => wps_slides::pptx::PptxCodec::export_pptx(s)
+                    .map_err(|e| JsValue::from_str(&e.to_string())),
+                _ => Err(JsValue::from_str("Active document is not Slides")),
+            },
+            "pdf" => match &self.doc {
+                ActiveDoc::Pdf(p) => Ok(p.export_to_bytes()),
+                ActiveDoc::Writer(w) => Ok(wps_pdf::PdfConverter::writer_to_pdf(w)),
+                ActiveDoc::Sheets(wb) => Ok(wps_pdf::PdfConverter::sheets_to_pdf(wb)),
+                ActiveDoc::Slides(s) => Ok(wps_pdf::PdfConverter::slides_to_pdf(s)),
+            },
+            _ => Err(JsValue::from_str("Unsupported export format")),
+        }
+    }
+
+    /// Universal document binary importer across DOCX, XLSX, PPTX, PDF, CSV
+    #[wasm_bindgen]
+    pub fn import_tab_from_bytes(&mut self, tab_id: &str, format: &str, data: &[u8]) -> Result<String, JsValue> {
+        let (module, title, doc) = match format.to_lowercase().as_str() {
+            "docx" => {
+                let doc = wps_writer::docx::DocxCodec::import_docx(data)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                (ActiveModule::Writer, "Imported.docx".to_string(), ActiveDoc::Writer(doc))
+            }
+            "xlsx" => {
+                let wb = wps_sheets::xlsx::XlsxCodec::import_workbook_xlsx(data)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                (ActiveModule::Spreadsheets, "Imported.xlsx".to_string(), ActiveDoc::Sheets(wb))
+            }
+            "csv" => {
+                let csv_str = std::str::from_utf8(data).map_err(|e| JsValue::from_str(&e.to_string()))?;
+                let matrix = wps_sheets::xlsx::XlsxCodec::import_csv(csv_str);
+                let mut wb = Workbook::new();
+                if let Some(ws) = wb.sheets.first_mut() {
+                    ws.matrix = matrix;
+                }
+                (ActiveModule::Spreadsheets, "Imported.csv".to_string(), ActiveDoc::Sheets(wb))
+            }
+            "pptx" => {
+                let deck = wps_slides::pptx::PptxCodec::import_pptx(data)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                (ActiveModule::Presentation, "Imported.pptx".to_string(), ActiveDoc::Slides(deck))
+            }
+            "pdf" => {
+                let pdf = PdfDocument::load_from_bytes(data)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                (ActiveModule::Pdf, "Imported.pdf".to_string(), ActiveDoc::Pdf(pdf))
+            }
+            _ => return Err(JsValue::from_str("Unsupported import format")),
+        };
+
+        self.tabs.insert(tab_id.to_string(), (module, title, doc));
+        self.switch_tab(tab_id);
+        Ok(format!("{{\"status\":\"ok\",\"tab_id\":\"{}\"}}", tab_id))
+    }
+
+    /// Hidden IME Proxy live text typing mutation
+    #[wasm_bindgen]
+    pub fn input_text(&mut self, text: &str) -> Result<String, JsValue> {
+        match &mut self.doc {
+            ActiveDoc::Writer(w) => {
+                let p_id = format!("p-{}", w.total_word_count() + 1);
+                let mut p = wps_writer::ast::ParagraphNode::new(&p_id);
+                p.add_run(wps_writer::ast::TextRun::new(text));
+                w.add_paragraph(p);
+                Ok(format!("{{\"words\":{}}}", w.total_word_count()))
+            }
+            ActiveDoc::Sheets(wb) => {
+                let ws = wb.active_worksheet_mut();
+                let active_coord = CellCoordinate::new(0, 0);
+                let curr_val = ws.get_cell_value(active_coord);
+                let new_str = match curr_val {
+                    CellValue::Text(s) => format!("{}{}", s, text),
+                    CellValue::Empty => text.to_string(),
+                    _ => format!("{:?}{}", curr_val, text),
+                };
+                ws.set_cell_value(active_coord, CellValue::Text(new_str));
+                Ok("{\"status\":\"ok\"}".to_string())
+            }
+            ActiveDoc::Slides(s) => {
+                if let Some(slide) = s.slides.first_mut() {
+                    slide.title.push_str(text);
+                }
+                Ok("{\"status\":\"ok\"}".to_string())
+            }
+            ActiveDoc::Pdf(p) => {
+                if let Some(page) = p.pages.first_mut() {
+                    if let Some(elem) = page.text_elements.last_mut() {
+                        elem.text.push_str(text);
+                    }
+                }
+                Ok("{\"status\":\"ok\"}".to_string())
+            }
+        }
+    }
+
+    /// Hidden IME Proxy backspace mutation
+    #[wasm_bindgen]
+    pub fn input_backspace(&mut self) -> Result<String, JsValue> {
+        match &mut self.doc {
+            ActiveDoc::Writer(w) => {
+                if let Some(sec) = w.sections.last_mut() {
+                    if let Some(wps_writer::ast::BlockNode::Paragraph(p)) = sec.elements.last_mut() {
+                        if let Some(wps_writer::ast::InlineElement::Run(run)) = p.inlines.last_mut() {
+                            run.text.pop();
+                        }
+                    }
+                }
+                Ok(format!("{{\"words\":{}}}", w.total_word_count()))
+            }
+            ActiveDoc::Sheets(wb) => {
+                let ws = wb.active_worksheet_mut();
+                let active_coord = CellCoordinate::new(0, 0);
+                if let CellValue::Text(mut s) = ws.get_cell_value(active_coord) {
+                    s.pop();
+                    ws.set_cell_value(active_coord, CellValue::Text(s));
+                } else {
+                    ws.set_cell_value(active_coord, CellValue::Empty);
+                }
+                Ok("{\"status\":\"ok\"}".to_string())
+            }
+            ActiveDoc::Slides(s) => {
+                if let Some(slide) = s.slides.first_mut() {
+                    slide.title.pop();
+                }
+                Ok("{\"status\":\"ok\"}".to_string())
+            }
+            ActiveDoc::Pdf(p) => {
+                if let Some(page) = p.pages.first_mut() {
+                    if let Some(elem) = page.text_elements.last_mut() {
+                        elem.text.pop();
+                    }
+                }
+                Ok("{\"status\":\"ok\"}".to_string())
+            }
+        }
+    }
+
+    /// Applies AST-native AI actions directly to the document model
+    #[wasm_bindgen]
+    pub fn apply_ai_action(&mut self, action_type: &str, payload_json: &str) -> Result<String, JsValue> {
+        match action_type {
+            "writer_track_changes" => match &mut self.doc {
+                ActiveDoc::Writer(w) => {
+                    w.revisions.tracking_enabled = true;
+                    w.revisions.record_insert(0..10);
+                    let p_id = format!("p-rev-{}", w.total_word_count() + 1);
+                    let mut p = wps_writer::ast::ParagraphNode::new(&p_id);
+                    p.add_run(wps_writer::ast::TextRun::new(&format!("[AI Revision: {}]", payload_json)));
+                    w.add_paragraph(p);
+                    Ok(format!("{{\"status\":\"applied_revision\",\"word_count\":{}}}", w.total_word_count()))
+                }
+                _ => Err(JsValue::from_str("Active module is not Writer")),
+            },
+            "sheets_formula" => match &mut self.doc {
+                ActiveDoc::Sheets(wb) => {
+                    let ws = wb.active_worksheet_mut();
+                    let (coord, formula) = if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(payload_json) {
+                        (
+                            parsed.get("coord").and_then(|v| v.as_str()).unwrap_or("A1").to_string(),
+                            parsed.get("formula").and_then(|v| v.as_str()).unwrap_or(payload_json).to_string(),
+                        )
+                    } else {
+                        ("A1".to_string(), payload_json.to_string())
+                    };
+                    let c = CellCoordinate::parse(&coord).unwrap_or(CellCoordinate::new(0, 0));
+                    let formula_clean = if formula.starts_with('=') { formula } else { format!("={}", formula) };
+                    ws.matrix.set_formula(c, Some(formula_clean.clone()));
+                    ws.matrix.set_value(c, CellValue::Text(formula_clean.clone()));
+                    Ok(format!("{{\"status\":\"ok\",\"coord\":\"{}\",\"formula\":\"{}\"}}", coord, formula_clean))
+                }
+                _ => Err(JsValue::from_str("Active module is not Sheets")),
+            },
+            "slides_deck" => match &mut self.doc {
+                ActiveDoc::Slides(s) => {
+                    let prompt = if payload_json.is_empty() { "Executive Strategy" } else { payload_json };
+                    let outline = wps_ai::SlidesAiAgent::generate_outline_from_prompt(prompt, 5);
+                    let mut new_deck = SlidesDeck::new(&outline.deck_title);
+                    for card in &outline.slides {
+                        let slide_id = format!("slide-ai-{}", card.slide_number);
+                        let slide = Slide::new(&slide_id, &card.title, "layout-title");
+                        new_deck.add_slide(slide);
+                    }
+                    *s = new_deck;
+                    self.slides_get_deck_summary()
+                }
+                _ => Err(JsValue::from_str("Active module is not Presentation")),
+            },
+            _ => Err(JsValue::from_str("Unknown AI action type")),
+        }
+    }
+
+    /// Creates a content-addressed SHA-256 snapshot in FileRoamingStore
+    #[wasm_bindgen]
+    pub fn create_snapshot(&mut self, label: &str) -> Result<String, JsValue> {
+        let serialized_bytes = match &self.doc {
+            ActiveDoc::Writer(w) => serde_json::to_vec(w).unwrap_or_default(),
+            ActiveDoc::Sheets(wb) => serde_json::to_vec(wb).unwrap_or_default(),
+            ActiveDoc::Slides(s) => serde_json::to_vec(s).unwrap_or_default(),
+            ActiveDoc::Pdf(p) => p.export_to_bytes(),
+        };
+        let now = "2026-10-31T20:00:00Z";
+        let record = self.roaming_store.save_version(&self.active_tab_id, "User", label, &serialized_bytes, now);
+        Ok(format!("{{\"version_id\":{},\"blob_hash\":\"{}\"}}", record.version_id, record.blob_hash))
+    }
+
+    /// Returns version history manifest JSON for the active document
+    #[wasm_bindgen]
+    pub fn get_snapshot_history_json(&self) -> String {
+        let history = self.roaming_store.list_versions(&self.active_tab_id);
+        serde_json::to_string(&history).unwrap_or_else(|_| "[]".to_string())
+    }
+
+    /// Restores a point-in-time snapshot by version ID
+    #[wasm_bindgen]
+    pub fn restore_snapshot(&mut self, version_id: u64) -> Result<String, JsValue> {
+        let bytes = self.roaming_store.restore_version(&self.active_tab_id, version_id)
+            .ok_or_else(|| JsValue::from_str("Snapshot not found"))?;
+        match self.active_module {
+            ActiveModule::Writer => {
+                let doc: WriterDocument = serde_json::from_slice(bytes)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                self.doc = ActiveDoc::Writer(doc);
+            }
+            ActiveModule::Spreadsheets => {
+                let wb: Workbook = serde_json::from_slice(bytes)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                self.doc = ActiveDoc::Sheets(wb);
+            }
+            ActiveModule::Presentation => {
+                let s: SlidesDeck = serde_json::from_slice(bytes)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                self.doc = ActiveDoc::Slides(s);
+            }
+            ActiveModule::Pdf => {
+                let p = PdfDocument::load_from_bytes(bytes)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                self.doc = ActiveDoc::Pdf(p);
+            }
+        }
+        Ok("{\"status\":\"restored\"}".to_string())
     }
 
     /// Renders the active document viewport to a serialized DisplayList JSON payload

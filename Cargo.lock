@@ -475,6 +475,7 @@ dependencies = [
  "serde",
  "serde_json",
  "wps-core",
+ "wps-wasm",
 ]
 
 [[package]]

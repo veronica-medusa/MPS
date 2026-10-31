@@ -270,6 +270,33 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const [leftIndent, setLeftIndent] = useState(0);
   const [rightIndent, setRightIndent] = useState(0);
 
+  // Writer Interactive Document Model & Caret State
+  const [writerTitle, setWriterTitle] = useState('Executive Summary: OpenWPS Platform Architecture');
+  const [writerLines, setWriterLines] = useState<string[]>([
+    'OpenWPS is engineered as an ultra-high-density office productivity suite executing natively across desktop',
+    'and web environments. Backed by a high-performance Rust core, rope buffers, and streaming OOXML codecs,',
+    'the system provides mathematical parity with existing enterprise formats (.docx, .xlsx, .pptx).',
+    '',
+    'Key Architectural Pillars:',
+    '• Bidirectional OOXML roundtrip engine with zero fidelity loss.',
+    '• Hardware-accelerated canvas rendering via WebGPU & Canvas2D display lists.',
+    '• Cross-module AST-grounded WPS AI co-pilot supporting contextual document mutations.',
+  ]);
+  const [writerCaret, setWriterCaret] = useState<{ lineIdx: number; charIdx: number }>({ lineIdx: 0, charIdx: 0 });
+  const [isCaretVisible, setIsCaretVisible] = useState(true);
+  const [isDraggingSelection, setIsDraggingSelection] = useState(false);
+  const [selectionStartCell, setSelectionStartCell] = useState<{ row: number; col: number } | null>(null);
+  const [selectionEndCell, setSelectionEndCell] = useState<{ row: number; col: number } | null>(null);
+  const inputProxyRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Caret Blinking Loop (530ms interval)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIsCaretVisible((v) => !v);
+    }, 530);
+    return () => clearInterval(timer);
+  }, []);
+
   // Spreadsheets Interactive Engine State
   const [sheetsList, setSheetsList] = useState<SheetInfo[]>([
     { id: 'sheet-1', name: 'Q1 Financial Model', rows: 8, cols: 7 },
@@ -549,6 +576,116 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     });
   };
 
+  // Keyboard Navigation & IME Input Proxy Hooks
+  const handleInputProxyKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (tab.type === 'sheets') {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handleCellClick(Math.max(0, selectedCell.row - 1), selectedCell.col);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleCellClick(Math.min(7, selectedCell.row + 1), selectedCell.col);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleCellClick(selectedCell.row, Math.max(0, selectedCell.col - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleCellClick(selectedCell.row, Math.min(6, selectedCell.col + 1));
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        handleCellClick(selectedCell.row, Math.min(6, selectedCell.col + 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleCellClick(Math.min(7, selectedCell.row + 1), selectedCell.col);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        const key = `${selectedCell.row},${selectedCell.col}`;
+        const cur = gridData[key]?.value || '';
+        if (cur.length > 0) {
+          const nextVal = cur.slice(0, -1);
+          setGridData({
+            ...gridData,
+            [key]: { value: nextVal, isNum: !isNaN(parseFloat(nextVal)) },
+          });
+          setFormulaValue(nextVal);
+        }
+      }
+    } else if (tab.type === 'writer') {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setWriterCaret((prev) => ({
+          lineIdx: prev.charIdx > 0 ? prev.lineIdx : Math.max(0, prev.lineIdx - 1),
+          charIdx: prev.charIdx > 0 ? prev.charIdx - 1 : (writerLines[Math.max(0, prev.lineIdx - 1)]?.length || 0),
+        }));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const curLine = writerLines[writerCaret.lineIdx] || '';
+        setWriterCaret((prev) => ({
+          lineIdx: prev.charIdx < curLine.length ? prev.lineIdx : Math.min(writerLines.length - 1, prev.lineIdx + 1),
+          charIdx: prev.charIdx < curLine.length ? prev.charIdx + 1 : 0,
+        }));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setWriterCaret((prev) => ({
+          lineIdx: Math.max(0, prev.lineIdx - 1),
+          charIdx: Math.min(prev.charIdx, (writerLines[Math.max(0, prev.lineIdx - 1)] || '').length),
+        }));
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setWriterCaret((prev) => ({
+          lineIdx: Math.min(writerLines.length - 1, prev.lineIdx + 1),
+          charIdx: Math.min(prev.charIdx, (writerLines[Math.min(writerLines.length - 1, prev.lineIdx + 1)] || '').length),
+        }));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const curLine = writerLines[writerCaret.lineIdx] || '';
+        const leftPart = curLine.slice(0, writerCaret.charIdx);
+        const rightPart = curLine.slice(writerCaret.charIdx);
+        const nextLines = [...writerLines];
+        nextLines.splice(writerCaret.lineIdx, 1, leftPart, rightPart);
+        setWriterLines(nextLines);
+        setWriterCaret({ lineIdx: writerCaret.lineIdx + 1, charIdx: 0 });
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        const curLine = writerLines[writerCaret.lineIdx] || '';
+        if (writerCaret.charIdx > 0) {
+          const nextLine = curLine.slice(0, writerCaret.charIdx - 1) + curLine.slice(writerCaret.charIdx);
+          const nextLines = [...writerLines];
+          nextLines[writerCaret.lineIdx] = nextLine;
+          setWriterLines(nextLines);
+          setWriterCaret((prev) => ({ ...prev, charIdx: prev.charIdx - 1 }));
+        } else if (writerCaret.lineIdx > 0) {
+          const prevLine = writerLines[writerCaret.lineIdx - 1];
+          const nextLines = [...writerLines];
+          nextLines.splice(writerCaret.lineIdx, 1);
+          nextLines[writerCaret.lineIdx - 1] = prevLine + curLine;
+          setWriterLines(nextLines);
+          setWriterCaret({ lineIdx: writerCaret.lineIdx - 1, charIdx: prevLine.length });
+        }
+      }
+    }
+  };
+
+  const handleInputProxyChar = (chars: string) => {
+    if (tab.type === 'sheets') {
+      const key = `${selectedCell.row},${selectedCell.col}`;
+      const cur = gridData[key]?.value || '';
+      const nextVal = cur + chars;
+      setGridData({
+        ...gridData,
+        [key]: { value: nextVal, isNum: !isNaN(parseFloat(nextVal)) },
+      });
+      setFormulaValue(nextVal);
+    } else if (tab.type === 'writer') {
+      const curLine = writerLines[writerCaret.lineIdx] || '';
+      const nextLine = curLine.slice(0, writerCaret.charIdx) + chars + curLine.slice(writerCaret.charIdx);
+      const nextLines = [...writerLines];
+      nextLines[writerCaret.lineIdx] = nextLine;
+      setWriterLines(nextLines);
+      setWriterCaret((prev) => ({ ...prev, charIdx: prev.charIdx + chars.length }));
+    }
+  };
+
   const handleAddSlide = () => {
     const newIdx = internalSlides.length + 1;
     const newSlide: SlideInfo = {
@@ -632,23 +769,23 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       const topMargin = 72 * scale;
 
       ctx.fillStyle = '#28253b';
-      ctx.font = `700 ${24 * scale}px Inter, sans-serif`;
-      ctx.fillText('Executive Summary: OpenWPS Platform Architecture', leftMargin, topMargin + 30 * scale);
+      ctx.font = `480 ${24 * scale}px Inter, sans-serif`;
+      ctx.fillText(writerTitle, leftMargin, topMargin + 30 * scale);
 
       ctx.font = `400 ${12 * scale}px Inter, sans-serif`;
       ctx.fillStyle = '#554e7b';
-      const lines = [
-        'OpenWPS is engineered as an ultra-high-density office productivity suite executing natively across desktop',
-        'and web environments. Backed by a high-performance Rust core, rope buffers, and streaming OOXML codecs,',
-        'the system provides mathematical parity with existing enterprise formats (.docx, .xlsx, .pptx).',
-        '',
-        'Key Architectural Pillars:',
-        '• Bidirectional OOXML roundtrip engine with zero fidelity loss.',
-        '• Hardware-accelerated canvas rendering via WebGPU & Canvas2D display lists.',
-        '• Cross-module AST-grounded WPS AI co-pilot supporting contextual document mutations.',
-      ];
-      lines.forEach((line, i) => {
-        ctx.fillText(line, leftMargin, topMargin + (70 + i * 22) * scale);
+      writerLines.forEach((line, i) => {
+        const lineY = topMargin + (70 + i * 22) * scale;
+        ctx.fillText(line, leftMargin, lineY);
+
+        // Blinking Caret Indicator
+        if (tab.type === 'writer' && isCaretVisible && writerCaret.lineIdx === i) {
+          const subStr = line.slice(0, writerCaret.charIdx);
+          const textW = ctx.measureText(subStr).width;
+          ctx.fillStyle = '#5266eb';
+          ctx.fillRect(leftMargin + textW, lineY - 11 * scale, 1.5, 14 * scale);
+          ctx.fillStyle = '#554e7b';
+        }
       });
     } else if (tab.type === 'sheets') {
       const totalRows = 8;
@@ -714,7 +851,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             const isHeader = row === 0;
             const isNum = cell.isNum;
             ctx.font = isHeader
-              ? `600 ${11 * scale}px Inter, sans-serif`
+              ? `500 ${11 * scale}px Inter, sans-serif`
               : isNum
               ? `400 ${11 * scale}px 'JetBrains Mono', monospace`
               : `400 ${11 * scale}px Inter, sans-serif`;
@@ -730,15 +867,41 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         }
       }
 
-      // Selection Highlight
+      // Multi-cell Range Drag Selection Highlight
+      if (selectionStartCell && selectionEndCell) {
+        const rMin = Math.min(selectionStartCell.row, selectionEndCell.row);
+        const rMax = Math.max(selectionStartCell.row, selectionEndCell.row);
+        const cMin = Math.min(selectionStartCell.col, selectionEndCell.col);
+        const cMax = Math.max(selectionStartCell.col, selectionEndCell.col);
+        const boxX = headerWidth + cMin * cellWidth;
+        const boxY = headerHeight + rMin * cellHeight;
+        const boxW = (cMax - cMin + 1) * cellWidth;
+        const boxH = (rMax - rMin + 1) * cellHeight;
+        ctx.fillStyle = 'rgba(82, 102, 235, 0.12)';
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.strokeStyle = '#5266eb';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+      }
+
+      // Single Selection Cell Highlight with Mercury Primary #5266eb
       const selX = headerWidth + selectedCell.col * cellWidth;
       const selY = headerHeight + selectedCell.row * cellHeight;
-      ctx.strokeStyle = '#0ca678';
+      ctx.strokeStyle = '#5266eb';
       ctx.lineWidth = 2;
       ctx.strokeRect(selX, selY, cellWidth, cellHeight);
-      ctx.fillStyle = '#0ca678';
+      ctx.fillStyle = '#5266eb';
       ctx.fillRect(selX + cellWidth - 4, selY + cellHeight - 4, 6, 6);
       ctx.lineWidth = 1;
+
+      // Blinking Caret inside active cell
+      if (isCaretVisible) {
+        const cellText = gridData[`${selectedCell.row},${selectedCell.col}`]?.value || '';
+        ctx.font = `400 ${11 * scale}px Inter, sans-serif`;
+        const textW = ctx.measureText(cellText).width;
+        ctx.fillStyle = '#5266eb';
+        ctx.fillRect(selX + 8 + textW + 1, selY + 4 * scale, 1.5, cellHeight - 8 * scale);
+      }
     } else if (tab.type === 'slides') {
       const slideW = 960 * scale;
       const slideH = 540 * scale;
@@ -859,7 +1022,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         // Text Run
         if (shape.text) {
           ctx.fillStyle = '#ffffff';
-          ctx.font = `600 ${14 * scale}px Inter, sans-serif`;
+          ctx.font = `480 ${14 * scale}px Inter, sans-serif`;
           ctx.textAlign = 'center';
           const lines = shape.text.split('\n');
           lines.forEach((line, i) => {
@@ -944,10 +1107,10 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       ctx.shadowColor = 'transparent';
 
       ctx.fillStyle = '#e03131';
-      ctx.font = `600 ${18 * scale}px Inter`;
+      ctx.font = `480 ${18 * scale}px Inter, sans-serif`;
       ctx.fillText('ISO 32000 Conforming PDF Document', 50 * scale, 70 * scale);
     }
-  }, [tab, selectedCell, gridData, tab.readingView, activeSlideIdx, internalSlides, selectedShapeId]);
+  }, [tab, selectedCell, gridData, tab.readingView, activeSlideIdx, internalSlides, selectedShapeId, writerTitle, writerLines, writerCaret, isCaretVisible, selectionStartCell, selectionEndCell]);
 
   return (
     <div className="relative flex-1 bg-mercury-canvas dark:bg-mercury-night overflow-hidden flex flex-col transition-colors">
@@ -1849,56 +2012,169 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       ) : (
         /* Writer, Spreadsheets, PDF Viewport */
         <div className="flex-1 flex overflow-hidden relative" ref={containerRef}>
+          {/* Hidden IME Input Proxy for Canvas Caret & Keyboard Navigation */}
+          <textarea
+            ref={inputProxyRef}
+            className="absolute opacity-0 pointer-events-none w-[1px] h-[1px] overflow-hidden"
+            style={{ top: -100, left: -100 }}
+            value=""
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                handleInputProxyChar(val);
+                e.target.value = '';
+              }
+            }}
+            onCompositionEnd={(e) => {
+              handleInputProxyChar(e.data);
+            }}
+            onKeyDown={handleInputProxyKeyDown}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+
           <div className="flex-1 overflow-auto flex items-start justify-center p-2 relative">
             <canvas
               ref={canvasRef}
               className={tab.type === 'sheets' ? 'cursor-cell' : 'cursor-text'}
-              onClick={(e) => {
-                if (tab.type === 'sheets') {
-                  const rect = canvasRef.current?.getBoundingClientRect();
-                  if (rect) {
-                    const clickX = e.clientX - rect.left;
-                    const clickY = e.clientY - rect.top;
-                    const scale = tab.zoom / 100;
-                    const headerW = 44;
-                    const headerH = 25;
-                    const cellW = 100 * scale;
-                    const cellH = 24 * scale;
+              onMouseDown={(e) => {
+                inputProxyRef.current?.focus();
+                const rect = canvasRef.current?.getBoundingClientRect();
+                if (!rect) return;
+                const scale = tab.zoom / 100;
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
 
-                    if (clickX > headerW && clickY > headerH) {
-                      const col = Math.floor((clickX - headerW) / cellW);
-                      const row = Math.floor((clickY - headerH) / cellH);
-                      handleCellClick(row, col);
+                if (tab.type === 'sheets') {
+                  const headerW = 44;
+                  const headerH = 25;
+                  const cellW = 100 * scale;
+                  const cellH = 24 * scale;
+
+                  if (clickX > headerW && clickY > headerH) {
+                    const col = Math.min(6, Math.max(0, Math.floor((clickX - headerW) / cellW)));
+                    const row = Math.min(7, Math.max(0, Math.floor((clickY - headerH) / cellH)));
+                    handleCellClick(row, col);
+                    setSelectionStartCell({ row, col });
+                    setSelectionEndCell({ row, col });
+                    setIsDraggingSelection(true);
+                  }
+                } else if (tab.type === 'writer') {
+                  const leftMargin = (72 + leftIndent + firstLineIndent) * scale;
+                  const topMargin = 72 * scale;
+                  const lineH = 22 * scale;
+                  const lineIdx = Math.min(
+                    writerLines.length - 1,
+                    Math.max(0, Math.floor((clickY - (topMargin + 50 * scale)) / lineH))
+                  );
+                  const line = writerLines[lineIdx] || '';
+                  const ctx = canvasRef.current?.getContext('2d');
+                  let charIdx = line.length;
+                  if (ctx) {
+                    ctx.font = `400 ${12 * scale}px Inter, sans-serif`;
+                    let accumulated = 0;
+                    for (let i = 0; i < line.length; i++) {
+                      const charW = ctx.measureText(line[i]).width;
+                      if (leftMargin + accumulated + charW / 2 >= clickX) {
+                        charIdx = i;
+                        break;
+                      }
+                      accumulated += charW;
                     }
                   }
+                  setWriterCaret({ lineIdx, charIdx });
+                  setIsCaretVisible(true);
+                  setHasSelection(true);
+                  setSelectionPos({ x: e.clientX, y: e.clientY });
                 } else {
                   setHasSelection(true);
                   setSelectionPos({ x: e.clientX, y: e.clientY });
                 }
               }}
+              onMouseMove={(e) => {
+                if (tab.type === 'sheets' && isDraggingSelection) {
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (!rect) return;
+                  const scale = tab.zoom / 100;
+                  const clickX = e.clientX - rect.left;
+                  const clickY = e.clientY - rect.top;
+                  const headerW = 44;
+                  const headerH = 25;
+                  const cellW = 100 * scale;
+                  const cellH = 24 * scale;
+
+                  if (clickX > headerW && clickY > headerH) {
+                    const col = Math.min(6, Math.max(0, Math.floor((clickX - headerW) / cellW)));
+                    const row = Math.min(7, Math.max(0, Math.floor((clickY - headerH) / cellH)));
+                    setSelectionEndCell({ row, col });
+
+                    // Multi-cell aggregate calculations
+                    if (selectionStartCell) {
+                      const rMin = Math.min(selectionStartCell.row, row);
+                      const rMax = Math.max(selectionStartCell.row, row);
+                      const cMin = Math.min(selectionStartCell.col, col);
+                      const cMax = Math.max(selectionStartCell.col, col);
+                      let sum = 0;
+                      let count = 0;
+                      let numCount = 0;
+                      let min = Infinity;
+                      let max = -Infinity;
+                      for (let r = rMin; r <= rMax; r++) {
+                        for (let c = cMin; c <= cMax; c++) {
+                          count++;
+                          const v = gridData[`${r},${c}`]?.value;
+                          if (v) {
+                            const num = parseFloat(v.replace(/[^0-9.-]/g, ''));
+                            if (!isNaN(num)) {
+                              sum += num;
+                              numCount++;
+                              min = Math.min(min, num);
+                              max = Math.max(max, num);
+                            }
+                          }
+                        }
+                      }
+                      if (onUpdateActiveCell) {
+                        const coordStr = `${getCellCoordinateString(rMin, cMin)}:${getCellCoordinateString(rMax, cMax)}`;
+                        onUpdateActiveCell(coordStr, {
+                          count,
+                          num_count: numCount,
+                          sum,
+                          average: numCount > 0 ? sum / numCount : 0,
+                          min: min === Infinity ? 0 : min,
+                          max: max === -Infinity ? 0 : max,
+                        });
+                      }
+                    }
+                  }
+                }
+              }}
+              onMouseUp={() => {
+                setIsDraggingSelection(false);
+              }}
             />
 
             {hasSelection && tab.type !== 'sheets' && (
               <div
-                className="absolute z-40 bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-mercury-pill shadow-xl px-2 py-1 flex items-center space-x-1 animate-in fade-in zoom-in-95"
+                className="absolute z-40 bg-white dark:bg-[#1e1e2a] border border-[rgba(112,115,147,0.22)] rounded-[40px] shadow-[0_2px_12px_rgba(40,37,59,0.05),0_1px_2px_rgba(40,37,59,0.04)] px-2.5 py-1.5 flex items-center space-x-1.5 animate-in fade-in zoom-in-95"
                 style={{
                   top: Math.max(10, selectionPos.y - 120),
                   left: Math.max(20, selectionPos.x - 100),
                 }}
               >
-                <button className="p-1 hover:bg-mercury-lavender dark:hover:bg-mercury-night rounded-full text-mercury-ink dark:text-mercury-on-dark">
+                <button className="p-1 hover:bg-[#edecfb] dark:hover:bg-[#171721] rounded-full text-[#28253b] dark:text-[#ededf3] transition">
                   <Bold className="w-3.5 h-3.5" />
                 </button>
-                <button className="p-1 hover:bg-mercury-lavender dark:hover:bg-mercury-night rounded-full text-mercury-ink dark:text-mercury-on-dark">
+                <button className="p-1 hover:bg-[#edecfb] dark:hover:bg-[#171721] rounded-full text-[#28253b] dark:text-[#ededf3] transition">
                   <Italic className="w-3.5 h-3.5" />
                 </button>
-                <button className="p-1 hover:bg-mercury-lavender dark:hover:bg-mercury-night rounded-full text-mercury-ink dark:text-mercury-on-dark">
+                <button className="p-1 hover:bg-[#edecfb] dark:hover:bg-[#171721] rounded-full text-[#28253b] dark:text-[#ededf3] transition">
                   <Highlighter className="w-3.5 h-3.5 text-yellow-500" />
                 </button>
-                <div className="w-[1px] h-3.5 bg-mercury-fog/30 mx-0.5" />
+                <div className="w-[1px] h-3.5 bg-[rgba(195,195,204,0.45)] mx-0.5" />
                 <button
                   onClick={() => onOpenAiAssist && onOpenAiAssist('selected text')}
-                  className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-mercury-ai/10 text-mercury-ai hover:bg-mercury-ai/20 text-xs font-medium"
+                  className="flex items-center space-x-1 px-3 py-1 rounded-[32px] bg-[#5266eb] hover:bg-[#4355d6] text-white text-xs font-[420] transition shadow-xs"
                 >
                   <Sparkles className="w-3 h-3" />
                   <span>AI Assist</span>

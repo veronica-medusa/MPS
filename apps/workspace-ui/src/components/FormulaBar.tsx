@@ -25,6 +25,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
   }, [value, activeCell]);
 
   const commonFunctions = [
+    { name: 'PY', desc: 'Embedded Python Runtime: execute Python code with wp.cell/wp.range DAG bindings' },
     { name: 'SUM', desc: 'Adds all numbers in a range of cells' },
     { name: 'AVERAGE', desc: 'Returns the average (arithmetic mean) of arguments' },
     { name: 'XLOOKUP', desc: 'Searches a range or array for a match and returns corresponding item' },

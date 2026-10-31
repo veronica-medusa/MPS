@@ -34,6 +34,46 @@ pub enum FormulaExpr {
     FunctionCall { name: String, args: Vec<FormulaExpr> },
 }
 
+impl FormulaExpr {
+    /// Extracts all cell coordinates referenced by this expression (including ranges and embedded Python scripts)
+    pub fn extract_dependencies(&self) -> Vec<CellCoordinate> {
+        let mut deps = Vec::new();
+        self.collect_dependencies(&mut deps);
+        deps.sort();
+        deps.dedup();
+        deps
+    }
+
+    fn collect_dependencies(&self, out: &mut Vec<CellCoordinate>) {
+        match self {
+            FormulaExpr::Literal(_) => {}
+            FormulaExpr::Cell(c) | FormulaExpr::Spill(c) => out.push(*c),
+            FormulaExpr::Range(r) => {
+                for row in r.start.row..=r.end.row {
+                    for col in r.start.col..=r.end.col {
+                        out.push(CellCoordinate::new(row, col));
+                    }
+                }
+            }
+            FormulaExpr::Unary(_, inner) => inner.collect_dependencies(out),
+            FormulaExpr::Binary(_, lhs, rhs) => {
+                lhs.collect_dependencies(out);
+                rhs.collect_dependencies(out);
+            }
+            FormulaExpr::FunctionCall { name, args } => {
+                for arg in args {
+                    arg.collect_dependencies(out);
+                }
+                if name.eq_ignore_ascii_case("PY") {
+                    if let Some(FormulaExpr::Literal(CellValue::Text(script))) = args.first() {
+                        crate::formula::extract_python_script_dependencies(script, out);
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
