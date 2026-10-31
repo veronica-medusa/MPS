@@ -10,17 +10,12 @@ use wps_render::{DisplayList, DrawCommand};
 pub const EMU_PER_PT: i64 = 12_700;
 pub const EMU_PER_INCH: i64 = 914_400;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum SlideSizeEmu {
+    #[default]
     Widescreen16x9, // 12,192,000 x 6,858,000 EMUs (960 x 540 pt)
     Standard4x3,    // 9,144,000 x 6,858,000 EMUs (720 x 540 pt)
     Custom { width: i64, height: i64 },
-}
-
-impl Default for SlideSizeEmu {
-    fn default() -> Self {
-        SlideSizeEmu::Widescreen16x9
-    }
 }
 
 impl SlideSizeEmu {

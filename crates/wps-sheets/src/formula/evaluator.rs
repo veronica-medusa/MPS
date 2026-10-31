@@ -79,7 +79,7 @@ impl<'a> Evaluator<'a> {
             }
             BinaryOp::Div => {
                 match (left.as_number(), right.as_number()) {
-                    (Some(_), Some(r)) if r == 0.0 => CellValue::Error(CellError::DivZero),
+                    (Some(_), Some(0.0)) => CellValue::Error(CellError::DivZero),
                     (Some(l), Some(r)) => CellValue::Number(l / r),
                     _ => CellValue::Error(CellError::Value),
                 }

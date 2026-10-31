@@ -44,14 +44,12 @@ impl PptxCodec {
 
         // 4. ppt/presentation.xml
         let (slide_cx, slide_cy) = deck.slide_size.dimensions_emu();
-        let mut pres_xml = format!(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\
+        let mut pres_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\
             <p:presentation xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" \
             xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" \
             xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">\n\
             <p:sldMasterIdLst><p:sldMasterId id=\"2147483648\" r:id=\"rId1\"/></p:sldMasterIdLst>\n\
-            <p:sldIdLst>"
-        );
+            <p:sldIdLst>".to_string();
         for (idx, _) in deck.slides.iter().enumerate() {
             pres_xml.push_str(&format!("<p:sldId id=\"{}\" r:id=\"rId{}\"/>", 256 + idx, idx + 2));
         }
@@ -97,15 +95,13 @@ impl PptxCodec {
         pkg.set_part_string("ppt/theme/theme1.xml", &theme_xml);
 
         // 6. ppt/slideMasters/slideMaster1.xml & rels
-        let master_xml = format!(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\
+        let master_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\
             <p:sldMaster xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" \
             xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" \
             xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">\n\
             <p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id=\"1\" name=\"\"/><p:cNvGrpSpPr/><p:grpSpPr/></p:nvGrpSpPr></p:spTree></p:cSld>\n\
             <p:sldLayoutIdLst><p:sldLayoutId id=\"2147483649\" r:id=\"rId1\"/></p:sldLayoutIdLst>\n\
-            </p:sldMaster>"
-        );
+            </p:sldMaster>".to_string();
         pkg.set_part_string("ppt/slideMasters/slideMaster1.xml", &master_xml);
 
         let mut master_rels = Relationships::new();
@@ -114,14 +110,12 @@ impl PptxCodec {
         pkg.set_part_string("ppt/slideMasters/_rels/slideMaster1.xml.rels", &master_rels.to_xml());
 
         // 7. ppt/slideLayouts/slideLayout1.xml & rels
-        let layout_xml = format!(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\
+        let layout_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\
             <p:sldLayout xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" \
             xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" \
             xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" type=\"blank\">\n\
             <p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id=\"1\" name=\"\"/><p:cNvGrpSpPr/><p:grpSpPr/></p:nvGrpSpPr></p:spTree></p:cSld>\n\
-            </p:sldLayout>"
-        );
+            </p:sldLayout>".to_string();
         pkg.set_part_string("ppt/slideLayouts/slideLayout1.xml", &layout_xml);
 
         let mut layout_rels = Relationships::new();
@@ -140,8 +134,8 @@ impl PptxCodec {
                 <p:nvGrpSpPr><p:cNvPr id=\"1\" name=\"\"/><p:cNvGrpSpPr/><p:grpSpPr/></p:nvGrpSpPr>"
             );
 
-            let mut shape_counter = 2;
-            for node in &slide.nodes {
+            for (node_idx, node) in slide.nodes.iter().enumerate() {
+                let shape_counter = node_idx + 2;
                 match node {
                     SlideNode::AutoShape(shape) => {
                         let emu_x = (shape.bounds.x * EMU_PER_PT as f64).round() as i64;
@@ -236,7 +230,6 @@ impl PptxCodec {
                     }
                     _ => {}
                 }
-                shape_counter += 1;
             }
 
             sld_xml.push_str("</p:spTree></p:cSld>");

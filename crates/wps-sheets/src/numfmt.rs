@@ -237,23 +237,23 @@ impl NumberFormatter {
 
 fn parse_condition(tag: &str) -> Option<SectionCondition> {
     let clean = tag.trim();
-    if clean.starts_with(">=") {
-        let target = clean[2..].trim().parse::<f64>().ok()?;
+    if let Some(rest) = clean.strip_prefix(">=") {
+        let target = rest.trim().parse::<f64>().ok()?;
         Some(SectionCondition { op: ConditionOp::GreaterThanOrEqual, target })
-    } else if clean.starts_with('>') {
-        let target = clean[1..].trim().parse::<f64>().ok()?;
+    } else if let Some(rest) = clean.strip_prefix('>') {
+        let target = rest.trim().parse::<f64>().ok()?;
         Some(SectionCondition { op: ConditionOp::GreaterThan, target })
-    } else if clean.starts_with("<=") {
-        let target = clean[2..].trim().parse::<f64>().ok()?;
+    } else if let Some(rest) = clean.strip_prefix("<=") {
+        let target = rest.trim().parse::<f64>().ok()?;
         Some(SectionCondition { op: ConditionOp::LessThanOrEqual, target })
-    } else if clean.starts_with('<') {
-        let target = clean[1..].trim().parse::<f64>().ok()?;
+    } else if let Some(rest) = clean.strip_prefix('<') {
+        let target = rest.trim().parse::<f64>().ok()?;
         Some(SectionCondition { op: ConditionOp::LessThan, target })
-    } else if clean.starts_with("=") || clean.starts_with("==") {
-        let target = clean.trim_start_matches('=').trim().parse::<f64>().ok()?;
+    } else if let Some(rest) = clean.strip_prefix("==").or_else(|| clean.strip_prefix('=')) {
+        let target = rest.trim().parse::<f64>().ok()?;
         Some(SectionCondition { op: ConditionOp::Equal, target })
-    } else if clean.starts_with("<>") || clean.starts_with("!=") {
-        let target = clean[2..].trim().parse::<f64>().ok()?;
+    } else if let Some(rest) = clean.strip_prefix("<>").or_else(|| clean.strip_prefix("!=")) {
+        let target = rest.trim().parse::<f64>().ok()?;
         Some(SectionCondition { op: ConditionOp::NotEqual, target })
     } else {
         None

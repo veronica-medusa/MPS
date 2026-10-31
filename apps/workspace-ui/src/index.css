@@ -1,46 +1,7 @@
-@import './theme/mercury-tokens.css';
+@import './styles/mercury-tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --mercury-primary: #5266eb;
-  --mercury-on-primary: #ffffff;
-  --mercury-periwinkle: #9cb4e8;
-  --mercury-canvas: #fbfcfd;
-  --mercury-surface: #ffffff;
-  --mercury-surface-tint: #fbfbff;
-  --mercury-lavender: #edecfb;
-  --mercury-night: #171721;
-  --mercury-night-raised: #1e1e2a;
-  --mercury-ink: #28253b;
-  --mercury-ink-secondary: #554e7b;
-  --mercury-on-dark: #ededf3;
-  --mercury-fog: #c3c3cc;
-  --mercury-slate: #70707d;
-
-  --mercury-bg-canvas: #fbfcfd;
-  --mercury-bg-surface-1: #ffffff;
-  --mercury-bg-surface-2: #fbfbff;
-  --mercury-bg-surface-3: #edecfb;
-  --mercury-border-hairline: 1px solid rgba(195, 195, 204, 0.45);
-
-  --mercury-accent-writer: #3b5bdb;
-  --mercury-accent-sheets: #0ca678;
-  --mercury-accent-slides: #e8590c;
-  --mercury-accent-pdf: #e03131;
-  --mercury-accent-ai-python: #7048e8;
-}
-
-[data-theme='dark'] {
-  --mercury-bg-canvas: #171721;
-  --mercury-bg-surface-1: #1e1e2a;
-  --mercury-bg-surface-2: #28253b;
-  --mercury-bg-surface-3: #33304a;
-  --mercury-border-hairline: 1px solid rgba(112, 112, 125, 0.35);
-  --mercury-ink: #ededf3;
-  --mercury-ink-secondary: #c3c3cc;
-}
 
 /* Strict Mercury Light Variable Typography Law: Weights NEVER exceed 500 */
 body, button, input, select, textarea, div, span, p, h1, h2, h3, h4, h5, h6 {

@@ -61,7 +61,7 @@ impl DocumentAutomation {
             toc_p.indent_left_twips = wps_core::units::Twips((*lvl as i64 - 1) * 360);
 
             let dots_count = (60usize).saturating_sub(title.chars().count() + page_num.to_string().len());
-            let dots: String = std::iter::repeat('.').take(dots_count).collect();
+            let dots = ".".repeat(dots_count);
 
             let entry_line = format!("{} {} {}", title, dots, page_num);
             toc_p.add_run(TextRun::new(&entry_line).with_size(10.0));

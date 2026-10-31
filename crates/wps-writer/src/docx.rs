@@ -123,7 +123,7 @@ impl DocxCodec {
                                 for cell_elem in &cell.elements {
                                     if let BlockNode::Paragraph(p) = cell_elem {
                                         xml.push_str("<w:p><w:r><w:t xml:space=\"preserve\">");
-                                        xml.push_str(&quick_xml::escape::escape(&p.plain_text()));
+                                        xml.push_str(&quick_xml::escape::escape(p.plain_text()));
                                         xml.push_str("</w:t></w:r></w:p>");
                                     }
                                 }
@@ -310,17 +310,17 @@ impl DocxCodec {
             let id = format!("md-p-{}", idx + 1);
             let trimmed = line.trim();
 
-            if trimmed.starts_with("# ") {
-                doc.add_paragraph(ParagraphNode::heading(&id, 1, &trimmed[2..]));
-            } else if trimmed.starts_with("## ") {
-                doc.add_paragraph(ParagraphNode::heading(&id, 2, &trimmed[3..]));
-            } else if trimmed.starts_with("### ") {
-                doc.add_paragraph(ParagraphNode::heading(&id, 3, &trimmed[4..]));
-            } else if trimmed.starts_with("- ") || trimmed.starts_with("* ") {
+            if let Some(h) = trimmed.strip_prefix("# ") {
+                doc.add_paragraph(ParagraphNode::heading(&id, 1, h));
+            } else if let Some(h) = trimmed.strip_prefix("## ") {
+                doc.add_paragraph(ParagraphNode::heading(&id, 2, h));
+            } else if let Some(h) = trimmed.strip_prefix("### ") {
+                doc.add_paragraph(ParagraphNode::heading(&id, 3, h));
+            } else if let Some(item) = trimmed.strip_prefix("- ").or_else(|| trimmed.strip_prefix("* ")) {
                 let mut p = ParagraphNode::new(&id);
                 p.style_id = "List Paragraph".to_string();
                 p.indent_left_twips = Twips(360);
-                p.add_run(TextRun::new(&trimmed[2..]));
+                p.add_run(TextRun::new(item));
                 doc.add_paragraph(p);
             } else if !trimmed.is_empty() {
                 let mut p = ParagraphNode::new(&id);

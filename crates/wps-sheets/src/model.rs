@@ -12,20 +12,15 @@ pub enum SheetVisibility {
     VeryHidden,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum CalcMode {
+    #[default]
     Automatic,
     Manual,
     Iterative {
         max_iterations: u32,
         max_change: f64,
     },
-}
-
-impl Default for CalcMode {
-    fn default() -> Self {
-        Self::Automatic
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

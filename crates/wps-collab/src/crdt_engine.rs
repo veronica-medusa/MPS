@@ -97,8 +97,8 @@ impl WriterCrdtBinding {
             .filter_map(|(idx, (_, _, del))| if !del { Some(idx) } else { None })
             .collect();
 
-        for i in offset..(offset + len).min(active_chars.len()) {
-            let idx = active_chars[i];
+        let end = (offset + len).min(active_chars.len());
+        for &idx in &active_chars[offset..end] {
             let op = WriterTextOp::Delete { target_char_id: self.chars[idx].0 };
             self.apply_text_op(&op);
             ops.push(op);
@@ -136,11 +136,16 @@ impl WriterCrdtBinding {
             }
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        self.chars.iter()
-            .filter_map(|(_, ch, del)| if !del { Some(*ch) } else { None })
-            .collect()
+impl std::fmt::Display for WriterCrdtBinding {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (_, ch, del) in &self.chars {
+            if !del {
+                write!(f, "{ch}")?;
+            }
+        }
+        Ok(())
     }
 }
 

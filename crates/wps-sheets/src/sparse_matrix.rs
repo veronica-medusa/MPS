@@ -4,17 +4,9 @@ use std::collections::{BTreeMap, HashMap};
 
 pub const CHUNK_SIZE: usize = 64;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct SparseChunk {
     cells: HashMap<(u8, u8), Cell>,
-}
-
-impl Default for SparseChunk {
-    fn default() -> Self {
-        Self {
-            cells: HashMap::new(),
-        }
-    }
 }
 
 impl SparseChunk {

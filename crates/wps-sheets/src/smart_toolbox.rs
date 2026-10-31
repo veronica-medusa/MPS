@@ -244,12 +244,10 @@ impl SmartToolbox {
                     composite_key.push('\t');
                 }
 
-                if !composite_key.trim().is_empty() {
-                    if !seen_keys.insert(composite_key) {
-                        // Duplicate row! Clear row cells
-                        for c in 0..=max_cols {
-                            matrix.set_value(CellCoordinate::new(r, c), CellValue::Empty);
-                        }
+                if !composite_key.trim().is_empty() && !seen_keys.insert(composite_key) {
+                    // Duplicate row! Clear row cells
+                    for c in 0..=max_cols {
+                        matrix.set_value(CellCoordinate::new(r, c), CellValue::Empty);
                     }
                 }
             }

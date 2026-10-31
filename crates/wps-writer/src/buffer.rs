@@ -66,15 +66,34 @@ pub struct RopeBuffer {
 
 const CHUNK_MAX_SIZE: usize = 512;
 
+impl std::str::FromStr for RopeBuffer {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut rope = Self::new();
+        rope.insert(0, s);
+        Ok(rope)
+    }
+}
+
+impl std::fmt::Display for RopeBuffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for chunk in &self.chunks {
+            write!(f, "{chunk}")?;
+        }
+        Ok(())
+    }
+}
+
 impl RopeBuffer {
     pub fn new() -> Self {
         Self { chunks: Vec::new() }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
-        let mut rope = Self::new();
-        rope.insert(0, s);
-        rope
+        use std::str::FromStr;
+        <Self as FromStr>::from_str(s).unwrap()
     }
 
     pub fn len_chars(&self) -> usize {
@@ -83,10 +102,6 @@ impl RopeBuffer {
 
     pub fn is_empty(&self) -> bool {
         self.chunks.is_empty() || self.len_chars() == 0
-    }
-
-    pub fn to_string(&self) -> String {
-        self.chunks.concat()
     }
 
     /// Inserts text at a given character offset
@@ -225,12 +240,8 @@ impl AttributeMap {
         let mut new_spans = Vec::new();
 
         for span in &self.spans {
-            // Case 1: Span is completely before target
-            if span.range.end <= target_range.start {
-                new_spans.push(span.clone());
-            }
-            // Case 2: Span is completely after target
-            else if span.range.start >= target_range.end {
+            // Case 1 & 2: Span is completely before or after target
+            if span.range.end <= target_range.start || span.range.start >= target_range.end {
                 new_spans.push(span.clone());
             }
             // Case 3: Overlapping

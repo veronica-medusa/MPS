@@ -139,18 +139,11 @@ impl LaidOutPage {
     }
 }
 
+#[derive(Default)]
 pub struct Paginator {
     // Cache for laid out paragraph lines by ParagraphId
     #[allow(dead_code)]
     line_cache: HashMap<String, Vec<LaidOutLine>>,
-}
-
-impl Default for Paginator {
-    fn default() -> Self {
-        Self {
-            line_cache: HashMap::new(),
-        }
-    }
 }
 
 impl Paginator {

@@ -483,12 +483,12 @@ impl ParametricShape {
                     self.adjustment_values[1] = frac;
                 }
             }
-            ShapeGeometryType::RectCallout | ShapeGeometryType::SpeechBubble => {
-                if handle_idx == 0 && b.width > 0.0 && b.height > 0.0 {
-                    let tx = (pt.x - b.x) / b.width;
-                    let ty = (pt.y - b.y) / b.height;
-                    self.adjustment_values = vec![tx, ty];
-                }
+            ShapeGeometryType::RectCallout | ShapeGeometryType::SpeechBubble
+                if handle_idx == 0 && b.width > 0.0 && b.height > 0.0 =>
+            {
+                let tx = (pt.x - b.x) / b.width;
+                let ty = (pt.y - b.y) / b.height;
+                self.adjustment_values = vec![tx, ty];
             }
             _ => {}
         }

@@ -17,20 +17,12 @@ pub struct DocumentSnapshot {
     pub content_bytes: Vec<u8>,
 }
 
+#[derive(Default)]
 pub struct FileRoamingStore {
     // Map of snapshot_id -> DocumentSnapshot
     snapshots: HashMap<String, DocumentSnapshot>,
     // Map of document_id -> list of snapshot_ids in chronological order
     doc_history: HashMap<String, Vec<String>>,
-}
-
-impl Default for FileRoamingStore {
-    fn default() -> Self {
-        Self {
-            snapshots: HashMap::new(),
-            doc_history: HashMap::new(),
-        }
-    }
 }
 
 impl FileRoamingStore {
