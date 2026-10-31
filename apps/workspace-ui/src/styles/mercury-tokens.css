@@ -1,0 +1,521 @@
+/* ─── Mercury Design System Tokens & Classes (apps/workspace-ui/src/styles/mercury-tokens.css) ─── */
+
+:root {
+  /* ─── Mercury Brand & Surface Palette ─── */
+  --mercury-primary: #5266eb;
+  --mercury-on-primary: #ffffff;
+  --mercury-periwinkle: #9cb4e8;
+  --mercury-canvas: #fbfcfd;
+  --mercury-surface: #ffffff;
+  --mercury-surface-tint: #fbfbff;
+  --mercury-lavender: #edecfb;
+  --mercury-night: #171721;
+  --mercury-night-raised: #1e1e2a;
+  --mercury-ink: #28253b;
+  --mercury-ink-secondary: #554e7b;
+  --mercury-on-dark: #ededf3;
+  --mercury-fog: #c3c3cc;
+  --mercury-slate: #70707d;
+
+  /* ─── Translucent Capsule Fills & Hairlines ─── */
+  --mercury-glass-dark-bg: rgba(175, 178, 206, 0.20);
+  --mercury-glass-dark-border: rgba(175, 178, 206, 0.36);
+  --mercury-tint-dark-bg: rgba(156, 180, 232, 0.20);
+  --mercury-tint-light-bg: rgba(82, 102, 235, 0.10);
+  --mercury-outline-light-bg: rgba(112, 115, 147, 0.10);
+  --mercury-outline-light-border: rgba(112, 115, 147, 0.22);
+  --mercury-shadow-soft-stack: 0 2px 12px rgba(40, 37, 59, 0.05), 0 1px 2px rgba(40, 37, 59, 0.04);
+
+  /* ─── Typography Families & Light Variable Weights (NEVER > 500) ─── */
+  --font-arcadia-display: 'arcadiaDisplay', 'Inter Variable', 'Inter', -apple-system, sans-serif;
+  --font-arcadia-sans: 'arcadia', 'Inter Variable', 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* ─── Border Radius Scale ─── */
+  --rounded-none: 0px;
+  --rounded-xs: 4px;
+  --rounded-sm: 8px;
+  --rounded-md: 12px;
+  --rounded-lg: 16px;
+  --rounded-xl: 32px;
+  --rounded-pill: 40px;
+  --rounded-full: 9999px;
+
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 32px;
+  --radius-pill: 40px;
+  --radius-full: 9999px;
+
+  /* ─── 8px Spacing System ─── */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  --spacing-huge: 40px;
+  --spacing-section: 80px;
+  --spacing-section-lg: 128px;
+
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-huge: 40px;
+  --space-section: 80px;
+  --space-section-lg: 128px;
+}
+
+/* ─── Typography Classes (Strict Light Variable Weights — Max 500) ─── */
+.ty-stat,
+.mercury-stat {
+  font-family: var(--font-arcadia-display);
+  font-size: 60px;
+  font-weight: 480;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.ty-display,
+.mercury-display {
+  font-family: var(--font-arcadia-display);
+  font-size: 52px;
+  font-weight: 480;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.ty-heading-1,
+.mercury-h1 {
+  font-family: var(--font-arcadia-display);
+  font-size: 42px;
+  font-weight: 480;
+  line-height: 1.15;
+  letter-spacing: 0.42px;
+}
+
+.ty-heading-2,
+.mercury-h2 {
+  font-family: var(--font-arcadia-display);
+  font-size: 28px;
+  font-weight: 480;
+  line-height: 1.2;
+  letter-spacing: 0.42px;
+}
+
+.ty-lead,
+.mercury-lead {
+  font-family: var(--font-arcadia-display);
+  font-size: 24px;
+  font-weight: 480;
+  line-height: 1.2;
+  letter-spacing: 0.48px;
+}
+
+.ty-body-lg,
+.mercury-body-lg {
+  font-family: var(--font-arcadia-sans);
+  font-size: 18px;
+  font-weight: 360;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.ty-body,
+.mercury-body {
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.ty-ui,
+.mercury-ui {
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.ty-ui-sm,
+.mercury-ui-sm {
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  line-height: 1;
+  letter-spacing: 0.07px;
+}
+
+.ty-eyebrow,
+.mercury-eyebrow {
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  text-transform: uppercase;
+}
+
+.ty-legal,
+.mercury-legal {
+  font-family: var(--font-arcadia-sans);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.24px;
+}
+
+/* ─── Mercury Navigation Bar ─── */
+.mercury-nav-bar {
+  height: 72px;
+  background-color: var(--mercury-night);
+  border-bottom: 1px solid var(--mercury-glass-dark-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-xxl);
+  user-select: none;
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+/* ─── Mercury Action Pills ─── */
+.mercury-button-primary,
+.button-primary {
+  background: var(--mercury-primary);
+  color: var(--mercury-on-primary);
+  border-radius: var(--rounded-xl);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(82, 102, 235, 0.2);
+}
+
+.mercury-button-primary:hover,
+.button-primary:hover {
+  background: #4355d6;
+  transform: translateY(-0.5px);
+}
+
+.mercury-button-glass-dark,
+.button-glass-dark {
+  background: var(--mercury-glass-dark-bg);
+  border: 1px solid var(--mercury-glass-dark-border);
+  color: var(--mercury-on-dark);
+  border-radius: var(--rounded-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.mercury-button-glass-dark:hover,
+.button-glass-dark:hover {
+  background: rgba(175, 178, 206, 0.28);
+}
+
+.mercury-nav-link {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--rounded-pill);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--mercury-on-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.mercury-nav-link:hover {
+  background: rgba(175, 178, 206, 0.12);
+}
+
+.mercury-nav-link.is-active {
+  background: var(--mercury-glass-dark-bg);
+  border-color: var(--mercury-glass-dark-border);
+}
+
+.mercury-button-tint-dark,
+.button-tint-dark {
+  background: var(--mercury-tint-dark-bg);
+  color: var(--mercury-on-dark);
+  border-radius: var(--rounded-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.mercury-button-tint-dark:hover,
+.button-tint-dark:hover {
+  background: rgba(156, 180, 232, 0.28);
+}
+
+.mercury-button-tint-light,
+.button-tint-light {
+  background: var(--mercury-tint-light-bg);
+  color: var(--mercury-ink);
+  border-radius: var(--rounded-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.mercury-button-tint-light:hover,
+.button-tint-light:hover {
+  background: rgba(82, 102, 235, 0.18);
+}
+
+.mercury-button-outline-light,
+.button-outline-light {
+  background: var(--mercury-outline-light-bg);
+  border: 1px solid var(--mercury-outline-light-border);
+  color: var(--mercury-ink);
+  border-radius: var(--rounded-pill);
+  height: 40px;
+  padding: 0 20px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 420;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.mercury-button-outline-light:hover,
+.button-outline-light:hover {
+  background: rgba(112, 115, 147, 0.16);
+}
+
+.mercury-button-small,
+.button-small {
+  background: var(--mercury-tint-light-bg);
+  color: var(--mercury-ink);
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  border-radius: var(--rounded-pill);
+  padding: 0 16px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.mercury-button-small:hover,
+.button-small:hover {
+  background: rgba(82, 102, 235, 0.18);
+}
+
+.mercury-button-small.is-active {
+  background: var(--mercury-primary);
+  color: var(--mercury-on-primary);
+  border-color: var(--mercury-primary);
+}
+
+.mercury-button-icon-round,
+.button-icon-round {
+  border-radius: var(--rounded-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+}
+
+/* ─── Fused Input Capsule ─── */
+.mercury-fused-capsule {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  background: var(--mercury-surface);
+  border: 1px solid var(--mercury-outline-light-border);
+  border-radius: var(--rounded-full);
+  box-shadow: var(--mercury-shadow-soft-stack);
+  padding: 3px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mercury-text-input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 16px;
+  color: var(--mercury-ink);
+  font-family: var(--font-arcadia-sans);
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  border-radius: 32px 0 0 32px;
+  box-sizing: border-box;
+}
+
+/* ─── Feature Cards ─── */
+.mercury-feature-card-dark {
+  background: var(--mercury-night-raised);
+  border: 1px solid var(--mercury-glass-dark-border);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xxl);
+  color: var(--mercury-on-dark);
+  box-sizing: border-box;
+}
+
+.mercury-feature-card-light {
+  background: var(--mercury-lavender);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xxl);
+  color: var(--mercury-ink);
+  box-sizing: border-box;
+}
+
+.mercury-surface-tint-bar {
+  background: var(--mercury-surface-tint);
+  border-bottom: 1px solid var(--mercury-fog);
+}
+
+/* ─── Data Table ─── */
+.mercury-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.mercury-data-table th,
+.mercury-data-table td {
+  border: 1px solid var(--mercury-fog);
+  padding: 8px 12px;
+}
+
+.mercury-data-table th {
+  background: var(--mercury-surface-tint);
+  color: var(--mercury-ink-secondary);
+}
+
+.mercury-data-table td.is-selected {
+  outline: 2px solid var(--mercury-primary);
+  background: rgba(82, 102, 235, 0.08);
+}
+
+/* ─── Toggle Switch ─── */
+.mercury-toggle-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: var(--rounded-full);
+  background: var(--mercury-fog);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+  padding: 2px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mercury-toggle-switch.is-on {
+  background: var(--mercury-primary);
+}
+
+.mercury-toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--rounded-full);
+  background: #ffffff;
+  display: block;
+  transition: transform 0.2s ease;
+  transform: translateX(0);
+}
+
+.mercury-toggle-switch.is-on .mercury-toggle-knob {
+  transform: translateX(20px);
+}
+
+/* ─── Accordion & Drawer Rows ─── */
+.mercury-accordion-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mercury-fog);
+}
+
+.mercury-app-shell-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--rounded-sm);
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.mercury-app-shell-row:hover {
+  background: rgba(112, 115, 147, 0.08);
+}
+
+.mercury-app-shell-row.is-active {
+  background: rgba(82, 102, 235, 0.12);
+}
+
+/* ─── Site Footer ─── */
+.mercury-site-footer {
+  height: 36px;
+  background-color: var(--mercury-night);
+  color: var(--mercury-on-dark);
+  border-top: 1px solid var(--mercury-glass-dark-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-xxl);
+  user-select: none;
+  flex-shrink: 0;
+}
