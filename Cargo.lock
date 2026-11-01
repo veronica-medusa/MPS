@@ -485,15 +485,6 @@ dependencies = [
  "serde",
  "serde_json",
  "wasm-bindgen",
- "wps-ai",
- "wps-collab",
- "wps-core",
- "wps-pdf",
- "wps-python",
- "wps-render",
- "wps-sheets",
- "wps-slides",
- "wps-writer",
 ]
 
 [[package]]

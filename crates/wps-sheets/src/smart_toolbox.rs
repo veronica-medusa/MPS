@@ -26,7 +26,7 @@ pub struct HygieneOptions {
 pub struct SmartToolbox;
 
 impl SmartToolbox {
-    /// 1. Merge Without Data Loss:
+    /// ### 1. Merge Without Data Loss
     /// Combines all non-empty cell values in range into top-left cell separated by delimiter,
     /// then clears the remaining cells in the range.
     pub fn merge_without_data_loss(
@@ -58,7 +58,7 @@ impl SmartToolbox {
         matrix.merged_ranges.push(range);
     }
 
-    /// 2. Split Sheet Wizard:
+    /// ### 2. Split Sheet Wizard
     /// Decomposes master sheet rows into separate named sub-matrices grouped by unique value in key_col.
     pub fn split_sheet_by_column(
         matrix: &SparseMatrix,
@@ -108,7 +108,7 @@ impl SmartToolbox {
         result
     }
 
-    /// 3. Combine Sheets:
+    /// ### 3. Combine Sheets
     /// Combines multiple matrices into a single master sheet with source tracking.
     pub fn combine_sheets(
         sheets: &[(&str, &SparseMatrix, u32, u16)],
@@ -151,7 +151,7 @@ impl SmartToolbox {
         master
     }
 
-    /// 4. Sheet Comparator:
+    /// ### 4. Sheet Comparator
     /// Visual diff between two matrices highlighting added, deleted, value-changed, or formula-changed cells.
     pub fn compare_sheets(
         sheet_a: &SparseMatrix,
@@ -201,7 +201,7 @@ impl SmartToolbox {
         SheetDiff { changed_cells }
     }
 
-    /// 5. One-Click Data Hygiene:
+    /// ### 5. One-Click Data Hygiene
     /// Trims spaces, strips non-printable ASCII, and deduplicates rows across key columns.
     pub fn data_hygiene(
         matrix: &mut SparseMatrix,
@@ -254,7 +254,7 @@ impl SmartToolbox {
         }
     }
 
-    /// 6. Unmerge and Fill:
+    /// ### 6. Unmerge and Fill
     /// Unmerges the specified range and populates all former child cells with the parent cell value.
     pub fn unmerge_and_fill(matrix: &mut SparseMatrix, range: CellRange) {
         let parent_val = matrix
@@ -269,7 +269,7 @@ impl SmartToolbox {
         }
     }
 
-    /// 7. In-Place Range Arithmetic:
+    /// ### 7. In-Place Range Arithmetic
     /// Applies arithmetic operation (add, sub, mul, div, round) across all numbers in range.
     pub fn range_arithmetic(
         matrix: &mut SparseMatrix,
@@ -297,7 +297,7 @@ impl SmartToolbox {
         }
     }
 
-    /// 8. Batch Regex Extractor:
+    /// ### 8. Batch Regex Extractor
     /// Extracts regex pattern matches from source column into target column.
     pub fn batch_regex_extract(
         matrix: &mut SparseMatrix,

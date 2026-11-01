@@ -438,7 +438,7 @@ fn fn_median(args: &[CellValue]) -> CellValue {
     if nums.is_empty() { return CellValue::Error(CellError::Num); }
     nums.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let mid = nums.len() / 2;
-    if nums.len() % 2 == 0 {
+    if nums.len().is_multiple_of(2) {
         CellValue::Number((nums[mid - 1] + nums[mid]) / 2.0)
     } else {
         CellValue::Number(nums[mid])
@@ -895,7 +895,7 @@ fn fn_switch(args: &[CellValue]) -> CellValue {
             return args[i + 1].clone();
         }
     }
-    if args.len() % 2 == 0 {
+    if args.len().is_multiple_of(2) {
         args.last().cloned().unwrap()
     } else {
         CellValue::Error(CellError::NA)
