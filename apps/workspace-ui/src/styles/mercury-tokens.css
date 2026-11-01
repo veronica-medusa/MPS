@@ -506,6 +506,467 @@
   background: rgba(82, 102, 235, 0.12);
 }
 
+/* ─── Top Nav Tabs (No Wrap & Smooth Scroll) ─── */
+.mercury-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.mercury-nav-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Excel-Grade Formula Bar ─── */
+.mercury-formula-bar {
+  display: flex;
+  align-items: center;
+  background: var(--mercury-surface);
+  border-bottom: 1px solid var(--mercury-fog);
+  padding: 6px 24px;
+  gap: 10px;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.mercury-name-box {
+  width: 76px;
+  height: 30px;
+  background: var(--mercury-surface-tint);
+  border: 1px solid var(--mercury-outline-light-border);
+  border-radius: var(--rounded-xs);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mercury-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.mercury-fx-badge {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--mercury-slate);
+  padding: 0 4px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.mercury-formula-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--mercury-surface-tint);
+  border: 1px solid var(--mercury-outline-light-border);
+  border-radius: var(--rounded-xs);
+  height: 32px;
+  padding: 0 10px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.mercury-formula-input-wrap:focus-within {
+  border-color: var(--mercury-primary);
+  background: #ffffff;
+}
+
+.mercury-formula-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--mercury-ink);
+  padding: 0;
+}
+
+/* ─── Writer Paper Canvas ─── */
+.mercury-paper-sheet {
+  width: 816px;
+  min-height: 1056px;
+  background: #ffffff;
+  margin: 24px auto;
+  border-radius: 4px;
+  padding: 72px 80px;
+  box-shadow: 0 4px 24px rgba(40, 37, 59, 0.08), 0 1px 3px rgba(40, 37, 59, 0.05);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.mercury-paper-margin-ruler {
+  position: absolute;
+  top: 36px;
+  left: 80px;
+  right: 80px;
+  height: 1px;
+  background: rgba(195, 195, 204, 0.4);
+  display: flex;
+  justify-content: space-between;
+}
+
+.mercury-redline-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ─── Spreadsheet Grid Realism ─── */
+.mercury-grid-viewport {
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid var(--mercury-fog);
+  border-radius: var(--rounded-sm);
+  box-shadow: var(--mercury-shadow-soft-stack);
+  max-height: calc(100vh - 240px);
+}
+
+.mercury-grid-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.mercury-grid-corner-cell {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  width: 48px;
+  min-width: 48px;
+  height: 28px;
+  background: #f4f4f7;
+  border-right: 1px solid var(--mercury-fog);
+  border-bottom: 1px solid var(--mercury-fog);
+}
+
+.mercury-grid-col-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 28px;
+  background: #f4f4f7;
+  border-right: 1px solid var(--mercury-fog);
+  border-bottom: 1px solid var(--mercury-fog);
+  text-align: center;
+  font-family: var(--font-arcadia-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mercury-slate);
+  user-select: none;
+}
+
+.mercury-grid-col-header.is-spotlit {
+  background: #e8e8f8;
+  color: var(--mercury-primary);
+}
+
+.mercury-grid-row-header {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  width: 48px;
+  min-width: 48px;
+  height: 32px;
+  background: #f4f4f7;
+  border-right: 1px solid var(--mercury-fog);
+  border-bottom: 1px solid var(--mercury-fog);
+  text-align: center;
+  font-family: var(--font-arcadia-sans);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--mercury-slate);
+  user-select: none;
+}
+
+.mercury-grid-row-header.is-spotlit {
+  background: #e8e8f8;
+  color: var(--mercury-primary);
+}
+
+.mercury-grid-cell {
+  height: 32px;
+  border-right: 1px solid rgba(195, 195, 204, 0.45);
+  border-bottom: 1px solid rgba(195, 195, 204, 0.45);
+  padding: 4px 10px;
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--mercury-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: cell;
+  position: relative;
+}
+
+.mercury-grid-cell.is-row-spotlit {
+  background: rgba(82, 102, 235, 0.03);
+}
+
+.mercury-grid-cell.is-selected {
+  outline: 2px solid var(--mercury-primary);
+  outline-offset: -1px;
+  background: rgba(82, 102, 235, 0.06);
+  z-index: 2;
+}
+
+.mercury-cell-handle {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 6px;
+  height: 6px;
+  background: var(--mercury-primary);
+  border: 1px solid #ffffff;
+  cursor: crosshair;
+  z-index: 3;
+}
+
+.mercury-sheet-tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f4f4f7;
+  border-top: 1px solid var(--mercury-fog);
+  height: 34px;
+  padding: 0 16px;
+  user-select: none;
+}
+
+/* ─── Slides Stage & Filmstrip ─── */
+.mercury-slides-container {
+  display: flex;
+  gap: 20px;
+  max-width: 1140px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.mercury-filmstrip {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.mercury-slide-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--mercury-night-raised);
+  border: 1px solid var(--mercury-glass-dark-border);
+  border-radius: var(--rounded-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.mercury-slide-thumb:hover {
+  border-color: var(--mercury-periwinkle);
+}
+
+.mercury-slide-thumb.is-active {
+  border: 2px solid var(--mercury-primary);
+  box-shadow: 0 0 0 2px rgba(82, 102, 235, 0.25);
+}
+
+.mercury-slide-main-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mercury-16-9-viewport {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 520px;
+  background: var(--mercury-night-raised);
+  border: 1px solid var(--mercury-glass-dark-border);
+  border-radius: var(--rounded-md);
+  box-shadow: 0 12px 32px rgba(23, 23, 33, 0.2);
+  padding: 36px 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  color: var(--mercury-on-dark);
+}
+
+.mercury-16-9-viewport h2,
+.mercury-16-9-viewport .ty-display,
+.mercury-16-9-viewport .ty-lead {
+  color: var(--mercury-on-dark);
+}
+
+.mercury-speaker-notes-drawer {
+  background: #ffffff;
+  border: 1px solid var(--mercury-fog);
+  border-radius: var(--rounded-sm);
+  padding: 14px 18px;
+  box-shadow: var(--mercury-shadow-soft-stack);
+}
+
+/* ─── PDF Stage & Spatial BBoxes ─── */
+.mercury-pdf-page {
+  width: 816px;
+  min-height: 1056px;
+  background: #ffffff;
+  margin: 24px auto;
+  border-radius: 4px;
+  padding: 72px 80px;
+  box-shadow: 0 4px 24px rgba(40, 37, 59, 0.08), 0 1px 3px rgba(40, 37, 59, 0.05);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.mercury-pdf-block {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--rounded-xs);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.mercury-pdf-block.is-cited {
+  background: var(--mercury-lavender);
+  border: 1px solid var(--mercury-primary);
+}
+
+.mercury-pdf-block.is-editable {
+  border: 1px dashed var(--mercury-fog);
+}
+
+.mercury-pdf-block.is-editable:hover {
+  border-color: var(--mercury-primary);
+}
+
+.mercury-redaction-mask {
+  background: #000000;
+  color: #00ff66;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  display: inline-block;
+  user-select: none;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Inspector Segmented Control & Timeline ─── */
+.mercury-segmented-control {
+  display: flex;
+  background: rgba(112, 115, 147, 0.12);
+  border-radius: var(--rounded-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.mercury-segmented-btn {
+  flex: 1;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--rounded-pill);
+  font-family: var(--font-arcadia-sans);
+  font-size: 13px;
+  font-weight: 420;
+  color: var(--mercury-ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mercury-segmented-btn.is-active {
+  background: #ffffff;
+  color: var(--mercury-ink);
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(40, 37, 59, 0.08);
+}
+
+.mercury-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.mercury-timeline-stem {
+  position: absolute;
+  left: 17px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: var(--mercury-fog);
+}
+
+.mercury-timeline-node {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding-bottom: 18px;
+}
+
+.mercury-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--mercury-primary);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px var(--mercury-primary);
+  margin-top: 4px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.mercury-timeline-dot.is-past {
+  background: var(--mercury-slate);
+  box-shadow: 0 0 0 1px var(--mercury-slate);
+}
+
+/* ─── Launchpad 4-Up Grid ─── */
+.mercury-launchpad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-xl);
+}
+
+@media (max-width: 1080px) {
+  .mercury-launchpad-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .mercury-launchpad-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ─── Site Footer ─── */
 .mercury-site-footer {
   height: 36px;
