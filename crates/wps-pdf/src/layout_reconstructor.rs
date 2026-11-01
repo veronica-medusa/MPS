@@ -1499,7 +1499,7 @@ impl SpatialLayoutReconstructor {
 
     fn detect_list_marker(text: &str) -> Option<(String, bool)> {
         let trimmed = text.trim_start();
-        for bullet in ["â€¢", "â—", "â—‹", "â–ª", "â–«", "â€“", "- "] {
+        for bullet in ["\u{2022}", "\u{25cf}", "\u{25cb}", "\u{25aa}", "\u{25ab}", "\u{2013}", "- "] {
             if trimmed.starts_with(bullet) {
                 return Some((bullet.trim().to_string(), false));
             }

@@ -15,7 +15,14 @@ use wps_core::geometry::{Point, Rect};
 use wps_render::{DisplayList, DrawCommand};
 
 pub use annotations::{Annotation, AnnotationKind, ShapeType, StampType};
-pub use converter::{PdfConverter, PdfToExcelMode};
+pub use converter::{
+    pt_to_emu, pt_to_signed_twips, pt_to_twips, ConvertedPresentationAst, ConvertedSheetCell,
+    ConvertedSlideAst, ConvertedSlideNodeAst, ConvertedWorkbookAst, ConvertedWorksheetAst,
+    ConvertedWriterDocument, PdfConverter, PdfToExcelMode, PdfToOfficeConverter, PdfToSheetsMode,
+    SheetMergedRange, SheetTypedValue, WriterBlockAst, WriterListBindingAst, WriterMarginsTwips,
+    WriterParagraphAst, WriterSectionAst, WriterTableAst, WriterTableCellAst, WriterTableRowAst,
+    WriterTextRunAst, WriterVMergeState, EMUS_PER_PT, TWIPS_PER_PT,
+};
 pub use editor::{PdfEditSession, reflow_page_to_stream};
 pub use forms_security::{
     AcroFieldType, AcroFormAndSignatureManager, AcroFormField, DigitalSignatureRecord,
