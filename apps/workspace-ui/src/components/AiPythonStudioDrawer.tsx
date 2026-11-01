@@ -27,7 +27,7 @@ interface AiMessage {
     index: number;
     page: number;
     text: string;
-    bbox: [number, number, number, number];
+    bounds: [number, number, number, number];
   }[];
   timestamp: string;
 }
@@ -120,7 +120,7 @@ export const AiPythonStudioDrawer: React.FC<AiPythonStudioDrawerProps> = ({
           index: 1,
           page: 2,
           text: 'Adjusted EBITDA reached 42.8 million dollars representing 38% margin growth.',
-          bbox: [60, 200, 500, 280],
+          bounds: [60, 200, 500, 280],
         },
       ];
     }
@@ -342,7 +342,7 @@ export const AiPythonStudioDrawer: React.FC<AiPythonStudioDrawerProps> = ({
                           <div className="flex items-center justify-between text-mercury-ai font-semibold mb-0.5">
                             <span>[{c.index}] Page {c.page}</span>
                             <span className="text-[9px] text-mercury-slate">
-                              [{c.bbox.map(n => Math.round(n)).join(', ')}]
+                              Section {c.index}
                             </span>
                           </div>
                           <p className="text-mercury-ink dark:text-mercury-fog line-clamp-2">

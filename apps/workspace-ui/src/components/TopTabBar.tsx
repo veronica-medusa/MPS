@@ -1,241 +1,351 @@
-import React from 'react';
-import { 
-  FileText, 
-  Table, 
-  Presentation, 
-  FileCheck, 
-  Plus, 
-  X, 
-  Columns, 
-  Sun, 
-  Moon, 
-  Share2, 
-  Sparkles, 
-  Play,
-  RotateCcw,
-  RotateCw,
-  History
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Home,
+  Plus,
+  X,
+  Sparkles,
+  History,
+  Download,
+  FileText,
+  Table,
+  Presentation,
+  FileCheck,
+  FolderOpen,
+  ChevronDown
 } from 'lucide-react';
-import { DocumentTab, DocumentType } from '../types';
+import { OfficeTab, DocumentType } from '../types';
 
 interface TopTabBarProps {
-  tabs: DocumentTab[];
+  tabs: OfficeTab[];
   activeTabId: string;
-  isSplitScreen: boolean;
-  isDarkMode: boolean;
+  isHomeActive: boolean;
   onSelectTab: (id: string) => void;
+  onSelectHome: () => void;
   onCloseTab: (id: string) => void;
+  onRenameTab: (id: string, newTitle: string) => void;
   onNewDocument: (type: DocumentType) => void;
-  onToggleSplitScreen: () => void;
-  onToggleDarkMode: () => void;
-  onOpenAi: () => void;
-  onOpenHistory?: () => void;
+  onOpenFile: () => void;
+  isAiOpen: boolean;
+  onToggleAi: () => void;
+  isHistoryOpen: boolean;
+  onToggleHistory: () => void;
+  onExportFile: (format: string) => void;
 }
 
 export const TopTabBar: React.FC<TopTabBarProps> = ({
   tabs,
   activeTabId,
-  isSplitScreen,
-  isDarkMode,
+  isHomeActive,
   onSelectTab,
+  onSelectHome,
   onCloseTab,
+  onRenameTab,
   onNewDocument,
-  onToggleSplitScreen,
-  onToggleDarkMode,
-  onOpenAi,
-  onOpenHistory,
+  onOpenFile,
+  isAiOpen,
+  onToggleAi,
+  isHistoryOpen,
+  onToggleHistory,
+  onExportFile,
 }) => {
-  const [showNewMenu, setShowNewMenu] = React.useState(false);
+  const [showNewMenu, setShowNewMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const newMenuRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  const getTypeIcon = (type: DocumentType) => {
-    switch (type) {
-      case 'writer':
-        return <FileText className="w-3.5 h-3.5 text-mercury-writer" />;
-      case 'sheets':
-        return <Table className="w-3.5 h-3.5 text-mercury-sheets" />;
-      case 'slides':
-        return <Presentation className="w-3.5 h-3.5 text-mercury-slides" />;
-      case 'pdf':
-        return <FileCheck className="w-3.5 h-3.5 text-mercury-pdf" />;
-    }
+  // Close popovers on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) {
+        setShowNewMenu(false);
+      }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleStartRename = (id: string, currentTitle: string) => {
+    setEditingTabId(id);
+    setEditingTitle(currentTitle);
   };
 
-  const getBorderColor = (type: DocumentType) => {
+  const handleFinishRename = (id: string) => {
+    if (editingTitle.trim()) {
+      onRenameTab(id, editingTitle.trim());
+    }
+    setEditingTabId(null);
+  };
+
+  const getBadge = (type: DocumentType) => {
     switch (type) {
       case 'writer':
-        return 'border-t-mercury-writer';
+        return <span className="wps-doc-tab-badge wps-badge-writer">W</span>;
       case 'sheets':
-        return 'border-t-mercury-sheets';
+        return <span className="wps-doc-tab-badge wps-badge-sheets">S</span>;
       case 'slides':
-        return 'border-t-mercury-slides';
+        return <span className="wps-doc-tab-badge wps-badge-slides">P</span>;
       case 'pdf':
-        return 'border-t-mercury-pdf';
+        return <span className="wps-doc-tab-badge wps-badge-pdf">PDF</span>;
     }
   };
 
   return (
-    <header className="h-10 bg-white dark:bg-mercury-night border-b border-mercury-fog/30 flex items-center justify-between px-2 select-none z-30 transition-colors">
-      {/* Left: Window Branding & Tabs */}
-      <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 mr-4">
-        <div className="flex items-center space-x-1.5 px-2.5 py-1 mr-2 rounded-mercury-md bg-mercury-primary/10 text-mercury-primary font-medium text-xs tracking-tight">
-          <div className="w-2 h-2 rounded-full bg-mercury-primary animate-pulse" />
-          <span className="font-semibold">OpenWPS</span>
-        </div>
+    <header className="wps-top-bar">
+      {/* Left: Home Button */}
+      <button
+        onClick={onSelectHome}
+        className={`wps-home-btn ${isHomeActive ? 'is-active' : ''}`}
+        title="Open WPS Home Hub"
+      >
+        <Home className="w-4 h-4" />
+        <span>Home</span>
+      </button>
 
-        {/* Tab Strip */}
-        <div className="flex items-center space-x-1">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTabId;
-            return (
-              <div
-                key={tab.id}
-                onClick={() => onSelectTab(tab.id)}
-                className={`group relative flex items-center h-8 px-3 rounded-t-mercury-sm text-xs cursor-pointer border-t-2 transition-all ${
-                  isActive
-                    ? `bg-mercury-surface-tint dark:bg-mercury-night-raised text-mercury-ink dark:text-mercury-on-dark font-medium shadow-sm ${getBorderColor(
-                        tab.type
-                      )}`
-                    : 'border-t-transparent hover:bg-mercury-lavender/50 dark:hover:bg-mercury-night-raised/50 text-mercury-ink-secondary dark:text-mercury-fog'
-                }`}
-              >
-                <span className="mr-1.5">{getTypeIcon(tab.type)}</span>
-                <span className="truncate max-w-[130px]">{tab.title}</span>
+      {/* Center-Left: Scrollable Document Tab Strip */}
+      <div className="wps-doc-tabs-strip">
+        {tabs.map((tab) => {
+          const isActive = !isHomeActive && tab.id === activeTabId;
+          const isEditing = editingTabId === tab.id;
 
-                {/* Dirty Dot */}
-                {tab.isDirty && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-mercury-primary ml-1.5" title="Unsaved changes" />
-                )}
+          return (
+            <div
+              key={tab.id}
+              onClick={() => onSelectTab(tab.id)}
+              onDoubleClick={() => handleStartRename(tab.id, tab.title)}
+              className={`wps-doc-tab ${isActive ? 'is-active' : ''}`}
+              title={`${tab.title} (Double-click to rename)`}
+            >
+              {getBadge(tab.type)}
 
-                {/* Close Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCloseTab(tab.id);
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  onBlur={() => handleFinishRename(tab.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleFinishRename(tab.id);
+                    if (e.key === 'Escape') setEditingTabId(null);
                   }}
-                  className="ml-2 p-0.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-mercury-fog/30 transition-opacity"
-                  title="Close Tab"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                  autoFocus
+                  className="bg-transparent border-b border-mercury-primary text-xs outline-none px-1 text-inherit"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="truncate max-w-[150px]">{tab.title}</span>
+              )}
 
-        {/* Plus Button with Menu */}
-        <div className="relative">
+              {tab.isDirty && <span className="wps-dirty-dot" title="Unsaved changes" />}
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseTab(tab.id);
+                }}
+                className="wps-tab-close"
+                title="Close Tab"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+
+        {/* Plus Button with Dropdown Menu */}
+        <div className="relative" ref={newMenuRef}>
           <button
             onClick={() => setShowNewMenu(!showNewMenu)}
-            className="w-7 h-7 flex items-center justify-center rounded-mercury-sm text-mercury-ink-secondary dark:text-mercury-fog hover:bg-mercury-lavender dark:hover:bg-mercury-night-raised transition-colors"
-            title="New Document (Ctrl/Cmd + N)"
+            className="wps-add-tab-btn"
+            title="New Document or Open File"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
           </button>
 
           {showNewMenu && (
-            <div
-              className="absolute left-0 mt-1 w-48 bg-white dark:bg-mercury-night-raised border border-mercury-fog/30 rounded-mercury-md shadow-lg py-1 z-50 text-xs"
-              onMouseLeave={() => setShowNewMenu(false)}
-            >
+            <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-mercury-night-raised border border-mercury-fog/40 rounded-mercury-md shadow-lg py-1.5 z-50 text-xs">
               <button
                 onClick={() => {
                   onNewDocument('writer');
                   setShowNewMenu(false);
                 }}
-                className="w-full px-3 py-1.5 text-left flex items-center space-x-2 hover:bg-mercury-lavender dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+                className="w-full px-3 py-2 text-left flex items-center gap-2.5 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
               >
-                <FileText className="w-4 h-4 text-mercury-writer" />
-                <span>WPS Writer Document (.docx)</span>
+                <span className="wps-doc-tab-badge wps-badge-writer">W</span>
+                <div>
+                  <div className="font-medium">New Document (.docx)</div>
+                  <div className="text-[10px] text-mercury-slate">WPS Writer</div>
+                </div>
               </button>
+
               <button
                 onClick={() => {
                   onNewDocument('sheets');
                   setShowNewMenu(false);
                 }}
-                className="w-full px-3 py-1.5 text-left flex items-center space-x-2 hover:bg-mercury-lavender dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+                className="w-full px-3 py-2 text-left flex items-center gap-2.5 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
               >
-                <Table className="w-4 h-4 text-mercury-sheets" />
-                <span>WPS Spreadsheet (.xlsx)</span>
+                <span className="wps-doc-tab-badge wps-badge-sheets">S</span>
+                <div>
+                  <div className="font-medium">New Spreadsheet (.xlsx)</div>
+                  <div className="text-[10px] text-mercury-slate">WPS Spreadsheets</div>
+                </div>
               </button>
+
               <button
                 onClick={() => {
                   onNewDocument('slides');
                   setShowNewMenu(false);
                 }}
-                className="w-full px-3 py-1.5 text-left flex items-center space-x-2 hover:bg-mercury-lavender dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+                className="w-full px-3 py-2 text-left flex items-center gap-2.5 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
               >
-                <Presentation className="w-4 h-4 text-mercury-slides" />
-                <span>WPS Presentation (.pptx)</span>
+                <span className="wps-doc-tab-badge wps-badge-slides">P</span>
+                <div>
+                  <div className="font-medium">New Presentation (.pptx)</div>
+                  <div className="text-[10px] text-mercury-slate">WPS Presentation</div>
+                </div>
               </button>
+
               <button
                 onClick={() => {
                   onNewDocument('pdf');
                   setShowNewMenu(false);
                 }}
-                className="w-full px-3 py-1.5 text-left flex items-center space-x-2 hover:bg-mercury-lavender dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+                className="w-full px-3 py-2 text-left flex items-center gap-2.5 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
               >
-                <FileCheck className="w-4 h-4 text-mercury-pdf" />
-                <span>WPS PDF Document (.pdf)</span>
+                <span className="wps-doc-tab-badge wps-badge-pdf">PDF</span>
+                <div>
+                  <div className="font-medium">Open / Convert PDF (.pdf)</div>
+                  <div className="text-[10px] text-mercury-slate">WPS PDF Toolkit</div>
+                </div>
+              </button>
+
+              <div className="border-t border-mercury-fog/30 my-1" />
+
+              <button
+                onClick={() => {
+                  onOpenFile();
+                  setShowNewMenu(false);
+                }}
+                className="w-full px-3 py-2 text-left flex items-center gap-2.5 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <FolderOpen className="w-4 h-4 text-mercury-slate ml-0.5" />
+                <span className="font-medium">Open Local File...</span>
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Right Controls: Split Screen, AI, Theme, Collaborators */}
-      <div className="flex items-center space-x-2">
-        {/* Active Tab Collaborators */}
-        {tabs.find((t) => t.id === activeTabId)?.collaborators.map((c) => (
-          <div
-            key={c.id}
-            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] text-white font-medium shadow-sm"
-            style={{ backgroundColor: c.color }}
-            title={`Collaborator: ${c.name}`}
-          >
-            {c.name.slice(0, 2).toUpperCase()}
-          </div>
-        ))}
-
-        {/* Split Screen Toggle */}
+      {/* Right Action Group */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Version History Button */}
         <button
-          onClick={onToggleSplitScreen}
-          className={`p-1.5 rounded-mercury-sm transition-colors ${
-            isSplitScreen
-              ? 'bg-mercury-primary text-white'
-              : 'text-mercury-ink-secondary dark:text-mercury-fog hover:bg-mercury-lavender dark:hover:bg-mercury-night-raised'
+          onClick={onToggleHistory}
+          className={`button-glass-dark h-8 px-3 text-xs flex items-center gap-1.5 ${
+            isHistoryOpen ? 'bg-mercury-glass-dark-border text-white' : ''
           }`}
-          title="Toggle Split-Screen View (◫)"
+          title="Toggle Version History"
         >
-          <Columns className="w-3.5 h-3.5" />
+          <History className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Version History</span>
         </button>
 
-        {/* AI Co-Pilot Button */}
+        {/* WPS AI Button */}
         <button
-          onClick={onOpenAi}
-          className="flex items-center space-x-1 px-2.5 py-1 rounded-mercury-pill bg-mercury-ai/10 text-mercury-ai hover:bg-mercury-ai/20 transition-all font-medium text-xs"
-          title="Open WPS AI Co-Pilot & Python Studio"
+          onClick={onToggleAi}
+          className={`button-tint-dark h-8 px-3 text-xs flex items-center gap-1.5 ${
+            isAiOpen ? 'bg-mercury-primary text-white border-transparent' : ''
+          }`}
+          title="Toggle WPS AI Assistant"
         >
-          <Sparkles className="w-3 h-3 text-mercury-ai animate-spin-slow" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
           <span>WPS AI</span>
         </button>
 
-        {/* File Roaming Version History Button */}
-        <button
-          onClick={onOpenHistory}
-          className="p-1.5 rounded-mercury-sm text-mercury-ink-secondary dark:text-mercury-fog hover:bg-mercury-lavender dark:hover:bg-mercury-night-raised transition-colors"
-          title="File Roaming Version History"
-        >
-          <History className="w-3.5 h-3.5" />
-        </button>
+        {/* Export / Save Primary CTA */}
+        <div className="relative" ref={exportMenuRef}>
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="button-primary h-8 px-3.5 text-xs flex items-center gap-1.5"
+            title="Save and Export Current File"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export / Save</span>
+            <ChevronDown className="w-3 h-3 opacity-70" />
+          </button>
 
-        {/* Dark/Light Mode Toggle */}
-        <button
-          onClick={onToggleDarkMode}
-          className="p-1.5 rounded-mercury-sm text-mercury-ink-secondary dark:text-mercury-fog hover:bg-mercury-lavender dark:hover:bg-mercury-night-raised transition-colors"
-          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Precision Night Mode'}
-        >
-          {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-        </button>
+          {showExportMenu && (
+            <div className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-mercury-night-raised border border-mercury-fog/40 rounded-mercury-md shadow-lg py-1.5 z-50 text-xs">
+              <div className="px-3 py-1 text-[10px] font-semibold text-mercury-slate uppercase tracking-wider">
+                Download Active File
+              </div>
+              <button
+                onClick={() => {
+                  onExportFile('docx');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <FileText className="w-3.5 h-3.5 text-mercury-primary" />
+                <span>Word Document (.docx)</span>
+              </button>
+              <button
+                onClick={() => {
+                  onExportFile('xlsx');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <Table className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Excel Workbook (.xlsx)</span>
+              </button>
+              <button
+                onClick={() => {
+                  onExportFile('pptx');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <Presentation className="w-3.5 h-3.5 text-orange-600" />
+                <span>PowerPoint (.pptx)</span>
+              </button>
+              <button
+                onClick={() => {
+                  onExportFile('pdf');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <FileCheck className="w-3.5 h-3.5 text-rose-600" />
+                <span>PDF Document (.pdf)</span>
+              </button>
+              <div className="border-t border-mercury-fog/30 my-1" />
+              <button
+                onClick={() => {
+                  onExportFile('csv');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <span>Comma Separated (.csv)</span>
+              </button>
+              <button
+                onClick={() => {
+                  onExportFile('txt');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-mercury-lavender/40 dark:hover:bg-mercury-night text-mercury-ink dark:text-mercury-on-dark"
+              >
+                <span>Plain Text (.txt)</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

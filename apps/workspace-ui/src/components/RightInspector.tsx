@@ -58,7 +58,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
         reply = `I can rewrite the selected paragraph into a concise, professional executive tone. Here is the revised draft.`;
         action = 'Replace Selection';
       } else if (tab.type === 'pdf') {
-        reply = `I found 3 relevant citations in this PDF. Click below to highlight and jump to [Page 1, BBox (50, 120, 500, 180)].`;
+        reply = `I found 3 relevant citations in this PDF. Click below to highlight and jump to Section 1 on Page 1.`;
         action = 'Jump to Citation';
       } else {
         reply = `I generated a 4-slide outline based on your prompt using the active slide master theme.`;

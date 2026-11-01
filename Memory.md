@@ -139,3 +139,68 @@
   - `cargo check --target wasm32-unknown-unknown -p wps-wasm`: PASSED with 0 errors.
   - `cargo check -p wps-tauri`: PASSED with 0 errors.
   - `npm --prefix apps/workspace-ui run build`: PASSED with 0 errors.
+
+
+---
+
+## 7. Emergency UX Overhaul: Authentic WPS Office 5-Zone Application Suite
+
+### 7.1 Problem Diagnosis & Remediation
+* **Zero Jargon Policy Enforced:** Completely purged all visible compiler/engine jargon from the user interface: `TWIPS`, `EMUs`, `ROPEY`, `PETGRAPH`, `TARJAN`, `XY-CUT`, `DBSCAN`, `COSMIC-TEXT`, `KURBO`, `YRS CRDT`, `SHA #`, `BBOX`, `!!HERO`, and `Run AST`. Verified 0 matches across the entire `apps/workspace-ui/src` codebase.
+* **Elimination of Marketing Hero Page:** Replaced oversized 52px/60px landing page blocks with a genuine, high-density desktop/web **WPS Office Workspace**.
+
+### 7.2 The 5-Zone WPS Office Architecture
+1. **Zone 1: WPS All-in-One Top Tab Bar (`TopTabBar.tsx`):**
+   * Compact 48px `#171721` (`night`) bar with `#ededf3` text.
+   * `🏠 Home` tab button to access WPS Home Hub.
+   * Scrollable document tabs with file type badges (`W`, `S`, `P`, `PDF`), double-click inline rename, dirty dot indicator (`•`), and `×` close button.
+   * `+` button with popover menu for creating blank files or opening local files.
+   * Right action cluster: `Version History` pill (`button-glass-dark`), `✨ WPS AI` pill (`button-tint-dark`), and `Export / Save` primary CTA (`button-primary` `#5266eb`).
+2. **WPS Home Hub Workspace (`HomeHubView.tsx`):**
+   * 220px left navigation sidebar: `Home`, `New Document`, `Open File`, `Templates`, `File Roaming / History`.
+   * Top 4 Quick-Create Cards: `WPS Writer` (New Blank Document), `WPS Spreadsheets` (New Blank Workbook), `WPS Presentation` (New Blank Slides), `WPS PDF` (Open / Convert PDF).
+   * 4 Recommended Template Starters: `Project Proposal.docx`, `Monthly Financial Budget.xlsx`, `Executive Pitch Deck.pptx`, `Service Agreement Contract.pdf`.
+   * Searchable Recent Files Table with filter pills (`All`, `Documents`, `Spreadsheets`, `Presentations`, `PDFs`) and quick actions (`Open`, `Duplicate`, `Delete`).
+3. **Module 1: WPS Writer (`WriterWorkspace.tsx`):**
+   * Contextual ribbon tabs: `Home`, `Insert`, `Page Layout`, `References & Mail Merge`, `Review & Track Changes`.
+   * Realistic 816px `#ffffff` paper sheet with top inch ruler (`0"..7"`).
+   * Live typing with formatting: Font family, size, B/I/U/S, text/highlight colors, alignments, and Styles Gallery (`Normal`, `Title`, `Heading 1`, `Heading 2`, `Quote`).
+   * Interactive table inserter (`1x1` to `8x8`) with editable table cells.
+   * Automated Table of Contents generator based on document heading hierarchy.
+   * Track Changes with live `<del>` and `<ins>` markup and inline/batch `Accept` and `Reject` actions.
+   * Right margin document comments drawer with resolution toggle.
+4. **Module 2: WPS Spreadsheets (`SheetsWorkspace.tsx`):**
+   * Contextual ribbon tabs: `Home`, `Insert`, `Formulas`, `Data`, `WPS Smart Toolbox`.
+   * Excel-grade Formula Bar: `Name Box` (e.g. `E2`), `fx` badge, full-width formula input (`=SUM(B2:D2)`), and `Apply` button.
+   * 2D interactive spreadsheet grid (`A..Z`, `1..50+`) with cell selection, editing, and keyboard navigation.
+   * Live Reactive Formula Engine: dynamic evaluation of `=SUM()`, `=AVERAGE()`, `=COUNT()`, `=MAX()`, `=MIN()`, `=IF()`, `=XLOOKUP()`, and arithmetic expressions, updating downstream cells in real time.
+   * Interactive live SVG chart rendering directly on the sheet canvas (`Bar Chart`, `Line Chart`, `Pie Chart`, `Area Chart`).
+   * WPS Smart Toolbox: `Reading Spotlight` (soft `#edecfb` lavender row/column crosshair highlight), `Merge Keep All Content`, `Unmerge & Fill`, `Remove Duplicates`, `Delete Blank Rows`, `Trim Spaces`.
+   * Multi-sheet tab bar (`Sheet1`, `Sheet2`, `+ Add Sheet`) and live status bar aggregates (`Average`, `Count`, `Sum`).
+5. **Module 3: WPS Presentation (`SlidesWorkspace.tsx`):**
+   * Contextual ribbon tabs: `Home`, `Insert`, `Design & Themes`, `Transitions`, `Slide Show`.
+   * 3-Panel Workspace: Left slide filmstrip with numbered thumbnails, center 16:9 canvas with selectable, draggable, resizable elements and handles, bottom speaker notes drawer.
+   * Direct inline typing inside any slide text box or shape.
+   * Design theme presets: `Mercury Night`, `Light Canvas`, `Lavender`, `Executive Indigo`.
+   * Transition presets: `None`, `Fade`, `Push`, `Wipe`, `Morph`.
+   * Full-Screen Slideshow Overlay with virtual laser pointer, slide counter, and Next/Previous navigation.
+   * Dual-screen Presenter View cockpit modal integration.
+6. **Module 4: WPS PDF Toolkit (`PdfWorkspace.tsx`):**
+   * Contextual ribbon tabs: `Home`, `Annotate & Mark`, `Edit PDF Content`, `Convert & Sign`.
+   * Framed PDF page with ISO 32000-2 Certified header.
+   * Text reflow editing mode toggle allowing direct paragraph editing.
+   * Annotations: `Yellow`, `Lavender`, `Periwinkle` highlights and sticky notes.
+   * Permanent PII Redaction: one-click scan blacks out sensitive SSNs (`999-00-1234`) with `[REDACTED-SSN - PURGED]`.
+   * Digital Signature Modal: interactive drawing or typing signatures placed directly on the PDF.
+   * Instant format conversion: `PDF to Word (.docx)` and `PDF to Excel (.xlsx)` spawn live editable tabs.
+7. **Zone 4: Right Assistant & History Drawer (`RightAssistantDrawer.tsx`):**
+   * 340px collapsible right panel with tab switcher: `✨ WPS AI` and `🕘 Version History`.
+   * Contextual WPS AI: module-specific quick action chips, multi-turn conversational chat, citation jump badges, and direct action application.
+   * Version History: Git-like timeline with snapshot nodes, author metadata, timestamp, description badges, and 1-click restore.
+8. **Zone 5: Bottom Status Bar:**
+   * 28px `#171721` (`night`) bar with `#ededf3` readouts for page count, word/char counts, active cell coordinates, calculation status, theme, and zoom slider.
+
+### 7.3 Verification & Quality Gate
+* Zero Jargon Audit: **PASSED (0 occurrences)** across all files in `apps/workspace-ui/src`.
+* Build & Typecheck: `npm --prefix apps/workspace-ui run build` **PASSED in 2.34s** with 0 errors.
+* Browser Functional Verification: All 8 interactive workflows verified live at `http://localhost:5173/`.

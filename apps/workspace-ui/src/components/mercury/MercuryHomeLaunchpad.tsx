@@ -183,7 +183,7 @@ export const MercuryHomeLaunchpad: React.FC<MercuryHomeLaunchpadProps> = ({
                   <span className="mercury-legal text-[#ff8787] font-[420]">.PDF • ISO 32000</span>
                 </div>
                 <p className="mercury-body-lg text-[14px] text-[#c3c3cc]/80 font-[360] leading-relaxed">
-                  XY-Cut layout reconstruction, direct inline text editing with reflow, pure-Rust OCR, AcroForms, and AES-256 security.
+                  Direct inline text editing, digital signatures, interactive forms, and ISO 32000-2 security.
                 </p>
               </div>
 

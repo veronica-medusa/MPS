@@ -144,7 +144,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         {
           id: 'p1-b4',
           kind: 'paragraph',
-          text: 'The OpenWPS PDF Toolkit provides a high-performance ISO 32000-compliant document processing pipeline. Built completely in safe Rust, it enables direct inline editing of PDF paragraphs with real-time text reflow, multi-column XY-Cut layout reconstruction, hybrid table extraction, and seamless AST conversion directly to Writer, Spreadsheets, and Presentation formats.',
+          text: 'The OpenWPS PDF Toolkit provides a high-performance ISO 32000-compliant document processing pipeline. Built completely in safe Rust, it enables direct inline editing of PDF paragraphs with real-time text reflow, multi-column document layout reconstruction, hybrid table extraction, and seamless AST conversion directly to Writer, Spreadsheets, and Presentation formats.',
           bounds: { x: 54, y: 130, w: 480, h: 56 },
           fontSize: 10.5,
           color: '#343a40',
@@ -187,7 +187,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         {
           id: 'p2-b2',
           kind: 'paragraph',
-          text: 'Spatial layout reconstructor benchmarks comparing XY-Cut heuristic clustering with OCR baselines:',
+          text: 'Spatial layout reconstructor benchmarks comparing structural clustering with OCR baselines:',
           bounds: { x: 54, y: 80, w: 480, h: 18 },
           fontSize: 10,
           color: '#495057',
@@ -203,7 +203,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             { text: 'Memory Footprint', isHeader: true },
           ],
           [
-            { text: 'XY-Cut Column Detection' },
+            { text: 'Page Column Detection' },
             { text: '1,420 pg/sec', isNum: true },
             { text: '99.8%', isNum: true },
             { text: '1.2 MB', isNum: true },
@@ -382,7 +382,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       shapes: [
         {
           id: 's1-hero',
-          name: '!!HeroCard',
+          name: 'HeroCard',
           geometry: 'RoundedRectangle',
           x: 100,
           y: 120,
@@ -474,7 +474,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       shapes: [
         {
           id: 's3-star',
-          name: '!!HeroCard',
+          name: 'HeroCard',
           geometry: 'Star5',
           x: 330,
           y: 110,
@@ -490,7 +490,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       connectors: [],
       transitionName: 'Fade',
       transitionDuration: 1000,
-      speakerNotes: 'Slide 3: Target slide for Morph transition. Notice the !!HeroCard naming convention matching Slide 1.',
+      speakerNotes: 'Slide 3: Target slide for Morph transition. Notice the matching HeroCard name from Slide 1.',
     },
   ]);
 
