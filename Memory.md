@@ -14,23 +14,17 @@
 ## 2. Mercury Design System Integration Status
 
 * **Design Package Installation:** Completed (`npx -y getdesign@latest add mercury` executed successfully)
-* **Design File Reference:** `./DESIGN.md` (Raw tokens) & `./Design.md` (Office & Canvas adaptation)
+* **Design File Reference:** `./Design.md` & `./DESIGN-mercury.md` (Full 568-line canonical specification with YAML frontmatter, tokens, and components)
 * **Core Token Mapping:**
-  * Base Palette: Canvas (`#fbfcfd`), Surface (`#ffffff`), Surface-Tint (`#fbfbff`), Lavender (`#edecfb`), Night (`#171721`), Night-Raised (`#1e1e2a`), Ink (`#28253b`), Ink-Secondary (`#554e7b`), Primary Indigo (`#5266eb`).
-  * Module Semantic Accents:
-    * Writer: Cobalt (`#3B5BDB`)
-    * Spreadsheets: Emerald (`#0CA678`)
-    * Presentation: Coral (`#E8590C`)
-    * PDF Toolkit: Crimson (`#E03131`)
-    * AI & Python Studio: Iris Violet (`#7048E8`)
-* **Verified UI Components:**
-  * Unified Polymorphic Tab Bar (Writer, Sheets, Slides, PDF, Collab Avatars, Version History toggle, WPS AI toggle)
-  * Contextual Mercury Ribbon Bar (Home, Insert, Formulas 150+, Data & Pivot, WPS Smart Toolbox, View with Spotlight, AI, PDF Annotate, PDF Edit, PDF Organize, PDF Convert, Security & Sign)
-  * Left Navigation Rail with 4 switchable tabs: Pages / Thumbnails, Spatial Outline Bookmarks, Annotations list, and Search & Permanent Redact PII
-  * Multi-Mode PDF Canvas Viewport: Read View, "Edit PDF Like Word" inline paragraph reflow editing with dashed Mercury Crimson `#E03131` bounding boxes, Responsive Reflow Reading View, and Visual Page Organizer Grid
-  * Dockable WPS AI & Python Studio Drawer: Iris Violet `#7048E8` styling, switchable between `@WPS-AI` co-pilot with spatial grounding citations and Embedded Python 3.12 studio with live DataFrame spill inspector and SVG plot preview
-  * Floating `/ai` Command Palette on Canvas (`Cmd/Ctrl + J`) with instant prompt submission
-  * File Roaming Version History Drawer with point-in-time time-travel and SHA-256 deduplicated snapshot restoration
+  * Base Palette: Canvas (`#fbfcfd`), Surface (`#ffffff`), Surface-Tint (`#fbfbff`), Lavender (`#edecfb`), Night (`#171721`), Night-Raised (`#1e1e2a`), Ink (`#28253b`), Ink-Secondary (`#554e7b`), Primary Indigo (`#5266eb`), Periwinkle (`#9cb4e8`), Fog (`#c3c3cc`), Slate (`#70707d`).
+  * Typography (Weights <= 500): Arcadia Display 480 (`stat` 60px, `display` 52px, `heading-1` 42px, `heading-2` 28px, `lead` 24px) & Arcadia Sans (`body-lg` 18px/360, `body` 16px/400, `ui` 16px/420, `ui-sm` 14px/420, `eyebrow` 14px/500, `legal` 12px/400).
+  * Action Pills: Single primary `#5266eb` action pill (`button-primary`), translucent secondary pills (`button-glass-dark`, `button-tint-dark`, `button-tint-light`, `button-outline-light`, `button-small`, `button-icon-round`).
+* **Verified UI Components & Surfaces:**
+  * Unified Top Tab Bar (48px `#171721` night bar, 🏠 Home hub button, document tabs `W`, `S`, `P`, `PDF`, Version History, ✨ WPS AI, Export/Save CTA)
+  * Dual-Surface Home Experience: Interactive toggle between **WPS Productivity Hub** (light canvas `#fbfcfd`) and **Mercury Night Launchpad Showcase** (`#171721` / `#1e1e2a`)
+  * Mercury Signature Components: `stat-block` (60px numerals), `feature-card-dark`, `feature-card-light`, `pricing-card` (3 tier columns with annual discount toggle), `quote-block`, `logo-strip`, `site-footer`
+  * Kit-Mirror Example Surfaces: `ex-pricing-tier`, `ex-pricing-tier-featured`, `ex-product-selector`, `ex-cart-drawer`, `ex-app-shell-row`, `ex-data-table-cell`, `ex-auth-form-card`, `ex-modal-card`, `ex-empty-state-card`, `ex-toast`
+  * Complete 4-Module Productivity Workspace: WPS Writer, WPS Spreadsheets, WPS Presentation, WPS PDF Toolkit with zero compiler jargon.
 
 ---
 
