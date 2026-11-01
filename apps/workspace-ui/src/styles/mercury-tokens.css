@@ -1494,3 +1494,292 @@
   border-color: var(--mercury-primary);
   background: var(--mercury-lavender);
 }
+
+
+/* ============================================================================
+   CANONICAL MERCURY DESIGN SPECIFICATION CLASSES (DESIGN-mercury.md / Design.md)
+   ============================================================================ */
+
+/* ─── Eyebrow Label ─── */
+.mercury-eyebrow-label,
+.eyebrow-label {
+  color: var(--mercury-ink-secondary);
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  text-transform: uppercase;
+}
+
+.eyebrow-label-dark {
+  color: var(--mercury-fog);
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  text-transform: uppercase;
+}
+
+/* ─── Stat Block ─── */
+.mercury-stat-block,
+.stat-block {
+  color: var(--mercury-on-dark);
+  font-family: var(--font-arcadia-display);
+  font-size: 60px;
+  font-weight: 480;
+  line-height: 1.1;
+  letter-spacing: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-block-caption {
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 420;
+  color: var(--mercury-fog);
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
+/* ─── Quote Block ─── */
+.mercury-quote-block,
+.quote-block {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-section) var(--spacing-lg);
+}
+
+.quote-block-text {
+  color: var(--mercury-ink);
+  font-family: var(--font-arcadia-display);
+  font-size: 24px;
+  font-weight: 480;
+  line-height: 1.35;
+  letter-spacing: 0.48px;
+}
+
+.quote-block-attribution {
+  color: var(--mercury-ink-secondary);
+  font-family: var(--font-arcadia-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
+  margin-top: var(--spacing-md);
+}
+
+/* ─── Logo Strip ─── */
+.mercury-logo-strip,
+.logo-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-huge);
+  padding: var(--spacing-xxl) 0;
+  opacity: 0.65;
+  filter: grayscale(100%);
+  user-select: none;
+}
+
+/* ─── Pricing Card & Comparison Table ─── */
+.mercury-pricing-card,
+.pricing-card {
+  background: var(--mercury-surface-tint);
+  border: 1px solid rgba(195, 195, 204, 0.4);
+  border-radius: var(--rounded-md);
+  box-shadow: var(--mercury-shadow-soft-stack);
+  overflow: hidden;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pricing-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xl) var(--spacing-xxl);
+  border-bottom: 1px solid var(--mercury-fog);
+  background: var(--mercury-surface-tint);
+}
+
+.pricing-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--mercury-fog);
+  gap: 1px;
+}
+
+.mercury-pricing-tier-column,
+.pricing-tier-column {
+  background: var(--mercury-surface);
+  padding: var(--spacing-xxl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  color: var(--mercury-ink);
+}
+
+.pricing-tier-name {
+  font-family: var(--font-arcadia-display);
+  font-size: 28px;
+  font-weight: 480;
+  line-height: 1.2;
+  letter-spacing: 0.42px;
+  color: var(--mercury-ink);
+}
+
+.pricing-tier-name .brand-suffix {
+  color: var(--mercury-primary);
+}
+
+.pricing-tier-price {
+  font-family: var(--font-arcadia-display);
+  font-size: 42px;
+  font-weight: 480;
+  line-height: 1.1;
+  color: var(--mercury-ink);
+}
+
+.pricing-tier-description {
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--mercury-ink-secondary);
+  line-height: 1.4;
+}
+
+/* ─── Kit-Mirror Example Surfaces (ex-*) ─── */
+
+/* ex-pricing-tier */
+.mercury-ex-pricing-tier,
+.ex-pricing-tier {
+  background: var(--mercury-surface);
+  color: var(--mercury-ink);
+  border: 1px solid var(--mercury-fog);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xxl);
+}
+
+/* ex-pricing-tier-featured (polarity-flipped) */
+.mercury-ex-pricing-tier-featured,
+.ex-pricing-tier-featured {
+  background: var(--mercury-ink);
+  color: var(--mercury-on-primary);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xxl);
+}
+
+/* ex-product-selector */
+.mercury-ex-product-selector,
+.ex-product-selector {
+  background: var(--mercury-surface);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xl);
+  border: 1px solid rgba(195, 195, 204, 0.4);
+}
+
+/* ex-cart-drawer */
+.mercury-ex-cart-drawer,
+.ex-cart-drawer {
+  background: var(--mercury-surface);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xl);
+  border: 1px solid rgba(195, 195, 204, 0.4);
+}
+
+.ex-cart-divider {
+  border-bottom: 1px solid var(--mercury-fog);
+  margin: var(--spacing-md) 0;
+}
+
+/* ex-app-shell-row */
+.mercury-ex-app-shell-row,
+.ex-app-shell-row {
+  background: var(--mercury-canvas);
+  border-radius: var(--rounded-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.mercury-ex-app-shell-row.is-active,
+.ex-app-shell-row.is-active {
+  border-left: 3px solid var(--mercury-primary);
+  background: rgba(82, 102, 235, 0.08);
+}
+
+/* ex-data-table-cell */
+.mercury-ex-data-table-cell,
+.ex-data-table-cell {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--mercury-fog);
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--mercury-ink);
+}
+
+th.mercury-ex-data-table-cell,
+th.ex-data-table-cell {
+  background: var(--mercury-surface);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.28px;
+  color: var(--mercury-ink-secondary);
+}
+
+/* ex-auth-form-card */
+.mercury-ex-auth-form-card,
+.ex-auth-form-card {
+  background: var(--mercury-surface);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xxl);
+  box-shadow: var(--mercury-shadow-soft-stack);
+  border: 1px solid rgba(195, 195, 204, 0.4);
+  max-width: 440px;
+  width: 100%;
+}
+
+/* ex-modal-card */
+.mercury-ex-modal-card,
+.ex-modal-card {
+  background: var(--mercury-surface);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-xxl);
+  box-shadow: 0 16px 48px rgba(40, 37, 59, 0.15);
+  border: 1px solid rgba(195, 195, 204, 0.4);
+}
+
+/* ex-empty-state-card */
+.mercury-ex-empty-state-card,
+.ex-empty-state-card {
+  background: var(--mercury-surface);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-huge);
+  text-align: center;
+  border: 1px dashed var(--mercury-fog);
+}
+
+/* ex-toast */
+.mercury-ex-toast,
+.ex-toast {
+  background: var(--mercury-surface);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-arcadia-sans);
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: 0 4px 16px rgba(40, 37, 59, 0.1);
+  border: 1px solid rgba(195, 195, 204, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
