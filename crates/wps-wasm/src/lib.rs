@@ -3,6 +3,8 @@
 //! Connects all 7 Rust engines (Writer, Spreadsheets, Presentation, PDF Toolkit,
 //! Python `=PY()`, CRDT File Roaming, and AST-native WPS AI) to `MercuryWorkspaceShell.tsx`.
 
+pub mod file_bridge;
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
@@ -403,8 +405,186 @@ impl WorkspaceSession {
         }
     }
 
-    pub fn export_tab_bytes(&self, _fmt: &str) -> Result<Vec<u8>, String> {
-        serde_json::to_vec(&self.state).map_err(|e| e.to_string())
+    pub fn load_document_payload(&mut self, payload: wps_ooxml::OfficeDocumentPayload) {
+        match payload {
+            wps_ooxml::OfficeDocumentPayload::Docx {
+                file_name,
+                paragraphs,
+                ..
+            } => {
+                let tab_id = format!("tab-writer-{}", self.state.tabs.len() + 1);
+                let paragraphs_dto: Vec<WriterParagraphDto> = paragraphs
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, p)| WriterParagraphDto {
+                        id: (idx + 1) as u64,
+                        style: p.style,
+                        text: p.text,
+                        ai_redline_delete: None,
+                        ai_redline_insert: None,
+                    })
+                    .collect();
+                self.state.writer_paragraphs = if paragraphs_dto.is_empty() {
+                    vec![WriterParagraphDto {
+                        id: 1,
+                        style: "Normal".to_string(),
+                        text: String::new(),
+                        ai_redline_delete: None,
+                        ai_redline_insert: None,
+                    }]
+                } else {
+                    paragraphs_dto
+                };
+                self.state.tabs.push(WorkspaceTabDto {
+                    id: tab_id.clone(),
+                    title: file_name,
+                    module: ModuleKind::Writer,
+                    dirty: false,
+                    roaming_hash: Self::fnv1a_short_hash(b"imported_docx"),
+                });
+                self.state.active_tab_id = tab_id;
+                self.record_roaming_snapshot("Imported Word Document (.docx)");
+            }
+            wps_ooxml::OfficeDocumentPayload::Xlsx {
+                file_name, rows, ..
+            }
+            | wps_ooxml::OfficeDocumentPayload::Csv { file_name, rows } => {
+                let tab_id = format!("tab-sheets-{}", self.state.tabs.len() + 1);
+                if !rows.is_empty() {
+                    self.state.sheet_grid = rows;
+                }
+                self.recalculate_sheet_metrics();
+                self.state.tabs.push(WorkspaceTabDto {
+                    id: tab_id.clone(),
+                    title: file_name,
+                    module: ModuleKind::Sheets,
+                    dirty: false,
+                    roaming_hash: Self::fnv1a_short_hash(b"imported_sheet"),
+                });
+                self.state.active_tab_id = tab_id;
+                self.record_roaming_snapshot("Imported Spreadsheet (.xlsx / .csv)");
+            }
+            wps_ooxml::OfficeDocumentPayload::Pptx { file_name, slides } => {
+                let tab_id = format!("tab-slides-{}", self.state.tabs.len() + 1);
+                let slide_dtos: Vec<SlideCardDto> = slides
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, s)| SlideCardDto {
+                        slide_index: idx + 1,
+                        title: s.title,
+                        morph_tag: format!("Slide {}", idx + 1),
+                        pillars: s.bullets,
+                        speaker_notes: s.speaker_notes,
+                    })
+                    .collect();
+                if !slide_dtos.is_empty() {
+                    self.state.slides = slide_dtos;
+                }
+                self.state.tabs.push(WorkspaceTabDto {
+                    id: tab_id.clone(),
+                    title: file_name,
+                    module: ModuleKind::Slides,
+                    dirty: false,
+                    roaming_hash: Self::fnv1a_short_hash(b"imported_pptx"),
+                });
+                self.state.active_tab_id = tab_id;
+                self.record_roaming_snapshot("Imported Presentation (.pptx)");
+            }
+            wps_ooxml::OfficeDocumentPayload::Pdf {
+                file_name, blocks, ..
+            } => {
+                let tab_id = format!("tab-pdf-{}", self.state.tabs.len() + 1);
+                let block_dtos: Vec<PdfSpatialBlockDto> = blocks
+                    .into_iter()
+                    .map(|b| PdfSpatialBlockDto {
+                        block_id: b.block_id,
+                        page: b.page_number,
+                        role: b.role,
+                        bbox: b.bbox,
+                        text: b.text,
+                    })
+                    .collect();
+                if !block_dtos.is_empty() {
+                    self.state.pdf_blocks = block_dtos;
+                }
+                self.state.tabs.push(WorkspaceTabDto {
+                    id: tab_id.clone(),
+                    title: file_name,
+                    module: ModuleKind::Pdf,
+                    dirty: false,
+                    roaming_hash: Self::fnv1a_short_hash(b"imported_pdf"),
+                });
+                self.state.active_tab_id = tab_id;
+                self.record_roaming_snapshot("Imported PDF Document (.pdf)");
+            }
+        }
+    }
+
+    pub fn export_tab_payload_bytes(&self, target_fmt: &str) -> Result<Vec<u8>, String> {
+        let active_mod = self.get_active_module();
+        let active_tab = self
+            .state
+            .tabs
+            .iter()
+            .find(|t| t.id == self.state.active_tab_id);
+        let title = active_tab
+            .map(|t| t.title.as_str())
+            .unwrap_or("document");
+
+        let fmt = target_fmt.to_ascii_lowercase();
+        match active_mod {
+            ModuleKind::Writer => {
+                let paras: Vec<wps_ooxml::DocxParagraphItem> = self
+                    .state
+                    .writer_paragraphs
+                    .iter()
+                    .map(|p| wps_ooxml::DocxParagraphItem {
+                        style: p.style.clone(),
+                        text: p.text.clone(),
+                        runs: vec![],
+                    })
+                    .collect();
+                wps_ooxml::FileIoEngine::write_docx(&paras, &[])
+            }
+            ModuleKind::Sheets => {
+                if fmt == "csv" || title.ends_with(".csv") {
+                    wps_ooxml::FileIoEngine::write_csv(&self.state.sheet_grid)
+                } else {
+                    wps_ooxml::FileIoEngine::write_xlsx("Sheet1", &self.state.sheet_grid)
+                }
+            }
+            ModuleKind::Slides => {
+                let slides: Vec<wps_ooxml::PptxSlideItem> = self
+                    .state
+                    .slides
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, s)| wps_ooxml::PptxSlideItem {
+                        slide_number: idx + 1,
+                        title: s.title.clone(),
+                        subtitle: s.morph_tag.clone(),
+                        bullets: s.pillars.clone(),
+                        speaker_notes: s.speaker_notes.clone(),
+                    })
+                    .collect();
+                wps_ooxml::FileIoEngine::write_pptx(&slides)
+            }
+            ModuleKind::Pdf => {
+                let blocks: Vec<wps_ooxml::PdfPageBlockItem> = self
+                    .state
+                    .pdf_blocks
+                    .iter()
+                    .map(|b| wps_ooxml::PdfPageBlockItem {
+                        block_id: b.block_id,
+                        page_number: b.page,
+                        role: b.role.clone(),
+                        bbox: b.bbox,
+                        text: b.text.clone(),
+                    })
+                    .collect();
+                wps_ooxml::FileIoEngine::write_pdf(&blocks)
+            }
+        }
     }
 
     /// Executes a `WorkspaceCommand`, updates reactive DAG / pagination / CRDT snapshot hashes,
@@ -832,6 +1012,24 @@ impl MercuryWasmEngine {
         let updated = self.session.dispatch(cmd);
         serde_json::to_string(updated)
             .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+    }
+
+    /// Imports a document binary buffer directly into the active session state.
+    #[wasm_bindgen(js_name = importDocumentBytes)]
+    pub fn import_document_bytes(&mut self, file_name: &str, bytes: &[u8]) -> Result<String, JsValue> {
+        let payload = wps_ooxml::FileIoEngine::import_bytes(file_name, bytes)
+            .map_err(|e| JsValue::from_str(&e))?;
+        self.session.load_document_payload(payload);
+        serde_json::to_string(self.session.state_frame())
+            .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+    }
+
+    /// Exports the current active tab as binary document bytes (`.docx`, `.xlsx`, `.csv`, `.pptx`, `.pdf`).
+    #[wasm_bindgen(js_name = exportActiveTabBytes)]
+    pub fn export_active_tab_bytes(&self, target_format: &str) -> Result<Vec<u8>, JsValue> {
+        self.session
+            .export_tab_payload_bytes(target_format)
+            .map_err(|e| JsValue::from_str(&e))
     }
 }
 

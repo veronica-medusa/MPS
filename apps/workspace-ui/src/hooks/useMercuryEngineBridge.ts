@@ -3,6 +3,8 @@ import { useState, useCallback, useRef } from 'react';
 export interface WorkspaceEngineClient {
   getStateJson(): string;
   dispatchCommandJson(cmdJson: string): string;
+  importDocumentBytes?(fileName: string, bytes: Uint8Array): string;
+  exportActiveTabBytes?(targetFormat: string): Uint8Array;
 }
 
 /**
@@ -32,8 +34,24 @@ export function useMercuryEngineBridge<TState>(
     setState(JSON.parse(updatedJson) as TState);
   }, []);
 
+  const importFile = useCallback((fileName: string, bytes: Uint8Array) => {
+    if (engineRef.current?.importDocumentBytes) {
+      const updatedJson = engineRef.current.importDocumentBytes(fileName, bytes);
+      setState(JSON.parse(updatedJson) as TState);
+    }
+  }, []);
+
+  const exportTab = useCallback((targetFormat: string): Uint8Array | null => {
+    if (engineRef.current?.exportActiveTabBytes) {
+      return engineRef.current.exportActiveTabBytes(targetFormat);
+    }
+    return null;
+  }, []);
+
   return {
     state,
     dispatchCommand,
+    importFile,
+    exportTab,
   };
 }

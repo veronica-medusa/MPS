@@ -11,3 +11,4 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+wps-ooxml = { workspace = true }

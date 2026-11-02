@@ -1,12 +1,17 @@
 // OpenWPS OOXML Codecs & Package Parser
 
 pub mod error;
+pub mod file_io;
 pub mod opc;
 pub mod package;
 pub mod shared_strings;
 pub mod styles;
 
 pub use error::OoxmlError;
+pub use file_io::{
+    DocxParagraphItem, FileFormatKind, FileIoEngine, OfficeDocumentPayload, PdfPageBlockItem,
+    PptxSlideItem,
+};
 pub use opc::{
     ContentTypes, Relationship, Relationships, CT_DOCX_MAIN, CT_PPTX_PRESENTATION,
     CT_PPTX_SLIDE, CT_PPTX_SLIDE_LAYOUT, CT_PPTX_SLIDE_MASTER, CT_PPTX_THEME,

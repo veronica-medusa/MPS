@@ -25,11 +25,13 @@ import {
   Globe
 } from 'lucide-react';
 import { OfficeTab, DocumentType } from '../types';
+import { OfficeDocumentPayload, MercuryFileDropzone } from '../services/fileIo';
 
 interface HomeHubViewProps {
   onNewDocument: (type: DocumentType) => void;
   onOpenTemplate: (templateId: string) => void;
   onOpenFile: () => void;
+  onFileLoaded?: (payload: OfficeDocumentPayload) => void;
   recentTabs: OfficeTab[];
   onOpenRecentTab: (id: string) => void;
   onDuplicateTab: (id: string) => void;
@@ -41,6 +43,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   onNewDocument,
   onOpenTemplate,
   onOpenFile,
+  onFileLoaded,
   recentTabs,
   onOpenRecentTab,
   onDuplicateTab,
@@ -371,6 +374,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
             </div>
           </section>
+
+          {/* In-Memory Document Dropzone */}
+          {onFileLoaded && (
+            <section className="mb-6">
+              <MercuryFileDropzone onFileLoaded={onFileLoaded} isCompact={true} />
+            </section>
+          )}
 
           {/* Recent Files Table */}
           <section>
